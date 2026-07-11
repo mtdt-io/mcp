@@ -22,6 +22,14 @@ files.
 - **`mtdt-troubleshoot` skill**: reading failed runs — component vs test failures, the 75%
   coverage rule, quick-deploy prerequisites.
 
+## Other clients
+
+The MCP server is one endpoint (`https://mcp.mtdt.io/mcp`) that works with any MCP-capable
+agent — Cursor, OpenAI Codex, OpenCode, or Claude Code without the plugin. Copy-paste
+configs for each: **[CONNECT.md](CONNECT.md)**.
+
+[![Add mtdt to Cursor](https://cursor.com/deeplink/mcp-install-dark.svg)](https://cursor.com/en/install-mcp?name=mtdt&config=eyJ1cmwiOiJodHRwczovL21jcC5tdGR0LmlvL21jcCJ9)
+
 ## Notes
 
 - Requires an mtdt.io account with at least one connected Salesforce org.
