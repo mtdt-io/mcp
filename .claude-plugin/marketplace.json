@@ -1,0 +1,16 @@
+{
+  "name": "mtdt",
+  "description": "Official mtdt.io plugins — Salesforce DevOps tooling for Claude Code.",
+  "owner": {
+    "name": "mtdt.io",
+    "url": "https://mtdt.io"
+  },
+  "plugins": [
+    {
+      "name": "mtdt",
+      "source": "./",
+      "description": "Salesforce DevOps from your IDE: promote metadata between orgs via mtdt.io — impact analysis, conflict checks, test recommendations, validate + quick-deploy.",
+      "version": "0.1.0"
+    }
+  ]
+}
