@@ -73,8 +73,9 @@ These take a `selected` object keyed by canonical type → `[{ "base_component":
   the target; confirm each item with the user explicitly), post-deploy flow activation, and
   record backups go through the low-level `create_deployment_run`. For anything shared, validate
   first.
-- The granular retrieve/list/prepare tools still exist for fine-grained control, but
-  `browse_metadata` + `validate_deployment` cover the normal flow in two calls.
+- `prepare_deployment_run_selected_items_object` still exists to build the `selected_items`
+  object for `create_deployment_run` by hand, but `browse_metadata` + `validate_deployment`
+  cover the normal flow in two calls.
 - `get_workflow_deployment_recipe` returns the server's current recommended recipe if you need a
   refresher.
 
