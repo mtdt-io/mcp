@@ -6,7 +6,9 @@ description: Diagnose failed or stuck Salesforce deployments run through mtdt.io
 # Troubleshooting mtdt deployments
 
 Start from `get_deploy_status` for the deployment — it returns a derived status plus the failure
-details you need. Read the failure **category** before proposing fixes:
+details you need. (To *wait* on a still-running run, use `await_deploy_status` instead — it blocks
+up to ~50s server-side; while it returns `timed_out: true`, call it again.) Read the failure
+**category** before proposing fixes:
 
 ## Component failures vs test failures vs coverage
 
@@ -26,15 +28,23 @@ details you need. Read the failure **category** before proposing fixes:
 
 `quick_deploy` only works after a **Succeeded validation that ran tests** on the same deployment.
 If it reports no eligible validation: the last validation failed, ran with `NoTestRun`, or a real
-deploy already consumed it. Re-validate with `test_option: "local"` or `"specific"`, then retry.
-Salesforce quick-deploy windows also expire (~10 days) — a stale validation needs a fresh one.
+deploy already consumed it. Re-validate with `validate_deployment` and `test_option: "local"` or
+`"specific"`, then retry. Salesforce quick-deploy windows also expire (~10 days) — a stale
+validation needs a fresh one.
+
+## `items_not_retrieved` from validate_deployment
+
+A component you named was never retrieved for this deployment — the reject lists exactly which.
+Run `browse_metadata` for that type first (it retrieves on first call) and check the spelling
+against its rows; only retrieved components can be deployed.
 
 ## Retrieval looks stuck
 
-- Poll `list_retrieved_metadata` — rows usually appear within seconds to a couple of minutes
-  depending on type size. Transient Salesforce errors (HTTP 404/timeouts) self-heal: retry
-  `start_metadata_retrieval` once before escalating.
-- Re-selecting the same type does not re-trigger retrieval; metadata is cached per deployment.
+- `browse_metadata` returning `{ status: "retrieving", timed_out: true }` just means the retrieval
+  is still running — call it again with the same args (safe to repeat; duplicate tasks are
+  impossible). Rows usually appear within seconds to a couple of minutes depending on type size.
+  Transient Salesforce errors (HTTP 404/timeouts) self-heal on a retry before escalating.
+- Re-browsing an already-retrieved type serves the cached rows; metadata is cached per deployment.
 
 ## Auth / access
 
