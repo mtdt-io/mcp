@@ -90,6 +90,12 @@ url = "https://mcp.mtdt.io/mcp"
 
 OAuth is the default when no bearer token is configured — nothing else to set.
 
+> **Known issue in Codex ≥ 0.143** ([openai/codex#31573](https://github.com/openai/codex/issues/31573)):
+> login fails with `Authorization server response missing required issuer` — Codex's OAuth callback
+> drops the RFC 9207 `iss` parameter its own validator then requires. Until the fix ships, use
+> Codex 0.141: `npm install -g @openai/codex@0.141.0` (check `which -a codex` for a newer binary
+> shadowing it, e.g. `~/.local/bin/codex`). Verified working end-to-end on 0.141.0.
+
 ## OpenCode
 
 In `opencode.json` (project) or the global config:
