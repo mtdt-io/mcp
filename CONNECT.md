@@ -26,7 +26,7 @@ Requirements:
 The plugin gives you the MCP connection **plus** the deploy/troubleshoot skills:
 
 ```
-/plugin marketplace add mtdt-io/claude-code-plugins
+/plugin marketplace add mtdt-io/mcp
 /plugin install mtdt@mtdt
 ```
 
