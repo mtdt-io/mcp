@@ -55,6 +55,14 @@ against its rows; only retrieved components can be deployed.
 - **`reauth_required: true` on an org** (in `list_orgs`): the Salesforce connection needs
   re-authentication in the mtdt web app before any retrieval/deploy against it will work.
 
+## The failure a preflight would have named
+
+Before re-validating blind, run `preflight_deployment` on the same selection — several classic
+failures show up there with the fix attached: a scheduled Apex (cron) job on a class you are
+overwriting (Salesforce refuses the overwrite until the job is aborted), an Entitlement Process
+whose Business Hours is missing on the target (deploys "Successfully" and silently drops the
+binding), and destructive changes whose components the target still references.
+
 ## Deployment blocked by "another deploy in progress"
 
 mtdt deliberately waits when **any** deployment is already running on the target org (including

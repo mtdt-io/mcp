@@ -17,10 +17,16 @@ production targets.
 - Source can be an org, a git repo (`list_git_repos`), or a metadata backup
   (`list_metadata_backups`).
 
-## 2. Create the deployment
+## 2. Create the deployment (or resume one)
 
+- Resuming rather than starting fresh? `list_deployments` shows the team's existing deployments
+  with source/target labels and each one's latest run — reuse its id instead of creating a
+  duplicate.
 - `create_deployment` with exactly one source (`from_org_id` / `from_repo_id` /
   `from_backup_id`) and `to_org_id`. It returns the `deploymentId` you use everywhere below.
+  Pass `caption` (short title) and, when you know what you are shipping, `description` — on a
+  push-to-git deploy it becomes the git commit message (`set_deployment_description` can change
+  it later).
 
 ## 3. Browse & pick components
 
@@ -35,19 +41,25 @@ production targets.
   yourself), you still browse once for the type — it both retrieves the metadata and confirms the
   names exist in the org.
 
-## 4. Pre-flight checks (read-only; run all three before deploying to shared/prod orgs)
+## 4. Pre-flight checks (read-only; run them before deploying to shared/prod orgs)
 
-These take a `selected` object keyed by canonical type → `[{ "base_component": "Name" }]`, e.g.
-`{ "classes": [{ "base_component": "FooService" }] }`.
-
-- `run_impact_analysis` — finds source-org dependencies of your selection you likely must add
-  (e.g. a field's global value set, a record type's picklist fields). Add the findings to your
-  selection or explain to the user why not.
-- `check_target_conflicts` — detects whether anything you are about to overwrite changed on the
-  target since it was retrieved. Surfaces honest `verifiable` vs `not-verifiable` buckets; treat
-  a conflict as a stop-and-ask.
-- `recommend_tests` — suggests which Apex tests cover the selection; feed `tests_to_run` into the
-  validation as `test_option: "specific"`.
+- `preflight_deployment` with `deployment_id` and `items` as `{ "type": ["Name1", …] }` — the
+  same checks a human gets automatically in the Deploy modal: destructive-change impact, which
+  profiles/permission sets grant access to the selection (plus profile-applicability warnings),
+  record-backup recommendations, scheduled Apex (cron) jobs on classes you'd overwrite, Business
+  Hours bindings the target would silently drop, and static-analysis findings. Verdicts are
+  **advisory** — read them, act on `suggested_action` where present, and tell the user what you
+  found. Deleting anything? Pass those as `destructive_items`.
+- Three checks live as their own tools (they take `selected` keyed by canonical type →
+  `[{ "base_component": "Name" }]`, e.g. `{ "classes": [{ "base_component": "FooService" }] }`):
+  - `run_impact_analysis` — finds source-org dependencies of your selection you likely must add
+    (e.g. a field's global value set, a record type's picklist fields). Add the findings to your
+    selection or explain to the user why not.
+  - `check_target_conflicts` — detects whether anything you are about to overwrite changed on the
+    target since it was retrieved. Surfaces honest `verifiable` vs `not-verifiable` buckets; treat
+    a conflict as a stop-and-ask.
+  - `recommend_tests` — suggests which Apex tests cover the selection; feed `tests_to_run` into
+    the validation as `test_option: "specific"`.
 
 ## 5. Validate
 
