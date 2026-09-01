@@ -1,0 +1,18 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.mtdt/mtdt",
+  "title": "mtdt — Salesforce DevOps",
+  "description": "Deploy Salesforce metadata between orgs with pre-deploy checks: impact analysis, target conflicts, profile & permission warnings, test recommendations, validate + quick-deploy.",
+  "repository": {
+    "url": "https://github.com/mtdt-io/mcp",
+    "source": "github"
+  },
+  "version": "0.2.0",
+  "websiteUrl": "https://docs.mtdt.io/docs/mcp",
+  "remotes": [
+    {
+      "type": "streamable-http",
+      "url": "https://mcp.mtdt.io/mcp"
+    }
+  ]
+}
