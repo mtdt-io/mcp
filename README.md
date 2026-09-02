@@ -44,7 +44,9 @@ On first use Claude Code opens your browser to sign in to mtdt (OAuth) — no co
 ## Connect (any MCP client)
 
 Verified copy-paste configs per client (and the `type`-field gotchas between them):
-**[CONNECT.md](CONNECT.md)**.
+**[CONNECT.md](CONNECT.md)**. Every client receives the deployment playbook at connection time
+(MCP `instructions`) and can pull the `mtdt-deploy` / `mtdt-troubleshoot` prompts; the plugin
+above ships the same know-how as skills, applied without being asked.
 
 Quick versions:
 
