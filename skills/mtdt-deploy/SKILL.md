@@ -27,6 +27,10 @@ production targets.
   Pass `caption` (short title) and, when you know what you are shipping, `description` — on a
   push-to-git deploy it becomes the git commit message (`set_deployment_description` can change
   it later).
+- **Repo or backup as the source?** The deployment is populated asynchronously — poll
+  `check_deployment_creation_status(deployment_id)` until it says `"done"` before browsing;
+  `"failed"` means the source could not be read — report it to the user rather than retrying
+  blindly.
 
 ## 3. Browse & pick components
 
@@ -90,6 +94,22 @@ production targets.
   cover the normal flow in two calls.
 - `get_workflow_deployment_recipe` returns the server's current recommended recipe if you need a
   refresher.
+- `get_task_status(task_id)` is the generic poller for any async task id you get back (backup,
+  comparison, retrieval) when there is no dedicated status tool.
+
+## Adjacent intents on the same connection
+
+- **"What differs between these two orgs?"** — create a deployment between them, then
+  `start_full_metadata_deployment_comparison(deployment_id)` (returns a `comparisonId`), poll
+  `get_full_metadata_deployment_comparison_status(comparison_id)`, and read
+  `get_latest_full_metadata_deployment_comparison` — a full org-to-org metadata diff, no
+  deploy involved.
+- **"Back up the org's metadata"** — `run_metadata_backup(org_id)` starts a backup task; track
+  it with `get_task_status(backup_task_id)`. A finished backup also becomes a valid deploy
+  *source* (`from_backup_id`) for restores.
+- **Record (data) backup before a risky deploy** — when `preflight_deployment` recommends it
+  (`record_backups/recommended` verdict), pass the objects as `objects_to_backup` on
+  `create_deployment_run`; mtdt snapshots the records before deploying.
 
 ## Guardrails
 
