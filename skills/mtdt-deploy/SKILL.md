@@ -28,9 +28,11 @@ production targets.
   push-to-git deploy it becomes the git commit message (`set_deployment_description` can change
   it later).
 - **Repo or backup as the source?** The deployment is populated asynchronously — poll
-  `check_deployment_creation_status(deployment_id)` until it says `"done"` before browsing;
-  `"failed"` means the source could not be read — report it to the user rather than retrying
-  blindly.
+  `check_deployment_creation_status(deployment_id)` until `deploymentStatus` is `"done"` before
+  browsing. It reports each side (`source` / `target`) with the population task behind it, so
+  `"failed"` comes with `task.error` (a partial or unfinished backup has no archive to unpack; an
+  org may need re-auth). A failed deployment does not recover by polling — tell the user the error
+  and create a new deployment from a usable source.
 
 ## 3. Browse & pick components
 
