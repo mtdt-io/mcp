@@ -42,7 +42,8 @@ against its rows; only retrieved components can be deployed.
 
 - `check_deployment_creation_status(deployment_id)` reports each side with the population task
   behind it, so a failed source unpack reads as `"failed"` with `task.error` instead of an endless
-  `"in progress"`. `"failed"` never recovers by polling — fix the cause and create a new deployment.
+  `"in progress"`. `"failed"` never recovers by polling — fix the cause, then press Refresh on
+  the deployment in the mtdt web app, or create a new deployment.
 - If it shows the source failed with `No value provided for input HTTP label: Key` (or otherwise
   reports there was nothing to download), the backup had no stored package — it finished without an
   archive, so there was never anything to unpack. Newer MCP versions reject such a backup up front
