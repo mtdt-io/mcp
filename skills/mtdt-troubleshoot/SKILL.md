@@ -44,6 +44,9 @@ against its rows; only retrieved components can be deployed.
   is still running — call it again with the same args (safe to repeat; duplicate tasks are
   impossible). Rows usually appear within seconds to a couple of minutes depending on type size.
   Transient Salesforce errors (HTTP 404/timeouts) self-heal on a retry before escalating.
+- `browse_metadata` returning `{ status: "retrieval_failed", failed_tasks }` is a failed retrieval,
+  not an empty type: read `failed_tasks[].error` (read timeouts on big Profiles are the classic),
+  retry once with the same args, then report the error instead of deploying "nothing".
 - Re-browsing an already-retrieved type serves the cached rows; metadata is cached per deployment.
 
 ## Auth / access

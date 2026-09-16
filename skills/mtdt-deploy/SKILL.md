@@ -39,6 +39,10 @@ production targets.
   `name_contains`, `modified_since` (ISO date), or `modified_by` (display names).
 - If it returns `{ status: "retrieving", timed_out: true }`, the retrieval is still running —
   **call it again with the same args** (safe to repeat; duplicates are impossible).
+- `{ status: "retrieval_failed", failed_tasks: [{ id, status, error }] }` means Salesforce could
+  not deliver that type (large Profiles timing out is the classic); `components` holds only what
+  landed before the failure. Retry once; if it repeats, tell the user the error — the type is **not**
+  empty.
 - Types are fuzzy-resolved ("ApexClass" → `classes`); an unknown type comes back as a structured
   reject with `did_you_mean` suggestions — fix and retry.
 - If the user already told you exactly which components they changed (or you edited the files
