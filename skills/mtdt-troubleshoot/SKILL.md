@@ -38,6 +38,17 @@ A component you named was never retrieved for this deployment — the reject lis
 Run `browse_metadata` for that type first (it retrieves on first call) and check the spelling
 against its rows; only retrieved components can be deployed.
 
+## The deployment never populates (repo or backup source)
+
+- `check_deployment_creation_status(deployment_id)` reports each side with the population task
+  behind it, so a failed source unpack reads as `"failed"` with `task.error` instead of an endless
+  `"in progress"`. `"failed"` never recovers by polling — fix the cause and create a new deployment.
+- If it shows the source failed with `No value provided for input HTTP label: Key` (or otherwise
+  reports there was nothing to download), the backup had no stored package — it finished without an
+  archive, so there was never anything to unpack. Newer MCP versions reject such a backup up front
+  at `create_deployment` as `{ error: "backup_not_usable", reason: "no_archive" }` and create no
+  deployment at all; pick a usable backup from `list_metadata_backups` or run a fresh one.
+
 ## Retrieval looks stuck
 
 - `browse_metadata` returning `{ status: "retrieving", timed_out: true }` just means the retrieval

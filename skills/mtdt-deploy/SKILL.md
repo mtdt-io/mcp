@@ -28,7 +28,10 @@ production targets.
   `from_backup_id`) and `to_org_id`. It returns the `deploymentId` you use everywhere below.
   Pass `caption` (short title) and, when you know what you are shipping, `description` — on a
   push-to-git deploy it becomes the git commit message (`set_deployment_description` can change
-  it later).
+  it later). A backup source must be **usable** — finished, with its archive present: otherwise
+  `create_deployment` returns `{ error: "backup_not_usable", reason }` and creates nothing, so pick
+  another backup from `list_metadata_backups` (its default view lists only usable ones) or run
+  `run_metadata_backup` first and wait for it to finish.
 - **Repo or backup as the source?** The deployment is populated asynchronously — poll
   `check_deployment_creation_status(deployment_id)` until `deploymentStatus` is `"done"` before
   browsing. It reports each side (`source` / `target`) with the population task behind it, so
