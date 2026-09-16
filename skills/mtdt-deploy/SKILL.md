@@ -58,16 +58,19 @@ production targets.
   Hours bindings the target would silently drop, and static-analysis findings. Verdicts are
   **advisory** — read them, act on `suggested_action` where present, and tell the user what you
   found. Deleting anything? Pass those as `destructive_items`.
-- Three checks live as their own tools (they take `selected` keyed by canonical type →
-  `[{ "base_component": "Name" }]`, e.g. `{ "classes": [{ "base_component": "FooService" }] }`):
+- Two checks live as their own tools and take `selected` keyed by canonical type →
+  `[{ "base_component": "Name" }]`, e.g. `{ "classes": [{ "base_component": "FooService" }] }`:
   - `run_impact_analysis` — finds source-org dependencies of your selection you likely must add
     (e.g. a field's global value set, a record type's picklist fields). Add the findings to your
     selection or explain to the user why not.
   - `check_target_conflicts` — detects whether anything you are about to overwrite changed on the
     target since it was retrieved. Surfaces honest `verifiable` vs `not-verifiable` buckets; treat
     a conflict as a stop-and-ask.
-  - `recommend_tests` — suggests which Apex tests cover the selection; feed `tests_to_run` into
-    the validation as `test_option: "specific"`.
+- `recommend_tests` — suggests which Apex tests cover a selection; feed `tests_to_run` into the
+  validation as `test_option: "specific"`. Pass `items` (same `{ "type": ["Name"] }` shape as
+  validate) to assess exactly that selection; without `items` it assesses the deployment's latest
+  run, then its saved modal selection. `selection_source: "none"` with `NoApex` means it found no
+  selection anywhere — pass `items`.
 
 ## 5. Validate
 
