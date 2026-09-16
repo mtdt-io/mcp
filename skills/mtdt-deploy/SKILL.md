@@ -15,7 +15,9 @@ production targets.
   "acme prod"). **Never assume the top hit** — confirm with the user, especially when a candidate
   has `org_type: production` or `is_important: true`.
 - Source can be an org, a git repo (`list_git_repos`), or a metadata backup
-  (`list_metadata_backups`).
+  (`list_metadata_backups`). `list_metadata_backups` returns only the backups actually usable as a
+  deploy source by default (status done with the archive present), each with a human `label` — pass
+  `include_unusable: true` to also see the rest, each carrying an `unusable_reason`.
 
 ## 2. Create the deployment (or resume one)
 
