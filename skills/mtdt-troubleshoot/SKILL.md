@@ -53,9 +53,10 @@ against its rows; only retrieved components can be deployed.
 
 ## Retrieval looks stuck
 
-- `browse_metadata` returning `{ status: "retrieving", timed_out: true }` just means the retrieval
-  is still running — call it again with the same args (safe to repeat; duplicate tasks are
-  impossible). Rows usually appear within seconds to a couple of minutes depending on type size.
+- `browse_metadata` returning `{ status: "retrieving", partial: true }` just means the retrieval
+  is still running and the rows so far are an incomplete snapshot — call it again with the same
+  args (safe to repeat; duplicate tasks are impossible). `task_ids` names the JIT tasks still
+  running. Rows usually appear within seconds to a couple of minutes depending on type size.
   Transient Salesforce errors (HTTP 404/timeouts) self-heal on a retry before escalating.
 - `browse_metadata` returning `{ status: "retrieval_failed", failed_tasks }` is a retrieval that
   failed on the Salesforce side for part of the type, not an empty type: read

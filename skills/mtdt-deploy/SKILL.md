@@ -44,8 +44,10 @@ production targets.
 - `browse_metadata` with the `deployment_id` and a metadata type — it retrieves the type from the
   source org on first call and returns one compact row per component. Filter server-side with
   `name_contains`, `modified_since` (ISO date), or `modified_by` (display names).
-- If it returns `{ status: "retrieving", timed_out: true }`, the retrieval is still running —
-  **call it again with the same args** (safe to repeat; duplicates are impossible).
+- If it returns `{ status: "retrieving", partial: true, task_ids }`, the retrieval is still
+  running and `components` holds only what has landed so far — **call it again with the same
+  args** (safe to repeat; duplicates are impossible). Treat the list as complete only at
+  `status: "ready"` (0 components is a valid ready).
 - `{ status: "retrieval_failed", failed_tasks: [{ id, status, error }] }` means the retrieval
   failed on the Salesforce side for **part** of that type (large Profiles timing out is the
   classic). The component **names** in `components` are complete — only the bodies of some of them
@@ -121,7 +123,7 @@ production targets.
   `get_latest_full_metadata_deployment_comparison` — a full org-to-org metadata diff, no
   deploy involved.
 - **"Back up the org's metadata"** — `run_metadata_backup(org_id)` starts a backup task; track
-  it with `get_task_status(backup_task_id)`. A finished backup also becomes a valid deploy
+  it with `get_task_status(task_id)`. A finished backup also becomes a valid deploy
   *source* (`from_backup_id`) for restores.
 - **Record (data) backup before a risky deploy** — when `preflight_deployment` recommends it
   (`record_backups/recommended` verdict), pass the objects as `objects_to_backup` on
