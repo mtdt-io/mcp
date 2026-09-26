@@ -60,4 +60,3 @@ Quick versions:
 ## Notes
 
 - Requires an mtdt.io account with at least one connected Salesforce org.
-- MFA-enrolled accounts are not yet supported by the MCP connection (coming).
