@@ -68,8 +68,9 @@ against its rows; only retrieved components can be deployed.
 
 ## Auth / access
 
-- **"MFA-enrolled user" refusal at connect time**: the mtdt MCP currently supports non-MFA
-  accounts only; the user should connect with a non-MFA account or use the web app.
+- **"MFA required" at connect time**: sign in again and complete the second factor in the
+  browser. If sign-in never asks for it, ask the mtdt administrator to enable the MFA step for
+  the account. Do not work around the team's MFA policy by switching to an unprotected account.
 - **Permission errors on deploy actions**: the user's mtdt role may lack direct-deploy on that
   target — mtdt then forces an approval request; that is policy, not a bug.
 - **`reauth_required: true` on an org** (in `list_orgs`): the Salesforce connection needs

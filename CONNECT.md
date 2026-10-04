@@ -14,7 +14,7 @@ no tokens to copy.**
 Requirements:
 
 - An mtdt.io account with at least one connected Salesforce org.
-- MFA-enrolled mtdt accounts are not yet supported by the MCP connection (coming).
+- If your account or team requires MFA, complete the second factor during browser sign-in.
 - On the consent screen you grant **View** (`mtdt:read`) and optionally **Run** (`mtdt:deploy`)
   privileges. Deploy-capable tools refuse without the Run scope, and always respect your team's
   mtdt roles — approval-gated targets stay approval-gated.

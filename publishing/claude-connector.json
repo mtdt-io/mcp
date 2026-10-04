@@ -1,0 +1,52 @@
+{
+  "connection": {
+    "server_url": "https://mcp.mtdt.io/mcp",
+    "url_mode": "universal"
+  },
+  "listing": {
+    "name": "mtdt.io",
+    "one_liner": "Salesforce DevOps: metadata deployments, preflight checks, validation and backups.",
+    "description": "Work with the Salesforce orgs connected to your mtdt.io team. Find orgs, inspect deployments, browse metadata, and prepare a deployment from an org, Git repository or usable metadata backup. Review dependencies, target conflicts, permission warnings and backup recommendations before validating with Apex tests. Follow validation and deployment results, quick-deploy a successful validation, or start a metadata backup.\n\nSign in to mtdt.io through OAuth in your browser. An mtdt.io account and connected Salesforce orgs are required. View consent allows inspection; Run consent is needed for tools that create tasks or deployments, retrieve metadata, validate or run backups. Team roles and approval policies continue to apply. Preflight checks are advisory. Validation does not deploy metadata to the target; quick-deploy and direct deployment can overwrite target metadata.",
+    "suggested_categories": ["Developer Tools"],
+    "documentation_url": "https://docs.mtdt.io/docs/mcp/",
+    "privacy_policy_url": "https://docs.mtdt.io/docs/legal-information/privacy-policy/",
+    "support_contact": "support@mtdt.io",
+    "support_url": "https://mtdt.io/#contact",
+    "icon_file": "assets/mtdt-icon.png",
+    "suggested_slug": "mtdt"
+  },
+  "use_cases": [
+    "Prepare and check a Salesforce metadata deployment between connected orgs.",
+    "Validate a package with Apex tests and quick-deploy a successful validation.",
+    "Inspect deployment history and troubleshoot failed runs.",
+    "Start and inspect metadata backups."
+  ],
+  "prerequisites": "An mtdt.io account, membership in a team with connected Salesforce orgs, and the roles and subscription entitlements for the requested operations.",
+  "access": "read_and_write",
+  "company": {
+    "brand": "mtdt.io",
+    "legal_entity": "Shiny Friday Deployment Club LLC",
+    "website": "https://mtdt.io",
+    "proposed_review_contact": "support@mtdt.io"
+  },
+  "authentication": {
+    "type": "oauth_dcr",
+    "flow": "authorization_code_pkce_s256",
+    "issuer": "https://identity.mtdt.io/realms/mtdt",
+    "protected_resource_metadata_url": "https://mcp.mtdt.io/.well-known/oauth-protected-resource",
+    "authorization_endpoint": "https://identity.mtdt.io/realms/mtdt/protocol/openid-connect/auth",
+    "token_endpoint": "https://identity.mtdt.io/realms/mtdt/protocol/openid-connect/token",
+    "registration_endpoint": "https://identity.mtdt.io/realms/mtdt/clients-registrations/openid-connect",
+    "scopes": ["mtdt:read", "mtdt:deploy", "email", "profile", "offline_access"],
+    "notes": "Users authenticate individually. Team roles and target approval policy apply in addition to OAuth scopes. Complete MFA when the account or team requires it. Reviewer access is supplied privately in the portal."
+  },
+  "data_handling": {
+    "api_ownership_draft": "The connector exposes MTDT's own Salesforce DevOps APIs. MTDT accesses Salesforce orgs and optional connected Git repositories on behalf of the authenticated team, using the integrations the team authorized.",
+    "data_draft": "Requested tool arguments and results may include org and team identifiers, Salesforce metadata and Apex source, deployment selections, run results, test failures, backup details and user/display names. Treat these as potentially personal or customer-confidential data.",
+    "declared_services": ["https://mcp.mtdt.io/mcp", "https://identity.mtdt.io/realms/mtdt"],
+    "privacy_policy": "https://docs.mtdt.io/docs/legal-information/privacy-policy/",
+    "terms": "https://docs.mtdt.io/docs/legal-information/terms/",
+    "retention_draft": "Tool activity is processed by the MTDT service under its published policies. The plugin's skills do not create a separate hosted datastore. Deployment/backup artifacts, account data and operational logs have different retention rules; use the published policy and the review team's configured retention rather than promising a single retention period.",
+    "owner_attestations": "The submitter must confirm API authorization, data categories, health-data suitability, sponsored content, audience/age and all policy acknowledgments against actual usage. These are proposed answers, not signed attestations."
+  }
+}

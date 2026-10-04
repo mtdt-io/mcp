@@ -60,3 +60,17 @@ Quick versions:
 ## Notes
 
 - Requires an mtdt.io account with at least one connected Salesforce org.
+
+## Privacy and support
+
+The connector processes requested Salesforce metadata and deployment/backup information
+through the MTDT service. Scope consent, team roles and target approval policies apply to the
+signed-in account. Review the [privacy policy](https://docs.mtdt.io/docs/legal-information/privacy-policy/)
+and [terms of service](https://docs.mtdt.io/docs/legal-information/terms/) before connecting.
+For support, email support@mtdt.io or use the [contact form](https://mtdt.io/#contact).
+
+## Directory packages
+
+Maintainers can build the OpenAI/Codex and Claude distribution ZIPs with
+`python3 publishing/package.py build`. Submission materials and instructions are in
+[publishing/README.md](publishing/README.md).

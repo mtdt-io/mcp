@@ -1,0 +1,1453 @@
+{
+  "evidence": {
+    "kind": "local-source",
+    "observedAt": "2026-10-04T21:54:23.914Z",
+    "source": "mtdt-backend/mcp/src/mcp/definitions.ts",
+    "sourceCommit": "eea66a1f",
+    "live": false,
+    "sourceSha256": "15f249a08d8c300556c69baac3b0529a38bcb0558286e883334b179459a7f3e0"
+  },
+  "tools": [
+    {
+      "name": "list_orgs",
+      "title": "List Salesforce Orgs",
+      "description": "List the Salesforce orgs connected to the user's team(s). Returns id, label, instance_url, derived org_type (scratch/sandbox/developer/production), is_important (protected org), namespace and reauth_required. Use this to find the org id for a deployment source/target.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "team_id": {
+            "type": "string",
+            "description": "Optional team ID. If omitted, lists orgs across all of the user's teams."
+          }
+        },
+        "additionalProperties": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "orgs": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": {}
+            }
+          }
+        },
+        "required": [
+          "orgs"
+        ],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "title": "List Salesforce Orgs",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      },
+      "oauthScope": "mtdt:read"
+    },
+    {
+      "name": "resolve_target",
+      "title": "Resolve Target Org",
+      "description": "Resolve a free-text org name (e.g. \"QA\") to candidate connected orgs, ranked by match score. Returns the top candidates with id/label/instance_url/org_type/is_important so you can confirm the right one before using it as a deploy target — do not assume the top hit; confirm, especially if a production org is among the candidates.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "description": "Free-text org name to resolve, e.g. \"QA\", \"acme prod\". Matched against org label and instance URL."
+          },
+          "team_id": {
+            "type": "string",
+            "description": "Optional team ID to scope the search. If omitted, searches all of the user's teams."
+          },
+          "limit": {
+            "type": "number",
+            "description": "Max candidates to return (default 5)."
+          }
+        },
+        "required": [
+          "query"
+        ],
+        "additionalProperties": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "candidates": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": {}
+            }
+          }
+        },
+        "required": [
+          "candidates"
+        ],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "title": "Resolve Target Org",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      },
+      "oauthScope": "mtdt:read"
+    },
+    {
+      "name": "list_deployments",
+      "title": "List Deployments",
+      "description": "START HERE for any deployment you did not create in this conversation — this is the only way to get a deployment_id without creating a new deployment. Lists the team's deployments newest-first with source (org / git repo / metadata backup / metadata set, each labelled), target (label + org_type + is_important so you can tell a production target apart), and the LATEST run's status (status, is_terminal, is_success, is_validation, is_rollback). `has_description` tells you whether the deployment already has a release note (the text itself is not listed — it can be kilobytes of HTML); set or replace it with set_deployment_description. Each row carries owner.id + owner.is_you so you can tell your own work from a teammate's (owner.label is only filled for your own deploys — other users' display names are not readable under row-level security). Use it to answer \"did yesterday's release land?\", \"what went to this org recently?\", or to resume work after losing context; filter with org_id (+ org_role=\"target\" for deployments INTO an org) and created_since/created_until. Org-comparison objects are excluded by default.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "team_id": {
+            "type": "string",
+            "description": "Optional team ID. If omitted, lists across all of the user's teams."
+          },
+          "org_id": {
+            "type": "string",
+            "description": "Optional org ID filter — only deployments involving this org."
+          },
+          "org_role": {
+            "type": "string",
+            "enum": [
+              "either",
+              "source",
+              "target"
+            ],
+            "description": "How org_id must be involved: \"target\" = deployments INTO that org (default \"either\")."
+          },
+          "include_comparisons": {
+            "type": "boolean",
+            "description": "Include org-comparison objects (is_comparison rows), which are not deployments. Default false."
+          },
+          "created_since": {
+            "type": "string",
+            "description": "ISO date/datetime — only deployments created on/after it (e.g. \"what went out this week\")."
+          },
+          "created_until": {
+            "type": "string",
+            "description": "ISO date/datetime — only deployments created on/before it. Pair with created_since for a release window."
+          },
+          "limit": {
+            "type": "number",
+            "description": "Max deployments to return, newest first (default 20, capped at 50)."
+          }
+        },
+        "additionalProperties": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "deployments": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": {}
+            }
+          },
+          "count": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "deployments",
+          "count"
+        ],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "title": "List Deployments",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      },
+      "oauthScope": "mtdt:read"
+    },
+    {
+      "name": "get_deploy_status",
+      "title": "Get Deploy Status",
+      "description": "Get an INSTANT snapshot of the latest run of a deployment by its id. Returns a derived status, whether it is terminal/succeeded, whether it was a validation, component/test failure details, counts, and the SF validation job id (for quick-deploy). To WAIT for a run to finish, prefer await_deploy_status (it blocks server-side up to ~50s per call, collapsing the poll loop). If you poll this tool manually instead, poll every 15–30s — not faster — to avoid burning the tools/call rate limit.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "deployment_id": {
+            "type": "number",
+            "description": "Deployment ID (metadata_deploys.id) to get the latest run status for."
+          }
+        },
+        "required": [
+          "deployment_id"
+        ],
+        "additionalProperties": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "additionalProperties": {}
+      },
+      "annotations": {
+        "title": "Get Deploy Status",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      },
+      "oauthScope": "mtdt:read"
+    },
+    {
+      "name": "await_deploy_status",
+      "title": "Await Deploy Status",
+      "description": "Wait for a deployment run to reach a terminal state, server-side. Blocks up to ~50s per call (default/cap) polling internally, then returns the same payload as get_deploy_status the moment is_terminal becomes true. If it has not finished within the window it returns the latest status with timed_out=true and a hint — just call await_deploy_status again to keep waiting (repeat while timed_out=true). A not-yet-created run (status \"no_run\") is treated as non-terminal and waited on. Read-only; never throws on timeout. Use this instead of a manual get_deploy_status poll loop.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "deployment_id": {
+            "type": "number",
+            "description": "Deployment ID (metadata_deploys.id) to wait on the latest run of."
+          },
+          "timeout_s": {
+            "type": "number",
+            "description": "Max seconds to wait server-side (default 50, capped at 50)."
+          }
+        },
+        "required": [
+          "deployment_id"
+        ],
+        "additionalProperties": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "additionalProperties": {}
+      },
+      "annotations": {
+        "title": "Await Deploy Status",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      },
+      "oauthScope": "mtdt:read"
+    },
+    {
+      "name": "create_deployment",
+      "title": "Create Deployment",
+      "description": "Create a deployment between source and target. Source can be an org, repo, or metadata backup. Exactly one of from_org_id, from_repo_id, or from_backup_id must be specified. Target must be an org. Optionally pass caption (short title) and description (release note — its plain text becomes the git commit message on a push-to-git deploy and is appended to approval requests); the description can be changed later with set_deployment_description. A backup source must be a FINISHED backup that has an archive — otherwise it returns { error:\"backup_not_usable\", reason } and creates NO deployment.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "team_id": {
+            "type": "string",
+            "description": "Team ID."
+          },
+          "from_org_id": {
+            "type": "string",
+            "description": "Source org ID."
+          },
+          "from_repo_id": {
+            "type": "string",
+            "description": "Source repo ID."
+          },
+          "from_backup_id": {
+            "type": "string",
+            "description": "Source metadata backup ID."
+          },
+          "to_org_id": {
+            "type": "string",
+            "description": "Destination org ID."
+          },
+          "caption": {
+            "type": "string",
+            "description": "Short title for the deployment (shown in lists)."
+          },
+          "description": {
+            "type": "string",
+            "description": "Longer description / release note for the deployment. Plain text or HTML. Its plain text becomes the git commit message on a push-to-git deploy and is appended to approval requests. Change it later with set_deployment_description."
+          }
+        },
+        "required": [
+          "team_id",
+          "to_org_id"
+        ],
+        "additionalProperties": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "deploymentId": {
+            "type": "number",
+            "description": "Success: the new deployment id."
+          },
+          "error": {
+            "type": "string",
+            "description": "Set to \"backup_not_usable\" when from_backup_id names a backup that cannot be a source; NO deployment is created."
+          },
+          "message": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string",
+            "description": "\"not_done\" or \"no_archive\"."
+          },
+          "backup": {
+            "type": "object",
+            "additionalProperties": {},
+            "description": "{ id, label, status, partial, has_archive } of the rejected backup."
+          },
+          "hint": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": {}
+      },
+      "annotations": {
+        "title": "Create Deployment",
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false
+      },
+      "oauthScope": "mtdt:deploy"
+    },
+    {
+      "name": "set_deployment_description",
+      "title": "Set Deployment Description",
+      "description": "Set or replace a deployment's description after it was created (pass an empty string to clear it). Plain text or HTML — the Deploy modal renders it as rich text, turns its plain text into the git commit message for a push-to-git deploy, and appends it to approval requests, so this is the deploy's release note rather than a private comment. Use caption for a short title instead. Returns the saved value.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "deployment_id": {
+            "type": "number",
+            "description": "Deployment ID whose description to set."
+          },
+          "description": {
+            "type": "string",
+            "description": "The new description. Plain text or HTML. Pass an empty string to clear it."
+          }
+        },
+        "required": [
+          "deployment_id",
+          "description"
+        ],
+        "additionalProperties": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "deploymentId": {
+            "type": "number"
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "deploymentId",
+          "description"
+        ],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "title": "Set Deployment Description",
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      },
+      "oauthScope": "mtdt:deploy"
+    },
+    {
+      "name": "check_deployment_creation_status",
+      "title": "Check Deployment Creation Status",
+      "description": "Is the deployment populated and ready to browse? Returns the overall deploymentStatus (\"done\" | \"in progress\" | \"failed\") PLUS each side (source/target) with its raw populated value, its kind (org/repo/backup/metadata_set) and the population task behind it { id, task_type, status, error } — so a failed source unpack next to a finished target is reported as \"failed\" with the Salesforce/storage error, not as an endless \"in progress\". Needed before browse_metadata on repo/backup sources; org sides populate lazily and are fine to browse right away. \"failed\" will not change by polling: for a backup source edit the deployment and pick a finished backup that has an archive, or create a new deployment; for an org side re-authenticate it and press Refresh in the web app.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "deployment_id": {
+            "type": "number",
+            "description": "Deployment ID."
+          }
+        },
+        "required": [
+          "deployment_id"
+        ],
+        "additionalProperties": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "deploymentStatus": {
+            "type": "string",
+            "description": "Overall verdict: \"done\" (both sides populated), \"failed\" (either side failed — this deployment will not populate), \"in progress\"."
+          },
+          "source": {
+            "type": "object",
+            "additionalProperties": {},
+            "description": "{ state, populated (raw column, e.g. \"in progress (unpacking)\"), kind: org|repo|backup|metadata_set, task: { id, task_type, status, error, created_at } | null }"
+          },
+          "target": {
+            "type": "object",
+            "additionalProperties": {},
+            "description": "Same shape for the target side."
+          },
+          "hint": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "deploymentStatus"
+        ],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "title": "Check Deployment Creation Status",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      },
+      "oauthScope": "mtdt:read"
+    },
+    {
+      "name": "prepare_deployment_run_selected_items_object",
+      "title": "Prepare Deployment Run Selected Items",
+      "description": "LOW-LEVEL (prefer validate_deployment): Normalize an { metadata_type: [base_component, …] } map into the selected-items object a deployment run needs. Metadata types are soft-resolved (autofixes common wrong guesses like \"ApexClass\"→classes; rejects made-up types with suggestions). If any type is unresolvable it returns { error, unresolved } and NO selectedItems — fix the types and retry.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "objects_to_deploy": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "description": "Objects to deploy. Format: { \"metadata_type\": [\"item_base_component_1\", \"item_base_component_2\", ...] }"
+          },
+          "deployment_id": {
+            "type": "number",
+            "description": "Deployment ID — when set, the metadata-type resolver also matches types already retrieved for this deployment."
+          }
+        },
+        "required": [
+          "objects_to_deploy"
+        ],
+        "additionalProperties": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "selectedItems": {
+            "type": "object",
+            "additionalProperties": {},
+            "description": "Success: the prepared selected-items object."
+          },
+          "resolved": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": {}
+            }
+          },
+          "error": {
+            "type": "string",
+            "description": "Set to \"unresolved_types\" when some metadata types could not be resolved."
+          },
+          "message": {
+            "type": "string"
+          },
+          "unresolved": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": {}
+            }
+          }
+        },
+        "additionalProperties": {}
+      },
+      "annotations": {
+        "title": "Prepare Deployment Run Selected Items",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      },
+      "oauthScope": "mtdt:read"
+    },
+    {
+      "name": "create_deployment_run",
+      "title": "Create Deployment Run (Validate or Deploy)",
+      "description": "Create a deployment run (validate or deploy) with selected metadata and deploy options (test level, destructive changes, metadata backup for rollback). This returns immediately; then call await_deploy_status to wait for it to finish (repeat while timed_out=true), or use get_deploy_status for an instant snapshot.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "deploy_id": {
+            "type": "number",
+            "description": "Deployment ID."
+          },
+          "validate": {
+            "type": "boolean",
+            "description": "Run in validation mode (checkOnly) instead of a real deploy. To later quick_deploy this run, validate with a test_option that runs tests."
+          },
+          "selected_items": {
+            "type": "object",
+            "additionalProperties": {},
+            "description": "Selected metadata items, keyed by type → array of items keyed by base_component. Use prepare_deployment_run_selected_items_object to build this object."
+          },
+          "comment": {
+            "type": "string",
+            "description": "Optional comment (shown on approval requests / audit)."
+          },
+          "test_option": {
+            "type": "string",
+            "enum": [
+              "all",
+              "local",
+              "specific",
+              "default",
+              "NoTestRun"
+            ],
+            "description": "Apex test level. \"local\" runs org+package tests (required if you intend to quick_deploy afterwards); \"specific\" needs tests_to_run; \"NoTestRun\" fails on production targets."
+          },
+          "tests_to_run": {
+            "type": "string",
+            "description": "Comma-separated Apex test class names. Only used when test_option=\"specific\"."
+          },
+          "destructive_changes": {
+            "type": "object",
+            "additionalProperties": {},
+            "description": "Items to DELETE from the target, same {type:[{base_component}]} shape as selected_items."
+          },
+          "destructive_changes_is_post": {
+            "type": "boolean",
+            "description": "If true, deletions run AFTER the deploy (destructiveChangesPost) instead of before."
+          },
+          "do_package_backup": {
+            "type": "boolean",
+            "description": "Enable the \"Metadata Backup\" — captures a pre-deploy snapshot of the target so this run can be rolled back later."
+          },
+          "objects_to_backup": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Object API names to snapshot record data for before deploying (record backup)."
+          },
+          "activate_flows_after_deploy": {
+            "type": "boolean",
+            "description": "Activate deployed flows after the deploy completes."
+          },
+          "request_approval": {
+            "type": "boolean",
+            "description": "Request approval instead of deploying directly (forced by the server when the user lacks direct-deploy on the target)."
+          }
+        },
+        "required": [
+          "deploy_id",
+          "selected_items"
+        ],
+        "additionalProperties": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "task_id": {
+            "type": "number",
+            "description": "The deployment run task id — pass to get_task_status / await_deploy_status."
+          }
+        },
+        "required": [
+          "task_id"
+        ],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "title": "Create Deployment Run (Validate or Deploy)",
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "oauthScope": "mtdt:deploy"
+    },
+    {
+      "name": "quick_deploy",
+      "title": "Quick Deploy (No Test Re-run)",
+      "description": "Deploy a package that a previous validation already compiled and tested, WITHOUT re-running tests. Only works after a Succeeded validation that ran tests. Pass just deployment_id to auto-derive the validation job — this performs a REAL deployment to the target org. This returns immediately; then call await_deploy_status to wait for it to finish (repeat while timed_out=true), or use get_deploy_status for an instant snapshot.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "deployment_id": {
+            "type": "number",
+            "description": "Deployment ID whose successful validation to quick-deploy."
+          },
+          "quick_deploy_job_id": {
+            "type": "string",
+            "description": "Optional: the Salesforce validation job id. Omit to auto-derive from the latest successful validation of this deploy."
+          },
+          "source_validation_task": {
+            "type": "number",
+            "description": "Optional: the metadata_deploy_results.id of the validation run. Omit to auto-derive."
+          },
+          "scheduled_at": {
+            "type": "string",
+            "description": "Optional ISO datetime to defer the deploy. Omit to deploy now."
+          },
+          "request_approval": {
+            "type": "boolean",
+            "description": "Request approval instead of deploying directly."
+          },
+          "comment": {
+            "type": "string",
+            "description": "Optional comment for the deploy/approval."
+          }
+        },
+        "required": [
+          "deployment_id"
+        ],
+        "additionalProperties": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "additionalProperties": {}
+      },
+      "annotations": {
+        "title": "Quick Deploy (No Test Re-run)",
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "oauthScope": "mtdt:deploy"
+    },
+    {
+      "name": "preflight_deployment",
+      "title": "Preflight Deployment Checks",
+      "description": "Run the pre-deploy checks the Deploy UI runs automatically for a human, and get them as one normalized list — call it before validate_deployment / quick_deploy. Checks: destructive_impact (deleting something the target still references), permissions_and_profiles (which profiles/permission sets grant access to what you are shipping), record_backups (objects whose RECORDS should be backed up first), cron_triggers (scheduled Apex that blocks overwriting a class), business_hours (Entitlement Process whose Business Hours is missing on the target — SF reports success and silently drops the binding), non_source_deployable (types no source deploy can carry between orgs because the body embeds an org-bound id — ship them as a package instead), static_analysis (effective, post-suppression findings of the latest scan), changed_since_donor (combined deployments only: components a donor deployment delivered that the source org has touched since — the deploy ships the body the source org has now and Salesforce reports success either way). Returns { checks, verdicts, counts, pending }: each verdict has severity (\"warning\" | \"info\"), what is affected, and often a suggested_action. ADVISORY — nothing here blocks a deploy, exactly like the UI. Checks that query the target org can be slow: anything that did not finish inside the budget comes back in `pending` — call again with checks:[...] to collect just those, or pass depth:\"fast\" for the DB-only subset.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "deployment_id": {
+            "type": "number",
+            "description": "Deployment ID to check."
+          },
+          "items": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "description": "Components you intend to deploy, keyed by metadata type → base_component names (same shape as validate_deployment). Types are fuzzy-resolved."
+          },
+          "destructive_items": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "description": "Components you intend to DELETE on the target, same shape. Enables the destructive-impact check."
+          },
+          "destructive_changes_is_post": {
+            "type": "boolean",
+            "description": "Destructive timing you intend to use, matching create_deployment_run. false (default) deletes BEFORE the additive part, true deletes after it. Affects which referrers count as blockers."
+          },
+          "depth": {
+            "type": "string",
+            "enum": [
+              "fast",
+              "full"
+            ],
+            "description": "\"fast\" runs only DB-backed checks (sub-second); \"full\" (default) also runs the checks that query the target org."
+          },
+          "checks": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "destructive_impact",
+                "permissions_and_profiles",
+                "record_backups",
+                "cron_triggers",
+                "business_hours",
+                "non_source_deployable",
+                "static_analysis",
+                "changed_since_donor"
+              ]
+            },
+            "description": "Run only these checks. Omit to run all."
+          }
+        },
+        "required": [
+          "deployment_id",
+          "items"
+        ],
+        "additionalProperties": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "deployment_id": {
+            "type": "number"
+          },
+          "checks": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": {}
+            },
+            "description": "Per-check status: ok | found | skipped | timed_out | error."
+          },
+          "verdicts": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": {}
+            }
+          },
+          "counts": {
+            "type": "object",
+            "additionalProperties": {}
+          },
+          "pending": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Checks that ran out of budget — call again to collect them."
+          },
+          "advisory": {
+            "type": "boolean",
+            "description": "Always true: preflight never blocks a deploy."
+          },
+          "error": {
+            "type": "string",
+            "description": "\"unresolved_types\", \"unknown_checks\" or \"checks_incompatible_with_depth\" on a structured reject."
+          },
+          "message": {
+            "type": "string"
+          },
+          "unresolved": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": {}
+            }
+          },
+          "unknown_checks": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "available_checks": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "incompatible_checks": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Valid check ids excluded by the depth filter — re-run with depth:\"full\"."
+          },
+          "depth": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": {}
+      },
+      "annotations": {
+        "title": "Preflight Deployment Checks",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "oauthScope": "mtdt:read"
+    },
+    {
+      "name": "run_impact_analysis",
+      "title": "Run Impact Analysis",
+      "description": "Given the metadata you intend to deploy, find what else on the source org it depends on that you should probably add too. Returns dependency findings that each map back to a selectable {type, base_component}. Read-only and synchronous — pass the selectedItems object you would deploy.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "deployment_id": {
+            "type": "number",
+            "description": "Deployment ID."
+          },
+          "selected": {
+            "type": "object",
+            "additionalProperties": {},
+            "description": "The items you intend to deploy, keyed by type → [{ base_component }] (the selectedItems object from prepare_deployment_run_selected_items_object)."
+          },
+          "deep_scan_mode": {
+            "type": "string",
+            "enum": [
+              "jit_only",
+              "full"
+            ],
+            "description": "Scan depth. Default \"jit_only\" (fast, uses already-retrieved metadata)."
+          }
+        },
+        "required": [
+          "deployment_id",
+          "selected"
+        ],
+        "additionalProperties": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "impact": {
+            "type": "object",
+            "additionalProperties": {}
+          }
+        },
+        "required": [
+          "impact"
+        ],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "title": "Run Impact Analysis",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "oauthScope": "mtdt:read"
+    },
+    {
+      "name": "check_target_conflicts",
+      "title": "Check Target Org Conflicts",
+      "description": "Check whether any item you are about to overwrite or delete on the TARGET org has changed since it was last retrieved (i.e. someone edited the target after your snapshot). Returns honest verifiable vs not-verifiable buckets with reasons. Read-only. Run before a deploy to a shared org.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "deployment_id": {
+            "type": "number",
+            "description": "Deployment ID."
+          },
+          "selected": {
+            "type": "object",
+            "additionalProperties": {},
+            "description": "Items to deploy (overwrite on target), keyed by type → [{ base_component }]."
+          },
+          "destructive_changes": {
+            "type": "object",
+            "additionalProperties": {},
+            "description": "Items to delete on target, same shape."
+          }
+        },
+        "required": [
+          "deployment_id",
+          "selected"
+        ],
+        "additionalProperties": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "additionalProperties": {}
+      },
+      "annotations": {
+        "title": "Check Target Org Conflicts",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "oauthScope": "mtdt:read"
+    },
+    {
+      "name": "recommend_tests",
+      "title": "Recommend Apex Tests",
+      "description": "Recommend which Apex tests to run for a selection (from class naming + code references, 2 hops). Pass items { type: [names] } to assess exactly that selection; omit items to assess the deployment's LATEST run (the validation you just started), then its saved Deploy-modal selection. Returns {recommendation, testsToRun, uncovered, unresolved, byComponent, reason, caveats, selection_source: \"items\"|\"latest_run\"|\"deployment_config\"|\"none\"}; \"NoApex\" with selection_source \"none\" means nothing was selected anywhere — pass items. Feed testsToRun into validate_deployment with test_option=\"specific\". Read-only.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "deployment_id": {
+            "type": "number",
+            "description": "Deployment ID."
+          },
+          "items": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "description": "Components to assess, keyed by metadata type → base_component names (same shape as validate_deployment.items; types fuzzy-resolved). Omit to assess the deployment's latest run (what you just validated), falling back to its saved Deploy-modal selection."
+          }
+        },
+        "required": [
+          "deployment_id"
+        ],
+        "additionalProperties": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "additionalProperties": {}
+      },
+      "annotations": {
+        "title": "Recommend Apex Tests",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      },
+      "oauthScope": "mtdt:read"
+    },
+    {
+      "name": "get_task_status",
+      "title": "Get Task Status",
+      "description": "Get task status by task ID (works for any async task: deployment runs, backups, comparisons, retrievals).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "task_id": {
+            "type": "number",
+            "description": "Task ID."
+          }
+        },
+        "required": [
+          "task_id"
+        ],
+        "additionalProperties": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "taskStatus": {
+            "type": "object",
+            "additionalProperties": {}
+          }
+        },
+        "required": [
+          "taskStatus"
+        ],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "title": "Get Task Status",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      },
+      "oauthScope": "mtdt:read"
+    },
+    {
+      "name": "get_workflow_deployment_recipe",
+      "title": "Get Workflow Deployment Recipe",
+      "description": "Return a recommended workflow for deploying recently changed classes.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "recipe": {
+            "type": "object",
+            "additionalProperties": {}
+          }
+        },
+        "required": [
+          "recipe"
+        ],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "title": "Get Workflow Deployment Recipe",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      },
+      "oauthScope": "mtdt:read"
+    },
+    {
+      "name": "start_full_metadata_deployment_comparison",
+      "title": "Start Full Metadata Comparison",
+      "description": "Start a full metadata deployment comparison for a deployment.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "deployment_id": {
+            "type": "number",
+            "description": "Deployment ID."
+          }
+        },
+        "required": [
+          "deployment_id"
+        ],
+        "additionalProperties": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "comparisonId": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "comparisonId"
+        ],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "title": "Start Full Metadata Comparison",
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "oauthScope": "mtdt:deploy"
+    },
+    {
+      "name": "get_full_metadata_deployment_comparison_status",
+      "title": "Get Metadata Comparison Status",
+      "description": "Get status for a full metadata deployment comparison task.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "comparison_id": {
+            "type": "number",
+            "description": "Full metadata deployment comparison task ID."
+          }
+        },
+        "required": [
+          "comparison_id"
+        ],
+        "additionalProperties": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "comparisonStatus": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "message"
+        ],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "title": "Get Metadata Comparison Status",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      },
+      "oauthScope": "mtdt:read"
+    },
+    {
+      "name": "get_latest_full_metadata_deployment_comparison",
+      "title": "Get Latest Metadata Comparison",
+      "description": "Get latest full metadata deployment comparison for a deployment. Each row carries metadata_deploy_id; poll live status with get_full_metadata_deployment_comparison_status(comparison_id) using the comparisonId that start_full_metadata_deployment_comparison returned — the ids inside these rows are comparison-internal, NOT task ids.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "deployment_id": {
+            "type": "number",
+            "description": "Deployment ID."
+          }
+        },
+        "required": [
+          "deployment_id"
+        ],
+        "additionalProperties": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "comparisons": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": {}
+            }
+          }
+        },
+        "required": [
+          "comparisons"
+        ],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "title": "Get Latest Metadata Comparison",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      },
+      "oauthScope": "mtdt:read"
+    },
+    {
+      "name": "run_metadata_backup",
+      "title": "Run Metadata Backup",
+      "description": "Run a metadata backup for an org. Track it with get_task_status(task_id).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "org_id": {
+            "type": "string",
+            "description": "Org ID."
+          }
+        },
+        "required": [
+          "org_id"
+        ],
+        "additionalProperties": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "task_id": {
+            "type": "number",
+            "description": "The backup task id — pass to get_task_status."
+          }
+        },
+        "required": [
+          "task_id"
+        ],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "title": "Run Metadata Backup",
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "oauthScope": "mtdt:deploy"
+    },
+    {
+      "name": "list_metadata_backups",
+      "title": "List Metadata Backups",
+      "description": "List metadata backups of an org that can serve as a deployment source (status done AND an archive present) — newest first, with a human label (caption or 'backup <date> (<status>)'). Pass include_unusable:true to also see unfinished/no-archive backups, each with unusable_reason. Reads the 60 newest backups and returns at most 20: `count` is the number of rows returned, `hidden_unusable` the number of unusable rows filtered out of those 60. Use a returned id as from_backup_id in create_deployment.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "org_id": {
+            "type": "string",
+            "description": "Org ID."
+          },
+          "include_unusable": {
+            "type": "boolean",
+            "description": "Also return backups that cannot serve as a deploy source (unfinished, or done but with no stored archive). Default false."
+          }
+        },
+        "required": [
+          "org_id"
+        ],
+        "additionalProperties": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "metadata_backups": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": {}
+            }
+          },
+          "count": {
+            "type": "number"
+          },
+          "hidden_unusable": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "metadata_backups"
+        ],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "title": "List Metadata Backups",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      },
+      "oauthScope": "mtdt:read"
+    },
+    {
+      "name": "list_git_repos",
+      "title": "List Git Repositories",
+      "description": "List git repos for a team.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "team_id": {
+            "type": "string",
+            "description": "Team ID."
+          }
+        },
+        "required": [
+          "team_id"
+        ],
+        "additionalProperties": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "git_repos": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": {}
+            }
+          }
+        },
+        "required": [
+          "git_repos"
+        ],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "title": "List Git Repositories",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      },
+      "oauthScope": "mtdt:read"
+    },
+    {
+      "name": "browse_metadata",
+      "title": "Browse Metadata",
+      "description": "THE way to see what metadata a deployment can deploy. Browse the components of ONE metadata type on the deployment's SOURCE side (org, git repo, or metadata backup — resolved automatically from the deployment; pass org_id only to browse a specific org side, e.g. the target). Optional server-side filters: name_contains / modified_since / modified_by. Returns one row per COMPONENT { name, type, last_modified, last_modified_by }, most-recently-modified first, paginated (page / page_size; total is the full component count). For org sources, uncached metadata is retrieved on first call with a short poll (~15s): while the retrieval is still running it returns { status:\"retrieving\", partial:true, components (the partial set so far), task_ids } — just call browse_metadata again with the same args (idempotent, dedupe-safe) until status:\"ready\" (0 components is a valid ready). Treat the list as complete only at status:\"ready\". If the retrieval fails on the Salesforce side for part of the type you get { status:\"retrieval_failed\", failed_tasks:[{id,status,error}], components }: the component NAMES are complete, some bodies may not have been read yet. mtdt retries the retrieval automatically (up to 3 times) — call browse_metadata again to get the list; if the failure keeps repeating, report the error to the user. Repo/backup sources are populated when the deployment is created (see check_deployment_creation_status). Unknown types return a structured reject with did_you_mean suggestions.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "deployment_id": {
+            "type": "number",
+            "description": "Deployment ID."
+          },
+          "metadata_type": {
+            "type": "string",
+            "description": "Metadata type to browse, e.g. \"classes\" (\"ApexClass\" is fuzzy-resolved). One type per call (mirrors the wizard)."
+          },
+          "org_id": {
+            "type": "string",
+            "description": "Org to browse. Defaults to the deployment's SOURCE org."
+          },
+          "name_contains": {
+            "type": "string",
+            "description": "Case-insensitive substring filter on the component name."
+          },
+          "modified_since": {
+            "type": "string",
+            "description": "ISO date; keep only components whose properties.lastModifiedDate is on/after this."
+          },
+          "modified_by": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Keep only components last modified by one of these names (properties.lastModifiedByName)."
+          },
+          "page": {
+            "type": "number",
+            "description": "Page number (1-based)."
+          },
+          "page_size": {
+            "type": "number",
+            "description": "Page size (default 100)."
+          }
+        },
+        "required": [
+          "deployment_id",
+          "metadata_type"
+        ],
+        "additionalProperties": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "description": "\"ready\" (the retrieval finished — components is the complete set; also returned with 0 components when the type simply has no metadata in this org, see hint), \"retrieving\" (still running — components is a PARTIAL set so far, call again) or \"retrieval_failed\" (a JIT task failed/cancelled for part of the type; see failed_tasks — mtdt retries automatically, call again)."
+          },
+          "components": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": {}
+            },
+            "description": "One row per COMPONENT { name, type, last_modified, last_modified_by }, most-recently-modified first. On retrieving/retrieval_failed the list is partial (more may still arrive)."
+          },
+          "total": {
+            "type": "number",
+            "description": "Component count matching the filters (across all pages). While status=\"retrieving\" it grows as more components arrive."
+          },
+          "page": {
+            "type": "number"
+          },
+          "page_size": {
+            "type": "number"
+          },
+          "partial": {
+            "type": "boolean",
+            "description": "True when components is an incomplete snapshot (status=\"retrieving\") — call again until status=\"ready\" before treating the list as the full set."
+          },
+          "task_ids": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            },
+            "description": "Retrieving: the JIT task ids still running."
+          },
+          "failed_tasks": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": {}
+            },
+            "description": "retrieval_failed: [{ id, status, error }] per failed JIT task — error is the Salesforce-side reason. mtdt re-queues the retrieval automatically (up to 3 times); report the error only if it keeps repeating."
+          },
+          "hint": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": {}
+      },
+      "annotations": {
+        "title": "Browse Metadata",
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "oauthScope": "mtdt:deploy"
+    },
+    {
+      "name": "validate_deployment",
+      "title": "Validate Deployment (Check-Only)",
+      "description": "PREFER this over prepare_deployment_run_selected_items_object + create_deployment_run. Validate (checkOnly — never a real deploy) the given components against the deployment target. Types are fuzzy-resolved; unresolved types return { error:\"unresolved_types\" } and NO run. Every named component must already be retrieved (browse_metadata first) — otherwise it returns { error:\"items_not_retrieved\", missing } and creates NO run. On success it returns { task_id, status:\"validating\" } immediately; wait with await_deploy_status(deployment_id) (repeat while timed_out=true) or get_task_status(task_id). Validate with test_option \"local\" (the default) so tests run and the run can be quick_deployed afterwards.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "deployment_id": {
+            "type": "number",
+            "description": "Deployment ID."
+          },
+          "items": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "description": "Components to validate, keyed by metadata type → base_component names, e.g. { \"ApexClass\": [\"FooService\"] }. Types are fuzzy-resolved."
+          },
+          "test_option": {
+            "type": "string",
+            "enum": [
+              "all",
+              "local",
+              "specific",
+              "default",
+              "NoTestRun"
+            ],
+            "description": "Apex test level (default \"local\" — runs org+package tests, required to quick_deploy afterwards). \"specific\" needs tests_to_run; \"NoTestRun\" fails on production targets."
+          },
+          "tests_to_run": {
+            "type": "string",
+            "description": "Comma-separated Apex test class names. Only used when test_option=\"specific\"."
+          },
+          "backup": {
+            "type": "boolean",
+            "description": "Enable the pre-deploy \"Metadata Backup\" so a later real deploy of this run can be rolled back."
+          },
+          "comment": {
+            "type": "string",
+            "description": "Optional comment (shown on approval requests / audit)."
+          }
+        },
+        "required": [
+          "deployment_id",
+          "items"
+        ],
+        "additionalProperties": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "task_id": {
+            "type": "number",
+            "description": "Started: the validation run task id (scalar from the RPC) — pass to get_task_status / await_deploy_status."
+          },
+          "status": {
+            "type": "string"
+          },
+          "hint": {
+            "type": "string"
+          },
+          "error": {
+            "type": "string",
+            "description": "\"unresolved_types\" or \"items_not_retrieved\" on a structured reject."
+          },
+          "message": {
+            "type": "string"
+          },
+          "missing": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": {}
+            },
+            "description": "items_not_retrieved: the [{type,name}] not yet retrieved."
+          },
+          "unresolved": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": {}
+            }
+          },
+          "resolved": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": {}
+            }
+          }
+        },
+        "additionalProperties": {}
+      },
+      "annotations": {
+        "title": "Validate Deployment (Check-Only)",
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "oauthScope": "mtdt:deploy"
+    }
+  ]
+}
