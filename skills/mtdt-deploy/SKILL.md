@@ -90,9 +90,9 @@ production targets.
     a conflict as a stop-and-ask.
 - `recommend_tests` — suggests which Apex tests cover a selection; feed `tests_to_run` into the
   validation as `test_option: "specific"`. Pass `items` (same `{ "type": ["Name"] }` shape as
-  validate) to assess exactly that selection; without `items` it assesses the deployment's latest
-  run, then its saved modal selection. `selection_source: "none"` with `NoApex` means it found no
-  selection anywhere — pass `items`.
+  validate) to assess exactly that selection, or `all_items: true` for a deployment created from an
+  archive; without either it assesses the deployment's latest run, then its saved modal selection.
+  `selection_source: "none"` with `NoApex` means it found no selection anywhere — pass `items`.
 
 ## 5. Validate
 
@@ -134,8 +134,11 @@ into the conversation or pass its contents through tool calls.
 4. `create_deployment` with `from_archive_id` = `archive_id` and `to_org_id`. Every component of
    the archive is selected automatically; poll `check_deployment_creation_status` until
    `deploymentStatus` is `"done"`.
-5. `preflight_deployment` and `validate_deployment` with `all_items: true` **instead of** `items`
-   — no `browse_metadata` needed. Validation may count a few more components than
+5. `preflight_deployment`, `recommend_tests` and `validate_deployment` with `all_items: true`
+   **instead of** `items` — no `browse_metadata` needed. When `recommend_tests` answers
+   `RunSpecifiedTests`, validate with `test_option: "specific"` and its `testsToRun` (the archive's
+   own test classes): `"local"` also needs a 75% average across the whole target org, which the
+   archive cannot fix. Validation may count a few more components than
    `register_archive` did: an object whose fields are shipped is sent as its own component too.
 6. `await_deploy_status`, then `quick_deploy` as above.
 
