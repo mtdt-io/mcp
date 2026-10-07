@@ -20,6 +20,10 @@ production targets.
   only the backups actually usable as a deploy source by default (status done with the archive
   present), each with a human `label` — pass `include_unusable: true` to also see the rest, each
   carrying an `unusable_reason`.
+- **Changes in local files?** If the user's changes are in the working directory (an SFDX
+  project, a Metadata API folder, or a zip of either) and they did not name a source org, those
+  files are the source: zip them and follow [Deploying a local zip](#deploying-a-local-zip). Do
+  not pick an org whose metadata only looks related.
 
 ## 2. Create the deployment (or resume one)
 
@@ -73,6 +77,8 @@ production targets.
   Hours bindings the target would silently drop, and static-analysis findings. Verdicts are
   **advisory** — read them, act on `suggested_action` where present, and tell the user what you
   found. Deleting anything? Pass those as `destructive_items`.
+- A preflight sends nothing to Salesforce, so it is not a validation. When the user asked to
+  validate or check a deploy, run `validate_deployment` and report its outcome.
 - Two checks live as their own tools and take `selected` keyed by canonical type →
   `[{ "base_component": "Name" }]`, e.g. `{ "classes": [{ "base_component": "FooService" }] }`:
   - `run_impact_analysis` — finds source-org dependencies of your selection you likely must add
@@ -114,6 +120,9 @@ next to the type folders). The zip goes straight to mtdt storage with `curl`; **
 into the conversation or pass its contents through tool calls.
 
 1. Have the zip ready first (build it with `zip -r release.zip force-app` if needed; 50 MB max).
+   Upload it even if `list_archives` shows an archive with the same name: that archive is an
+   earlier upload and may differ from the local files. Reuse an existing archive only when the
+   user points to it.
 2. `request_archive_upload(team_id, file_name)` returns `path` and a ready `curl` command. Replace
    `<LOCAL_ZIP_PATH>` and run it **right away** — the link lives only `expires_in_seconds`
    (can be as little as 2 minutes). The upload must answer HTTP 200; if the link expired, request
@@ -169,6 +178,10 @@ from step 4), or to push the project to a connected git repo and deploy from the
 - **Coverage:** Salesforce requires ≥75% coverage on the components you deploy. A class with no
   covering test will fail validation with a `codeCoverageWarning` even if it compiles. Fix: deploy
   the class **together with its test class** and run that test (`test_option: "specific"`).
+  A validation that ends Failed with every component deployed and no failed tests failed on
+  coverage: read `codeCoverageWarnings` in the `await_deploy_status` result. With
+  `test_option: "local"` Salesforce also requires a 75% average across the whole target org, which
+  the package cannot fix; validate again with `"specific"` and the package's test classes.
 - **Rollback safety:** for risky deploys pass `backup: true` on `validate_deployment` (or
   `do_package_backup: true` on `create_deployment_run`) — it snapshots the target pre-deploy so
   the run can be rolled back from the mtdt UI.
