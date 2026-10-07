@@ -15,8 +15,9 @@ production targets.
   "acme prod"). **Never assume the top hit** — confirm with the user, especially when a candidate
   has `org_type: production` or `is_important: true`.
 - Source can be an org, a git repo (`list_git_repos`), a metadata backup
-  (`list_metadata_backups`), or an uploaded zip archive (`list_archives`; to deploy a zip you have
-  locally, see [Deploying a local zip](#deploying-a-local-zip)). `list_metadata_backups` returns
+  (`list_metadata_backups`), or an archive the user names (`list_archives`). A zip or project the
+  user has locally is always uploaded fresh, see [Deploying a local zip](#deploying-a-local-zip):
+  an archive with the same name in `list_archives` is an earlier upload, not this file. `list_metadata_backups` returns
   only the backups actually usable as a deploy source by default (status done with the archive
   present), each with a human `label` — pass `include_unusable: true` to also see the rest, each
   carrying an `unusable_reason`.
