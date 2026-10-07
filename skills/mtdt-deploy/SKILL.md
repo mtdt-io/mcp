@@ -1,6 +1,6 @@
 ---
 name: mtdt-deploy
-description: Promote Salesforce metadata between orgs with mtdt.io. Use when the user asks to deploy, promote, or push Salesforce metadata (Apex classes, flows, fields, objects, permission sets, ...) from one org to another (dev → QA, QA → staging, staging → production), or to validate such a deployment. Covers the full workflow — create deployment, browse & pick components, pre-flight checks, validate, quick-deploy.
+description: Promote Salesforce metadata between orgs with mtdt.io. Use when the user asks to deploy, promote, or push Salesforce metadata (Apex classes, flows, fields, objects, permission sets, ...) from one org to another (dev → QA, QA → staging, staging → production), to deploy a local zip (SFDX project or Metadata API package) to an org, or to validate such a deployment. Covers the full workflow — create deployment, browse & pick components, pre-flight checks, validate, quick-deploy.
 ---
 
 # Deploying Salesforce metadata with mtdt
@@ -14,10 +14,12 @@ production targets.
 - `list_orgs` to see connected orgs, or `resolve_target` with the user's free-text name ("QA",
   "acme prod"). **Never assume the top hit** — confirm with the user, especially when a candidate
   has `org_type: production` or `is_important: true`.
-- Source can be an org, a git repo (`list_git_repos`), or a metadata backup
-  (`list_metadata_backups`). `list_metadata_backups` returns only the backups actually usable as a
-  deploy source by default (status done with the archive present), each with a human `label` — pass
-  `include_unusable: true` to also see the rest, each carrying an `unusable_reason`.
+- Source can be an org, a git repo (`list_git_repos`), a metadata backup
+  (`list_metadata_backups`), or an uploaded zip archive (`list_archives`; to deploy a zip you have
+  locally, see [Deploying a local zip](#deploying-a-local-zip)). `list_metadata_backups` returns
+  only the backups actually usable as a deploy source by default (status done with the archive
+  present), each with a human `label` — pass `include_unusable: true` to also see the rest, each
+  carrying an `unusable_reason`.
 
 ## 2. Create the deployment (or resume one)
 
@@ -25,14 +27,15 @@ production targets.
   with source/target labels and each one's latest run — reuse its id instead of creating a
   duplicate.
 - `create_deployment` with exactly one source (`from_org_id` / `from_repo_id` /
-  `from_backup_id`) and `to_org_id`. It returns the `deploymentId` you use everywhere below.
-  Pass `caption` (short title) and, when you know what you are shipping, `description` — on a
-  push-to-git deploy it becomes the git commit message (`set_deployment_description` can change
-  it later). A backup source must be **usable** — finished, with its archive present: otherwise
-  `create_deployment` returns `{ error: "backup_not_usable", reason }` and creates nothing, so pick
-  another backup from `list_metadata_backups` (its default view lists only usable ones) or run
-  `run_metadata_backup` first and wait for it to finish.
-- **Repo or backup as the source?** The deployment is populated asynchronously — poll
+  `from_backup_id` / `from_archive_id`) and `to_org_id`. It returns the `deploymentId` you use
+  everywhere below. Pass `caption` (short title) and, when you know what you are shipping,
+  `description` — on a push-to-git deploy it becomes the git commit message
+  (`set_deployment_description` can change it later). A backup source must be **usable** —
+  finished, with its archive present: otherwise `create_deployment` returns
+  `{ error: "backup_not_usable", reason }` and creates nothing, so pick another backup from
+  `list_metadata_backups` (its default view lists only usable ones) or run `run_metadata_backup`
+  first and wait for it to finish.
+- **Repo, backup, or archive as the source?** The deployment is populated asynchronously — poll
   `check_deployment_creation_status(deployment_id)` until `deploymentStatus` is `"done"` before
   browsing. It reports each side (`source` / `target`) with the population task behind it, so
   `"failed"` comes with `task.error` (a partial or unfinished backup has no archive to unpack; an
@@ -62,8 +65,9 @@ production targets.
 
 ## 4. Pre-flight checks (read-only; run them before deploying to shared/prod orgs)
 
-- `preflight_deployment` with `deployment_id` and `items` as `{ "type": ["Name1", …] }` — the
-  same checks a human gets automatically in the Deploy modal: destructive-change impact, which
+- `preflight_deployment` with `deployment_id` and `items` as `{ "type": ["Name1", …] }` (or
+  `all_items: true` for a deployment created from an archive) — the same checks a human gets
+  automatically in the Deploy modal: destructive-change impact, which
   profiles/permission sets grant access to the selection (plus profile-applicability warnings),
   record-backup recommendations, scheduled Apex (cron) jobs on classes you'd overwrite, Business
   Hours bindings the target would silently drop, and static-analysis findings. Verdicts are
@@ -89,6 +93,7 @@ production targets.
   type names are fine — they are fuzzy-resolved), and a `test_option` that **runs tests**
   (`"local"`, or `"specific"` + `tests_to_run`) — a validation that ran tests is what makes
   quick-deploy possible. Pass `backup: true` for risky deploys (pre-deploy snapshot → rollback).
+  A deployment created from an archive takes `all_items: true` instead of `items`.
 - If it returns `items_not_retrieved`, a named component was never retrieved — run
   `browse_metadata` for that type first and check the spelling against its rows.
 - Wait with `await_deploy_status(deployment_id)` — one call blocks up to ~50s server-side and
@@ -100,6 +105,33 @@ production targets.
 - After a successful validation-with-tests: `quick_deploy` with just the `deployment_id` (it
   auto-derives the validation job) — this performs the **real deployment** without re-running
   tests. Wait with `await_deploy_status` again.
+
+## Deploying a local zip
+
+Use this when the user (or you) already has the package as a zip — an SFDX project
+(`force-app/...`, with or without `sfdx-project.json`) or a Metadata API package (`package.xml`
+next to the type folders). The zip goes straight to mtdt storage with `curl`; **never** read it
+into the conversation or pass its contents through tool calls.
+
+1. Have the zip ready first (build it with `zip -r release.zip force-app` if needed; 50 MB max).
+2. `request_archive_upload(team_id, file_name)` returns `path` and a ready `curl` command. Replace
+   `<LOCAL_ZIP_PATH>` and run it **right away** — the link lives only `expires_in_seconds`
+   (can be as little as 2 minutes). The upload must answer HTTP 200; if the link expired, request
+   a new one.
+3. `register_archive(team_id, path, caption)` converts SFDX source to Metadata API format and
+   creates the archive (it shows up on the Archives page). It returns `archive_id`,
+   `component_count` and `types` — counts only.
+4. `create_deployment` with `from_archive_id` = `archive_id` and `to_org_id`. Every component of
+   the archive is selected automatically; poll `check_deployment_creation_status` until
+   `deploymentStatus` is `"done"`.
+5. `preflight_deployment` and `validate_deployment` with `all_items: true` **instead of** `items`
+   — no `browse_metadata` needed. Validation may count a few more components than
+   `register_archive` did: an object whose fields are shipped is sent as its own component too.
+6. `await_deploy_status`, then `quick_deploy` as above.
+
+**No shell?** There is no way to upload the zip through the MCP connection itself. Ask the user to
+upload it on the Archives page of the mtdt web app (then find it with `list_archives` and continue
+from step 4), or to push the project to a connected git repo and deploy from the repo.
 
 ## Advanced / low-level
 
