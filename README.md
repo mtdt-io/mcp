@@ -15,8 +15,9 @@ speaks MCP.
 Deploy metadata between Salesforce orgs through [mtdt.io](https://mtdt.io): list orgs, create
 deployments, browse/retrieve metadata, pre-deploy checks (impact analysis, target conflicts,
 profile & permission warnings, record-backup recommendations), Apex test recommendations,
-validate with tests, quick-deploy. Long-running deploys are awaitable server-side
-(`await_deploy_status`) so your agent doesn't busy-poll.
+validate with tests, quick-deploy. A zip the agent already has (SFDX project or Metadata API
+package) can be uploaded straight to mtdt and deployed whole. Long-running deploys are awaitable
+server-side (`await_deploy_status`) so your agent doesn't busy-poll.
 
 Deploy-capable tools require the **Run** (`mtdt:deploy`) consent scope and always respect your
 team's mtdt roles — approval-gated targets stay approval-gated.
@@ -28,8 +29,8 @@ doesn't just *have* the tools — it knows the playbook.
 
 - **`mtdt-deploy`** — the full promotion workflow: resolve the target safely (production targets
   get confirmed, never assumed), browse & pick components, the pre-flight battery (the same
-  checks a human gets in the Deploy modal), validation-first flow, quick-deploy, and the
-  guardrails: the 75% coverage rule, rollback snapshots, approval gates.
+  checks a human gets in the Deploy modal), validation-first flow, quick-deploy, deploying a
+  local zip, and the guardrails: the 75% coverage rule, rollback snapshots, approval gates.
 - **`mtdt-troubleshoot`** — reading failed runs: component vs test vs coverage failures,
   quick-deploy prerequisites and expiry, stuck retrievals, auth pitfalls — each with the fix,
   not just the diagnosis.
