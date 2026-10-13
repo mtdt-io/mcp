@@ -4,7 +4,7 @@ The [mtdt.io](https://mtdt.io) MCP server is one endpoint that works with every 
 client:
 
 ```
-https://mcp.mtdt.io/mcp
+https://mcp.mtdt.io
 ```
 
 Transport is Streamable HTTP. Authentication is OAuth 2.0 (authorization code + PKCE, with
@@ -33,7 +33,7 @@ The plugin gives you the MCP connection **plus** the deploy/troubleshoot skills:
 MCP server only (no skills):
 
 ```bash
-claude mcp add --transport http mtdt https://mcp.mtdt.io/mcp
+claude mcp add --transport http mtdt https://mcp.mtdt.io
 ```
 
 or in `.mcp.json`:
@@ -43,7 +43,7 @@ or in `.mcp.json`:
   "mcpServers": {
     "mtdt": {
       "type": "http",
-      "url": "https://mcp.mtdt.io/mcp"
+      "url": "https://mcp.mtdt.io"
     }
   }
 }
@@ -63,7 +63,7 @@ Or manually in `~/.cursor/mcp.json` (global) or `.cursor/mcp.json` (project):
 {
   "mcpServers": {
     "mtdt": {
-      "url": "https://mcp.mtdt.io/mcp"
+      "url": "https://mcp.mtdt.io"
     }
   }
 }
@@ -77,7 +77,7 @@ flow on first connection. Verify under **Cursor Settings → MCP**.
 Codex supports remote Streamable HTTP MCP servers with OAuth natively:
 
 ```bash
-codex mcp add mtdt --url https://mcp.mtdt.io/mcp
+codex mcp add mtdt --url https://mcp.mtdt.io
 codex mcp login mtdt
 ```
 
@@ -85,7 +85,7 @@ or in `~/.codex/config.toml`:
 
 ```toml
 [mcp_servers.mtdt]
-url = "https://mcp.mtdt.io/mcp"
+url = "https://mcp.mtdt.io"
 ```
 
 OAuth is the default when no bearer token is configured — nothing else to set.
@@ -107,7 +107,7 @@ In `opencode.json` (project) or the global config:
   "mcp": {
     "mtdt": {
       "type": "remote",
-      "url": "https://mcp.mtdt.io/mcp",
+      "url": "https://mcp.mtdt.io",
       "enabled": true
     }
   }

@@ -2,7 +2,7 @@
   "mcpServers": {
     "mtdt": {
       "type": "http",
-      "url": "https://mcp.mtdt.io/mcp"
+      "url": "https://mcp.mtdt.io"
     }
   }
 }

@@ -3,7 +3,7 @@
 Salesforce DevOps in any MCP-capable coding agent. One remote endpoint:
 
 ```
-https://mcp.mtdt.io/mcp
+https://mcp.mtdt.io
 ```
 
 Streamable HTTP + OAuth 2.0 (browser sign-in, Dynamic Client Registration) — **no API keys, no
@@ -53,10 +53,10 @@ Quick versions:
 
 | Client | One-liner |
 |---|---|
-| Claude Code | `claude mcp add --transport http mtdt https://mcp.mtdt.io/mcp` |
+| Claude Code | `claude mcp add --transport http mtdt https://mcp.mtdt.io` |
 | Cursor | [![Add mtdt to Cursor](https://cursor.com/deeplink/mcp-install-dark.svg)](https://cursor.com/en/install-mcp?name=mtdt&config=eyJ1cmwiOiJodHRwczovL21jcC5tdGR0LmlvL21jcCJ9) |
-| OpenAI Codex | `codex mcp add mtdt --url https://mcp.mtdt.io/mcp` |
-| OpenCode | `"mcp": { "mtdt": { "type": "remote", "url": "https://mcp.mtdt.io/mcp" } }` |
+| OpenAI Codex | `codex mcp add mtdt --url https://mcp.mtdt.io` |
+| OpenCode | `"mcp": { "mtdt": { "type": "remote", "url": "https://mcp.mtdt.io" } }` |
 
 ## Notes
 
