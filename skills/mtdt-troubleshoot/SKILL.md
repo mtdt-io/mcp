@@ -58,7 +58,8 @@ state or Salesforce work. `execution_settings` exposes inherited settings; `afte
 
 Start with `get_deployment_components(deployment_id)` to inspect what is saved.
 `validate_deployment` takes `deployment_id`; `create_deployment_run` takes `deploy_id`. Neither
-accepts a replacement composition.
+accepts a replacement composition. Composition edits follow the UI's last-save-wins model;
+concurrent edits are not detected or rejected.
 
 - `inline_config_not_supported` or an input-schema error naming old run arguments: stop passing
   `items`, `all_items`, `selected_items`, `config` or destructive-change arguments at launch.
@@ -73,8 +74,6 @@ accepts a replacement composition.
   `check_deployment_creation_status`; retry after it is done.
 - `deployment_population_failed`: read the source task error in creation status and fix the
   source as described below. Repeating the run cannot repair population.
-- `deployment_config_changed`: someone changed the draft while the edit was being saved.
-  Re-read the composition and reassess the intended edit before retrying.
 - `component_has_overrides` or `component_marked_for_deletion`: the requested component has
   advanced saved settings. Make that edit in the MTDT UI; do not remove settings to bypass the
   reject. The tools leave those saved settings intact.

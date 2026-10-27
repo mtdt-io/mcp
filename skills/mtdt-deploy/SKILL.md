@@ -71,6 +71,7 @@ Browsing does not change the deployment selection. Save the chosen full componen
 
 - Repeat adds are no-ops. `remove_deployment_components` takes the same shape and removes the
   components from the saved selection; it does **not** delete them from Salesforce.
+- Saving follows the UI's last-save-wins model; there is no concurrent-edit check.
 - Read `get_deployment_components(deployment_id)` to confirm the saved composition. Add/remove
   preserve other settings, including saved deletions and overrides. Editing components with
   partial selections, manual overrides or saved deletions requires the MTDT UI for now.
