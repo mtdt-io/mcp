@@ -1,7 +1,7 @@
 # Publishing the MTDT connector and plugin
 
 This folder contains submission inputs and packaging tools. Project work and decisions are
-tracked in the MTDT workspace through `tt` (preparation #1323, Claude annotations #1324).
+tracked in the MTDT workspace through `tt` (preparation #1323, saved-config refresh #1982).
 Reviewer credentials belong in the portals' private forms, never in this repository or ZIPs.
 
 ## Build and check the packages
@@ -35,6 +35,13 @@ review evidence and directory prerequisites separately from package validity; us
 `--require-ready` to return a failing exit code while those prerequisites remain unresolved.
 Use `--tools-json /path/to/export.json` to inspect a fresh tools/list export. That option does
 not turn a local inventory into proof that every tool was exercised.
+
+The maintained inventory contains 32 tools from the local server source and is marked
+`live: false`. It includes saved composition get/add/remove and the read-only run preview.
+The review cases follow browse → save → inspect → preflight → preview → launch by ID;
+launch tools no longer accept inline composition or Flow activation arguments. After rolling
+out the matching MCP build, compare a fresh live tools/list before submission. The versioned
+justifications must cover exactly the same tool names as the inventory.
 
 ## OpenAI / Codex directory
 
@@ -82,7 +89,7 @@ through MCP Inspector and a custom connector in Claude before making the testing
 Claude's current checklist asks for `destructiveHint: true` on modifying tools. The inventory
 checker reports stateful tools with both readOnlyHint and destructiveHint false. The inventory
 shipped in this folder comes from local source, not the live endpoint. Compare a fresh live
-tools/list and resolve #1324 before asserting catalog compliance. Do not mark an additive tool
+tools/list before asserting catalog compliance. Do not mark an additive tool
 read-only just to silence a catalog warning.
 
 MTDT exposes tools without an MCP App UI. No carousel screenshots are supplied. A demo

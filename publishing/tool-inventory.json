@@ -1,11 +1,10 @@
 {
   "evidence": {
     "kind": "local-source",
-    "observedAt": "2026-10-04T21:54:23.914Z",
+    "observedAt": "2026-10-27T09:30:14.409920Z",
     "source": "mtdt-backend/mcp/src/mcp/definitions.ts",
-    "sourceCommit": "eea66a1f",
-    "live": false,
-    "sourceSha256": "15f249a08d8c300556c69baac3b0529a38bcb0558286e883334b179459a7f3e0"
+    "sourceSha256": "8bacc24d57febd7cb65157c4ffcda83a5c76ee7cb43a9b56336f988b93533591",
+    "live": false
   },
   "tools": [
     {
@@ -44,8 +43,7 @@
         "destructiveHint": false,
         "idempotentHint": true,
         "openWorldHint": false
-      },
-      "oauthScope": "mtdt:read"
+      }
     },
     {
       "name": "resolve_target",
@@ -94,8 +92,7 @@
         "destructiveHint": false,
         "idempotentHint": true,
         "openWorldHint": false
-      },
-      "oauthScope": "mtdt:read"
+      }
     },
     {
       "name": "list_deployments",
@@ -166,13 +163,12 @@
         "destructiveHint": false,
         "idempotentHint": true,
         "openWorldHint": false
-      },
-      "oauthScope": "mtdt:read"
+      }
     },
     {
       "name": "get_deploy_status",
       "title": "Get Deploy Status",
-      "description": "Get an INSTANT snapshot of the latest run of a deployment by its id. Returns a derived status, whether it is terminal/succeeded, whether it was a validation, component/test failure details, counts, and the SF validation job id (for quick-deploy). To WAIT for a run to finish, prefer await_deploy_status (it blocks server-side up to ~50s per call, collapsing the poll loop). If you poll this tool manually instead, poll every 15–30s — not faster — to avoid burning the tools/call rate limit.",
+      "description": "Get an INSTANT snapshot of the latest run of a deployment by its id. Returns a derived status, whether it is terminal/succeeded, whether it was a validation, component/test failure details, counts, folder_sharing_check advisory findings from the final package, and the SF validation job id (for quick-deploy). To WAIT for a run to finish, prefer await_deploy_status (it blocks server-side up to ~50s per call, collapsing the poll loop). If you poll this tool manually instead, poll every 15–30s — not faster — to avoid burning the tools/call rate limit.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -196,8 +192,7 @@
         "destructiveHint": false,
         "idempotentHint": true,
         "openWorldHint": false
-      },
-      "oauthScope": "mtdt:read"
+      }
     },
     {
       "name": "await_deploy_status",
@@ -230,13 +225,12 @@
         "destructiveHint": false,
         "idempotentHint": true,
         "openWorldHint": false
-      },
-      "oauthScope": "mtdt:read"
+      }
     },
     {
       "name": "create_deployment",
       "title": "Create Deployment",
-      "description": "Create a deployment between source and target. Source can be an org, repo, or metadata backup. Exactly one of from_org_id, from_repo_id, or from_backup_id must be specified. Target must be an org. Optionally pass caption (short title) and description (release note — its plain text becomes the git commit message on a push-to-git deploy and is appended to approval requests); the description can be changed later with set_deployment_description. A backup source must be a FINISHED backup that has an archive — otherwise it returns { error:\"backup_not_usable\", reason } and creates NO deployment.",
+      "description": "Create a deployment between source and target. Source can be an org, repo, metadata backup, or archive. Exactly one of from_org_id, from_repo_id, from_backup_id, or from_archive_id must be specified. Target must be an org. An archive source is unpacked in the background and ALL its components get selected: wait with check_deployment_creation_status until \"done\", then preflight_deployment / recommend_tests / validate_deployment by deployment_id. Optionally pass caption (short title) and description (release note — its plain text becomes the git commit message on a push-to-git deploy and is appended to approval requests); the description can be changed later with set_deployment_description. A backup source must be a FINISHED backup that has an archive — otherwise it returns { error:\"backup_not_usable\", reason } and creates NO deployment.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -255,6 +249,10 @@
           "from_backup_id": {
             "type": "string",
             "description": "Source metadata backup ID."
+          },
+          "from_archive_id": {
+            "type": "string",
+            "description": "Source archive ID (from register_archive or list_archives). Every component of the archive is selected automatically."
           },
           "to_org_id": {
             "type": "string",
@@ -307,11 +305,10 @@
       "annotations": {
         "title": "Create Deployment",
         "readOnlyHint": false,
-        "destructiveHint": false,
+        "destructiveHint": true,
         "idempotentHint": false,
         "openWorldHint": false
-      },
-      "oauthScope": "mtdt:deploy"
+      }
     },
     {
       "name": "set_deployment_description",
@@ -355,11 +352,10 @@
       "annotations": {
         "title": "Set Deployment Description",
         "readOnlyHint": false,
-        "destructiveHint": false,
+        "destructiveHint": true,
         "idempotentHint": true,
         "openWorldHint": false
-      },
-      "oauthScope": "mtdt:deploy"
+      }
     },
     {
       "name": "check_deployment_creation_status",
@@ -410,13 +406,12 @@
         "destructiveHint": false,
         "idempotentHint": true,
         "openWorldHint": false
-      },
-      "oauthScope": "mtdt:read"
+      }
     },
     {
       "name": "prepare_deployment_run_selected_items_object",
       "title": "Prepare Deployment Run Selected Items",
-      "description": "LOW-LEVEL (prefer validate_deployment): Normalize an { metadata_type: [base_component, …] } map into the selected-items object a deployment run needs. Metadata types are soft-resolved (autofixes common wrong guesses like \"ApexClass\"→classes; rejects made-up types with suggestions). If any type is unresolvable it returns { error, unresolved } and NO selectedItems — fix the types and retry.",
+      "description": "LOW-LEVEL normalization only; does not save or launch. Prefer add_deployment_components to save the selection before validate_deployment: normalize an { metadata_type: [base_component, …] } map into the selected-items object a deployment run needs. Metadata types are soft-resolved (autofixes common wrong guesses like \"ApexClass\"→classes; rejects made-up types with suggestions). If any type is unresolvable it returns { error, unresolved } and NO selectedItems — fix the types and retry.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -478,13 +473,12 @@
         "destructiveHint": false,
         "idempotentHint": true,
         "openWorldHint": false
-      },
-      "oauthScope": "mtdt:read"
+      }
     },
     {
       "name": "create_deployment_run",
       "title": "Create Deployment Run (Validate or Deploy)",
-      "description": "Create a deployment run (validate or deploy) with selected metadata and deploy options (test level, destructive changes, metadata backup for rollback). This returns immediately; then call await_deploy_status to wait for it to finish (repeat while timed_out=true), or use get_deploy_status for an instant snapshot.",
+      "description": "Run the deployment using its FULL saved config (components, overrides, partial selections and deletions). Pass deploy_id, optionally validate and execution options; never pass items or config. Save composition first with add_deployment_components/remove_deployment_components, inspect it with get_deployment_components. Returns task_id; wait with await_deploy_status.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -496,11 +490,6 @@
             "type": "boolean",
             "description": "Run in validation mode (checkOnly) instead of a real deploy. To later quick_deploy this run, validate with a test_option that runs tests."
           },
-          "selected_items": {
-            "type": "object",
-            "additionalProperties": {},
-            "description": "Selected metadata items, keyed by type → array of items keyed by base_component. Use prepare_deployment_run_selected_items_object to build this object."
-          },
           "comment": {
             "type": "string",
             "description": "Optional comment (shown on approval requests / audit)."
@@ -510,24 +499,16 @@
             "enum": [
               "all",
               "local",
+              "relevant",
               "specific",
               "default",
               "NoTestRun"
             ],
-            "description": "Apex test level. \"local\" runs org+package tests (required if you intend to quick_deploy afterwards); \"specific\" needs tests_to_run; \"NoTestRun\" fails on production targets."
+            "description": "Apex test level. \"local\" runs org+package tests (required if you intend to quick_deploy afterwards); \"relevant\" lets Salesforce select tests automatically; \"specific\" needs tests_to_run; \"NoTestRun\" fails on production targets."
           },
           "tests_to_run": {
             "type": "string",
             "description": "Comma-separated Apex test class names. Only used when test_option=\"specific\"."
-          },
-          "destructive_changes": {
-            "type": "object",
-            "additionalProperties": {},
-            "description": "Items to DELETE from the target, same {type:[{base_component}]} shape as selected_items."
-          },
-          "destructive_changes_is_post": {
-            "type": "boolean",
-            "description": "If true, deletions run AFTER the deploy (destructiveChangesPost) instead of before."
           },
           "do_package_backup": {
             "type": "boolean",
@@ -540,18 +521,13 @@
             },
             "description": "Object API names to snapshot record data for before deploying (record backup)."
           },
-          "activate_flows_after_deploy": {
-            "type": "boolean",
-            "description": "Activate deployed flows after the deploy completes."
-          },
           "request_approval": {
             "type": "boolean",
             "description": "Request approval instead of deploying directly (forced by the server when the user lacks direct-deploy on the target)."
           }
         },
         "required": [
-          "deploy_id",
-          "selected_items"
+          "deploy_id"
         ],
         "additionalProperties": false
       },
@@ -559,14 +535,16 @@
         "type": "object",
         "properties": {
           "task_id": {
-            "type": "number",
-            "description": "The deployment run task id — pass to get_task_status / await_deploy_status."
+            "type": "number"
+          },
+          "error": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
           }
         },
-        "required": [
-          "task_id"
-        ],
-        "additionalProperties": false
+        "additionalProperties": {}
       },
       "annotations": {
         "title": "Create Deployment Run (Validate or Deploy)",
@@ -574,8 +552,79 @@
         "destructiveHint": true,
         "idempotentHint": false,
         "openWorldHint": true
+      }
+    },
+    {
+      "name": "preview_deployment_run",
+      "title": "Preview Deployment Run",
+      "description": "Preview a validation/deployment WITHOUT creating tasks, saving settings or calling Salesforce. Reads the saved config and applies the same optional execution options as launch. Returns component counts, deletions, test level, backups, Apex code, git push, jobs, activations and all remaining execution settings. Flow activation comes only from the saved deployment. validate defaults to false (real-deploy plan); use true before validate_deployment. Review actions with the user before launch, using the same options. Draft/settings may change before launch; permissions, approval and worker checks are not guaranteed by preview.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "deployment_id": {
+            "type": "number",
+            "description": "Deployment ID."
+          },
+          "validate": {
+            "type": "boolean",
+            "description": "Run in validation mode (checkOnly) instead of a real deploy. To later quick_deploy this run, validate with a test_option that runs tests."
+          },
+          "backup": {
+            "type": "boolean",
+            "description": "Alias for do_package_backup when previewing validate_deployment with backup."
+          },
+          "comment": {
+            "type": "string",
+            "description": "Optional comment (shown on approval requests / audit)."
+          },
+          "test_option": {
+            "type": "string",
+            "enum": [
+              "all",
+              "local",
+              "relevant",
+              "specific",
+              "default",
+              "NoTestRun"
+            ],
+            "description": "Apex test level. \"local\" runs org+package tests (required if you intend to quick_deploy afterwards); \"relevant\" lets Salesforce select tests automatically; \"specific\" needs tests_to_run; \"NoTestRun\" fails on production targets."
+          },
+          "tests_to_run": {
+            "type": "string",
+            "description": "Comma-separated Apex test class names. Only used when test_option=\"specific\"."
+          },
+          "do_package_backup": {
+            "type": "boolean",
+            "description": "Enable the \"Metadata Backup\" — captures a pre-deploy snapshot of the target so this run can be rolled back later."
+          },
+          "objects_to_backup": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Object API names to snapshot record data for before deploying (record backup)."
+          },
+          "request_approval": {
+            "type": "boolean",
+            "description": "Request approval instead of deploying directly (forced by the server when the user lacks direct-deploy on the target)."
+          }
+        },
+        "required": [
+          "deployment_id"
+        ],
+        "additionalProperties": false
       },
-      "oauthScope": "mtdt:deploy"
+      "outputSchema": {
+        "type": "object",
+        "additionalProperties": {}
+      },
+      "annotations": {
+        "title": "Preview Deployment Run",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
     },
     {
       "name": "quick_deploy",
@@ -624,13 +673,12 @@
         "destructiveHint": true,
         "idempotentHint": false,
         "openWorldHint": true
-      },
-      "oauthScope": "mtdt:deploy"
+      }
     },
     {
       "name": "preflight_deployment",
       "title": "Preflight Deployment Checks",
-      "description": "Run the pre-deploy checks the Deploy UI runs automatically for a human, and get them as one normalized list — call it before validate_deployment / quick_deploy. Checks: destructive_impact (deleting something the target still references), permissions_and_profiles (which profiles/permission sets grant access to what you are shipping), record_backups (objects whose RECORDS should be backed up first), cron_triggers (scheduled Apex that blocks overwriting a class), business_hours (Entitlement Process whose Business Hours is missing on the target — SF reports success and silently drops the binding), non_source_deployable (types no source deploy can carry between orgs because the body embeds an org-bound id — ship them as a package instead), static_analysis (effective, post-suppression findings of the latest scan), changed_since_donor (combined deployments only: components a donor deployment delivered that the source org has touched since — the deploy ships the body the source org has now and Salesforce reports success either way). Returns { checks, verdicts, counts, pending }: each verdict has severity (\"warning\" | \"info\"), what is affected, and often a suggested_action. ADVISORY — nothing here blocks a deploy, exactly like the UI. Checks that query the target org can be slow: anything that did not finish inside the budget comes back in `pending` — call again with checks:[...] to collect just those, or pass depth:\"fast\" for the DB-only subset.",
+      "description": "Run the pre-deploy checks the Deploy UI runs automatically for a human, and get them as one normalized list — call it before validate_deployment / quick_deploy. Checks: folder_sharing (report/dashboard folder recipients missing on the target, or explicit target grants removed or downgraded by the outgoing folder XML), destructive_impact (deleting something the target still references), permissions_and_profiles (which profiles/permission sets grant access to what you are shipping), record_backups (objects whose RECORDS should be backed up first), cron_triggers (scheduled Apex that blocks overwriting a class), business_hours (Entitlement Process whose Business Hours is missing on the target — SF reports success and silently drops the binding), non_source_deployable (types no source deploy can carry between orgs because the body embeds an org-bound id — ship them as a package instead), static_analysis (effective, post-suppression findings of the latest scan), changed_since_donor (combined deployments only: components a donor deployment delivered that the source org has touched since — the deploy ships the body the source org has now and Salesforce reports success either way). Returns { checks, verdicts, counts, pending }: each verdict has severity (\"warning\" | \"info\"), what is affected, and often a suggested_action. ADVISORY — nothing here blocks a deploy, exactly like the UI. Checks that query the target org can be slow: anything that did not finish inside the budget comes back in `pending` — call again with checks:[...] to collect just those, or pass depth:\"fast\" for the DB-only subset. For a deployment created from an archive pass all_items:true instead of items to check every component of the archive.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -646,7 +694,11 @@
                 "type": "string"
               }
             },
-            "description": "Components you intend to deploy, keyed by metadata type → base_component names (same shape as validate_deployment). Types are fuzzy-resolved."
+            "description": "Optional explicit components for an advisory check, keyed by type → names. Omit items/all_items to check the full saved deployment config."
+          },
+          "all_items": {
+            "type": "boolean",
+            "description": "Deployment created from an archive only: check every component of the archive instead of naming them in items."
           },
           "destructive_items": {
             "type": "object",
@@ -660,7 +712,7 @@
           },
           "destructive_changes_is_post": {
             "type": "boolean",
-            "description": "Destructive timing you intend to use, matching create_deployment_run. false (default) deletes BEFORE the additive part, true deletes after it. Affects which referrers count as blockers."
+            "description": "Destructive timing: false deletes before deployment, true deletes afterwards."
           },
           "depth": {
             "type": "string",
@@ -675,6 +727,7 @@
             "items": {
               "type": "string",
               "enum": [
+                "folder_sharing",
                 "destructive_impact",
                 "permissions_and_profiles",
                 "record_backups",
@@ -689,8 +742,7 @@
           }
         },
         "required": [
-          "deployment_id",
-          "items"
+          "deployment_id"
         ],
         "additionalProperties": false
       },
@@ -732,7 +784,7 @@
           },
           "error": {
             "type": "string",
-            "description": "\"unresolved_types\", \"unknown_checks\" or \"checks_incompatible_with_depth\" on a structured reject."
+            "description": "\"unresolved_types\", \"unknown_checks\", \"checks_incompatible_with_depth\", or with all_items \"archive_not_ready\" / \"archive_unpack_failed\" / \"all_items_not_supported\" / \"archive_empty\"; \"missing_selection\" / \"conflicting_selection\" when items and all_items are both absent or both set."
           },
           "message": {
             "type": "string"
@@ -775,8 +827,7 @@
         "destructiveHint": false,
         "idempotentHint": true,
         "openWorldHint": true
-      },
-      "oauthScope": "mtdt:read"
+      }
     },
     {
       "name": "run_impact_analysis",
@@ -828,8 +879,7 @@
         "destructiveHint": false,
         "idempotentHint": true,
         "openWorldHint": true
-      },
-      "oauthScope": "mtdt:read"
+      }
     },
     {
       "name": "check_target_conflicts",
@@ -869,13 +919,12 @@
         "destructiveHint": false,
         "idempotentHint": true,
         "openWorldHint": true
-      },
-      "oauthScope": "mtdt:read"
+      }
     },
     {
       "name": "recommend_tests",
       "title": "Recommend Apex Tests",
-      "description": "Recommend which Apex tests to run for a selection (from class naming + code references, 2 hops). Pass items { type: [names] } to assess exactly that selection; omit items to assess the deployment's LATEST run (the validation you just started), then its saved Deploy-modal selection. Returns {recommendation, testsToRun, uncovered, unresolved, byComponent, reason, caveats, selection_source: \"items\"|\"latest_run\"|\"deployment_config\"|\"none\"}; \"NoApex\" with selection_source \"none\" means nothing was selected anywhere — pass items. Feed testsToRun into validate_deployment with test_option=\"specific\". Read-only.",
+      "description": "Recommend which Apex tests to run for a selection (from class naming + code references, 2 hops). Pass items { type: [names] } to assess exactly that selection; omit items to assess the saved deployment selection, falling back to the latest run only for a legacy deployment without saved selection. Returns {recommendation, testsToRun, uncovered, unresolved, byComponent, reason, caveats, selection_source: \"items\"|\"all_items\"|\"latest_run\"|\"deployment_config\"|\"none\"}; \"NoApex\" with selection_source \"none\" means nothing was selected anywhere — pass items. Feed testsToRun into validate_deployment with test_option=\"specific\". For a deployment created from an archive pass all_items:true: the tests are picked from the archive's own test classes (packageSource \"archive\"), so call it before validating. Read-only.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -891,7 +940,11 @@
                 "type": "string"
               }
             },
-            "description": "Components to assess, keyed by metadata type → base_component names (same shape as validate_deployment.items; types fuzzy-resolved). Omit to assess the deployment's latest run (what you just validated), falling back to its saved Deploy-modal selection."
+            "description": "Optional components to assess, keyed by type → names. Omit to assess the saved deployment selection; legacy deployments without saved selection fall back to the latest run."
+          },
+          "all_items": {
+            "type": "boolean",
+            "description": "Deployment created from an archive only: assess every component of the archive instead of naming them in items."
           }
         },
         "required": [
@@ -909,8 +962,7 @@
         "destructiveHint": false,
         "idempotentHint": true,
         "openWorldHint": false
-      },
-      "oauthScope": "mtdt:read"
+      }
     },
     {
       "name": "get_task_status",
@@ -948,8 +1000,7 @@
         "destructiveHint": false,
         "idempotentHint": true,
         "openWorldHint": false
-      },
-      "oauthScope": "mtdt:read"
+      }
     },
     {
       "name": "get_workflow_deployment_recipe",
@@ -979,8 +1030,7 @@
         "destructiveHint": false,
         "idempotentHint": true,
         "openWorldHint": false
-      },
-      "oauthScope": "mtdt:read"
+      }
     },
     {
       "name": "start_full_metadata_deployment_comparison",
@@ -1014,11 +1064,10 @@
       "annotations": {
         "title": "Start Full Metadata Comparison",
         "readOnlyHint": false,
-        "destructiveHint": false,
+        "destructiveHint": true,
         "idempotentHint": false,
         "openWorldHint": true
-      },
-      "oauthScope": "mtdt:deploy"
+      }
     },
     {
       "name": "get_full_metadata_deployment_comparison_status",
@@ -1058,8 +1107,7 @@
         "destructiveHint": false,
         "idempotentHint": true,
         "openWorldHint": false
-      },
-      "oauthScope": "mtdt:read"
+      }
     },
     {
       "name": "get_latest_full_metadata_deployment_comparison",
@@ -1100,8 +1148,7 @@
         "destructiveHint": false,
         "idempotentHint": true,
         "openWorldHint": false
-      },
-      "oauthScope": "mtdt:read"
+      }
     },
     {
       "name": "run_metadata_backup",
@@ -1136,11 +1183,10 @@
       "annotations": {
         "title": "Run Metadata Backup",
         "readOnlyHint": false,
-        "destructiveHint": false,
+        "destructiveHint": true,
         "idempotentHint": false,
         "openWorldHint": true
-      },
-      "oauthScope": "mtdt:deploy"
+      }
     },
     {
       "name": "list_metadata_backups",
@@ -1191,8 +1237,7 @@
         "destructiveHint": false,
         "idempotentHint": true,
         "openWorldHint": false
-      },
-      "oauthScope": "mtdt:read"
+      }
     },
     {
       "name": "list_git_repos",
@@ -1233,8 +1278,210 @@
         "destructiveHint": false,
         "idempotentHint": true,
         "openWorldHint": false
+      }
+    },
+    {
+      "name": "list_archives",
+      "title": "List Archives",
+      "description": "List uploaded metadata archives (zip files on the Archives page) of the user's team(s), newest first: id, caption, description preview, created_at, size_in_bytes, origin (upload / mcp_upload / deployment_change_set / …) and, for archives registered over MCP, component_count + types. Use an id as from_archive_id in create_deployment.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "team_id": {
+            "type": "string",
+            "description": "Optional team ID. If omitted, lists archives across all of the user's teams."
+          },
+          "name_contains": {
+            "type": "string",
+            "description": "Case-insensitive substring filter on the archive caption."
+          },
+          "limit": {
+            "type": "number",
+            "description": "Max archives to return, newest first (default 20, capped at 50)."
+          }
+        },
+        "additionalProperties": false
       },
-      "oauthScope": "mtdt:read"
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "archives": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": {}
+            }
+          },
+          "count": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "archives",
+          "count"
+        ],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "title": "List Archives",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "request_archive_upload",
+      "title": "Request Archive Upload Link",
+      "description": "Step 1 of deploying a zip you have locally (SFDX source format — force-app/… with or without sfdx-project.json — or Metadata API format with package.xml). Returns { path, upload_url, curl }: run the curl command in your shell with the zip path filled in — the file goes straight to mtdt storage and never passes through this conversation. Then call register_archive with the same team_id and path. The link is short-lived (expires_in_seconds — can be as little as 2 minutes), so have the zip ready BEFORE calling this and run the curl command right away; if it expired, call request_archive_upload again. Max 50 MB. Needs a shell that can run curl. If you have no shell, do not try to send the zip contents through tool calls: ask the user to upload the zip on the Archives page of the mtdt web app (then find it with list_archives), or to push the project to a connected git repo and deploy from the repo.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "team_id": {
+            "type": "string",
+            "description": "Team that will own the archive."
+          },
+          "file_name": {
+            "type": "string",
+            "description": "File name of the zip, e.g. \"release-42.zip\"."
+          }
+        },
+        "required": [
+          "team_id",
+          "file_name"
+        ],
+        "additionalProperties": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string",
+            "description": "Pass to register_archive after the upload."
+          },
+          "upload_url": {
+            "type": "string",
+            "description": "Signed upload URL, valid until expires_at."
+          },
+          "method": {
+            "type": "string"
+          },
+          "expires_in_seconds": {
+            "type": "number",
+            "description": "Lifetime of the upload link — run the curl command before it runs out."
+          },
+          "expires_at": {
+            "type": "string"
+          },
+          "max_bytes": {
+            "type": "number"
+          },
+          "curl": {
+            "type": "string",
+            "description": "Ready upload command — replace <LOCAL_ZIP_PATH>."
+          },
+          "next": {
+            "type": "string"
+          },
+          "error": {
+            "type": "string",
+            "description": "\"forbidden\" or \"invalid_request\" on a reject."
+          },
+          "message": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": {}
+      },
+      "annotations": {
+        "title": "Request Archive Upload Link",
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "register_archive",
+      "title": "Register Uploaded Archive",
+      "description": "Step 2 after request_archive_upload: turns the uploaded zip into an archive. SFDX source is converted to Metadata API format; the archive appears on the Archives page. Returns { archive_id, component_count, types } — counts only, no file contents. Rejects: \"not_uploaded\" (the curl upload has not happened or failed — rerun it, or request a new link if it expired), \"invalid_archive\" (neither SFDX source nor a Metadata API package), \"archive_empty\", \"too_large\". Then create_deployment with from_archive_id = archive_id.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "team_id": {
+            "type": "string",
+            "description": "Same team ID as in request_archive_upload."
+          },
+          "path": {
+            "type": "string",
+            "description": "The path request_archive_upload returned."
+          },
+          "caption": {
+            "type": "string",
+            "description": "Archive title shown on the Archives page. Defaults to the file name."
+          },
+          "description": {
+            "type": "string",
+            "description": "Optional longer description of the archive."
+          }
+        },
+        "required": [
+          "team_id",
+          "path"
+        ],
+        "additionalProperties": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "archive_id": {
+            "type": "string",
+            "description": "Success: pass as from_archive_id to create_deployment."
+          },
+          "caption": {
+            "type": "string"
+          },
+          "source_format": {
+            "type": "string",
+            "description": "\"source\" (SFDX, converted) or \"metadata_api\"."
+          },
+          "component_count": {
+            "type": "number"
+          },
+          "types": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "number"
+            },
+            "description": "Component count per metadata type."
+          },
+          "api_version": {
+            "type": "string",
+            "nullable": true
+          },
+          "next": {
+            "type": "string"
+          },
+          "error": {
+            "type": "string",
+            "description": "\"not_uploaded\", \"too_large\", \"invalid_archive\", \"archive_empty\", \"forbidden\" or \"invalid_request\" on a reject; NO archive is created."
+          },
+          "message": {
+            "type": "string"
+          },
+          "hint": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": {}
+      },
+      "annotations": {
+        "title": "Register Uploaded Archive",
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": false
+      }
     },
     {
       "name": "browse_metadata",
@@ -1337,17 +1584,16 @@
       },
       "annotations": {
         "title": "Browse Metadata",
-        "readOnlyHint": false,
+        "readOnlyHint": true,
         "destructiveHint": false,
         "idempotentHint": true,
         "openWorldHint": true
-      },
-      "oauthScope": "mtdt:deploy"
+      }
     },
     {
       "name": "validate_deployment",
       "title": "Validate Deployment (Check-Only)",
-      "description": "PREFER this over prepare_deployment_run_selected_items_object + create_deployment_run. Validate (checkOnly — never a real deploy) the given components against the deployment target. Types are fuzzy-resolved; unresolved types return { error:\"unresolved_types\" } and NO run. Every named component must already be retrieved (browse_metadata first) — otherwise it returns { error:\"items_not_retrieved\", missing } and creates NO run. On success it returns { task_id, status:\"validating\" } immediately; wait with await_deploy_status(deployment_id) (repeat while timed_out=true) or get_task_status(task_id). Validate with test_option \"local\" (the default) so tests run and the run can be quick_deployed afterwards.",
+      "description": "Validate the deployment using its FULL saved config (checkOnly, never a real deploy). Pass deployment_id and optional test/backup/comment settings only. Save components first with add_deployment_components; get_deployment_components shows the saved composition. Existing overrides, partial selections and deletions are preserved. Archive components are selected automatically after population; wait for check_deployment_creation_status. Returns task_id/status validating, or an actionable reject without creating a task. Wait with await_deploy_status.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -1355,26 +1601,17 @@
             "type": "number",
             "description": "Deployment ID."
           },
-          "items": {
-            "type": "object",
-            "additionalProperties": {
-              "type": "array",
-              "items": {
-                "type": "string"
-              }
-            },
-            "description": "Components to validate, keyed by metadata type → base_component names, e.g. { \"ApexClass\": [\"FooService\"] }. Types are fuzzy-resolved."
-          },
           "test_option": {
             "type": "string",
             "enum": [
               "all",
               "local",
+              "relevant",
               "specific",
               "default",
               "NoTestRun"
             ],
-            "description": "Apex test level (default \"local\" — runs org+package tests, required to quick_deploy afterwards). \"specific\" needs tests_to_run; \"NoTestRun\" fails on production targets."
+            "description": "Apex test level. Omit to use the saved testOption, or local if none is saved. Inspect preview_deployment_run first. Tests must run to enable quick_deploy. \"relevant\" lets Salesforce select tests automatically; \"specific\" needs tests_to_run; \"NoTestRun\" fails on production targets."
           },
           "tests_to_run": {
             "type": "string",
@@ -1390,8 +1627,7 @@
           }
         },
         "required": [
-          "deployment_id",
-          "items"
+          "deployment_id"
         ],
         "additionalProperties": false
       },
@@ -1410,10 +1646,14 @@
           },
           "error": {
             "type": "string",
-            "description": "\"unresolved_types\" or \"items_not_retrieved\" on a structured reject."
+            "description": "\"unresolved_types\" or \"items_not_retrieved\" on a structured reject; with all_items \"archive_not_ready\" / \"archive_unpack_failed\" / \"all_items_not_supported\" / \"archive_empty\"; \"missing_selection\" / \"conflicting_selection\" when items and all_items are both absent or both set."
           },
           "message": {
             "type": "string"
+          },
+          "component_count": {
+            "type": "number",
+            "description": "all_items: number of components sent to validation. Can exceed register_archive component_count: an object whose fields are shipped is sent as its own component too."
           },
           "missing": {
             "type": "array",
@@ -1443,11 +1683,116 @@
       "annotations": {
         "title": "Validate Deployment (Check-Only)",
         "readOnlyHint": false,
-        "destructiveHint": false,
+        "destructiveHint": true,
         "idempotentHint": false,
         "openWorldHint": true
+      }
+    },
+    {
+      "name": "get_deployment_components",
+      "title": "Get Saved Deployment Components",
+      "description": "Read the deployment saved composition: selected components, deletions, manual overrides and partial selections. The UI and MCP run this same saved config.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "deployment_id": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "deployment_id"
+        ],
+        "additionalProperties": false
       },
-      "oauthScope": "mtdt:deploy"
+      "outputSchema": {
+        "type": "object",
+        "additionalProperties": {}
+      },
+      "annotations": {
+        "title": "Get Saved Deployment Components",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "add_deployment_components",
+      "title": "Add Deployment Components",
+      "description": "Add full source components to the saved deployment config. items is {metadata_type:[names]}; types are normalized and source components must be retrieved (browse_metadata). Repeating an add is a no-op. Other saved config is preserved. Manual overrides are preserved and do not block selection edits; edit their contents in MTDT. Components with partial selections must be edited in MTDT.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "deployment_id": {
+            "type": "number"
+          },
+          "items": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        },
+        "required": [
+          "deployment_id",
+          "items"
+        ],
+        "additionalProperties": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "additionalProperties": {}
+      },
+      "annotations": {
+        "title": "Add Deployment Components",
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "remove_deployment_components",
+      "title": "Remove Deployment Components",
+      "description": "Remove full components from the saved deployment selection; does not delete them from Salesforce. Other config, including deletions and overrides, is preserved. Manual overrides are preserved and do not block selection edits; edit their contents in MTDT. Components with partial selections must be edited in MTDT.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "deployment_id": {
+            "type": "number"
+          },
+          "items": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        },
+        "required": [
+          "deployment_id",
+          "items"
+        ],
+        "additionalProperties": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "additionalProperties": {}
+      },
+      "annotations": {
+        "title": "Remove Deployment Components",
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
     }
   ]
 }

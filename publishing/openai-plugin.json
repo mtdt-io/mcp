@@ -15,10 +15,10 @@
   "interface": {
     "displayName": "mtdt.io",
     "shortDescription": "Salesforce deploys and backups",
-    "longDescription": "Use mtdt.io to work with the Salesforce orgs connected to your team. Find source and target orgs, inspect deployment history, browse metadata, and prepare deployments from an org, a Git repository, or a usable metadata backup. Run pre-deployment checks for dependencies, target conflicts, permissions, and backup recommendations. Validate a selected package with Apex tests, follow its status, and quick-deploy a successful validation. You can also start metadata backups and inspect their progress.\n\nThe package includes deployment and troubleshooting skills. It connects to the hosted mtdt.io MCP server using browser-based OAuth sign-in. You need an mtdt.io account and connected Salesforce orgs. Viewing requires the mtdt:read scope; tools that create deployments, retrieve metadata, validate, or run backups require mtdt:deploy. Your team roles and target approval policies still apply. Validation checks the package without deploying its metadata to the target; quick-deploy and direct deployment can overwrite target metadata. Preflight findings are advisory and require review before a deployment.",
+    "longDescription": "Use mtdt.io to work with the Salesforce orgs connected to your team. Find source and target orgs, inspect deployment history, and prepare deployments from an org, a Git repository, or a usable metadata backup. Browse metadata, save the component selection, and preview execution settings before launch. Run pre-deployment checks for dependencies, target conflicts, permissions, and backup recommendations. Validate a selected package with Apex tests, follow its status, and quick-deploy a successful validation. You can also start metadata backups and inspect their progress.\n\nThe package includes deployment and troubleshooting skills. It connects to the hosted mtdt.io MCP server using browser-based OAuth sign-in. You need an mtdt.io account and connected Salesforce orgs. Viewing requires the mtdt:read scope; tools that create deployments, retrieve metadata, validate, or run backups require mtdt:deploy. Your team roles and target approval policies still apply. Validation checks the package without deploying its metadata to the target; quick-deploy and direct deployment can overwrite target metadata. Preflight findings are advisory. Review the run preview before launch: saved actions such as Apex scripts and scheduled-job pauses can have effects even during validation.",
     "developerName": "mtdt.io",
     "category": "Developer Tools",
-    "capabilities": ["Salesforce metadata deployments", "Deployment preflight checks", "Metadata backups"],
+    "capabilities": ["Salesforce metadata deployments", "Deployment run previews", "Deployment preflight checks", "Metadata backups"],
     "websiteURL": "https://mtdt.io",
     "supportURL": "https://mtdt.io/#contact",
     "privacyPolicyURL": "https://docs.mtdt.io/docs/legal-information/privacy-policy/",
@@ -34,7 +34,7 @@
   "extensions": {
     "com.openai": {
       "publication": {
-        "release_notes": "Adds the OpenAI/Codex directory package with the hosted MCP connection, deployment and troubleshooting skills, listing assets, and review cases. Updates MFA troubleshooting guidance."
+        "release_notes": "Updates the saved-composition deployment workflow: add/remove and inspect components, preview inherited execution actions, then validate or deploy by ID. Preserves manual overrides created in MTDT and refreshes the 32-tool inventory and reviewer cases."
       }
     }
   }

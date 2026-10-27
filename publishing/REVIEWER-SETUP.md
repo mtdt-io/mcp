@@ -6,25 +6,23 @@ private tenant identifiers, OAuth tokens, or a filled account handoff to the pub
 
 ## Prepare an isolated workspace
 
-Create a dedicated MTDT review team with synthetic data and two Salesforce sandboxes or
-scratch orgs labelled **Review Source** and **Review Target**. Connect both through the normal
-MTDT UI, check their credentials and subscription entitlements, and grant the reviewer the
-roles needed for metadata retrieval, validation, deployment and backups. Do not include
-production orgs or actual customer data. For OpenAI review, use an account that signs in
-immediately without MFA approval, email/SMS codes or magic links; do not weaken another
-team's MFA settings to create it.
+The reviewer account is a dedicated sign-up whose Personal team holds two scratch orgs labelled
+**DEV** (source) and **UAT** (target). Scratch orgs live at most 30 days, so rotate them before
+expiry: create them on the local stand with `service-tools/create-scratch.js --admin-email=…`,
+seed them with `service-tools/claude-review/seed-scratch-metadata.js <id> dev|base`, set a
+password with `service-tools/scratch-set-password.js <id>`, and reconnect them in the reviewer's
+team through the normal MTDT UI. Do not include production orgs or actual customer data. For
+OpenAI review, use an account that signs in immediately without MFA approval, email/SMS codes
+or magic links; do not weaken another team's MFA settings to create it.
 
-Seed Review Source with `fixtures/ReviewHello.cls` and `fixtures/ReviewHelloTest.cls` plus
-their Metadata API sidecars. Keep Review Target initially without those classes, or restore
-it to a known sandbox baseline before a repeat. Run ReviewHelloTest on Review Source and
-check that target validation can run the intended local tests. The selected fixtures exercise
-deployment without relying on customer fields, flows or business records.
+The seed deploys a `Project__c` object, `ProjectService`, `ProjectTriggerHandler`, their tests,
+a trigger, a custom label and the `Project_Manager` permission set. DEV gets a newer variant
+(extra field, picklist value, validation rule, method and label text), so comparison and
+deployment from DEV to UAT show real differences. Reseeding UAT with `base` restores it after a
+promotion case.
 
-Create a deployment captioned **Review Baseline** through the MTDT UI and complete a validation
-with these two classes and local tests. Keep the deployment and successful result available
-for case 2. Check that a repeat quick-deploy or fixture reset will not invalidate the seeded
-history. Confirm sufficient plan quota and backup storage for a metadata backup of Review
-Source before the rehearsal; `run_metadata_backup` takes the org ID and creates a backup task.
+Keep a deployment captioned **Test Deployment** with a successful validation for case 2, a
+completed full comparison, and completed metadata backups of both orgs.
 
 ## Rehearse the submitted cases
 
@@ -34,7 +32,7 @@ Use a new chat for the read-only-consent case: grant View without Run, check tha
 created, then restore the full-scope connection for subsequent cases. Do not mistake an agent
 refusal for a server permission check; verify both where applicable.
 
-For the promotion case, verify the new class on Review Target through Salesforce Setup or an
+For the promotion case, verify the new class on UAT through Salesforce Setup or an
 independent Metadata API retrieve, and inspect its MTDT run result. For backups, inspect the
 terminal task result and confirm the resulting archive is usable. Record the client, date,
 fixture labels, case outcomes and independent observations in the `tt` preparation task.
@@ -42,9 +40,15 @@ fixture labels, case outcomes and independent observations in the `tt` preparati
 The eight directory cases are a review sample. Claude additionally requires every tool to be
 exercised. Use `tool-inventory.json` as the starting list; collect a current tools/list from
 the review connection and cover tools outside those eight cases too, including
-set_deployment_description, comparison start/status/latest, the low-level run-selection helper,
-create_deployment_run and the workflow recipe. Exercise low-level writes only in the isolated
-review sandboxes. Check prompts/resources and graceful invalid-input/permission failures.
+get_deployment_components, add_deployment_components, remove_deployment_components,
+preview_deployment_run, set_deployment_description,
+comparison start/status/latest, the legacy run-selection normalizer, create_deployment_run and
+the workflow recipe. Exercise the saved-selection path explicitly: add both classes, remove/re-add
+the test class and inspect the result. Preview with the intended mode/options before each new
+validation/direct run; confirm preview creates no run, and launch by ID without inline composition.
+Creating or editing manual override contents still uses MTDT; existing manual overrides do not
+block MCP selection edits and must survive removal/re-add of their component. Exercise low-level
+writes only in the isolated review sandboxes. Check prompts/resources and graceful invalid-input/permission failures.
 
 ## Supply private access in each portal
 

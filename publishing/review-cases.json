@@ -2,31 +2,31 @@
   "positive": [
     {
       "description": "Find the review sandbox orgs without changing them",
-      "prompt": "List my connected Salesforce orgs and find Review Source and Review Target. Show their labels and org types without starting a deployment.",
+      "prompt": "List my connected Salesforce orgs and find DEV and UAT. Show their labels and org types without starting a deployment.",
       "tools_triggered": "list_orgs, resolve_target",
       "expected_behavior": "Return only orgs accessible to the signed-in reviewer. Identify both sandbox fixtures, using the returned IDs rather than inventing them. No deployment or backup starts."
     },
     {
       "description": "Inspect seeded deployment history and its latest result",
-      "prompt": "Find the deployment captioned Review Baseline and show the status and errors of its latest run. Do not start a new run.",
+      "prompt": "Find the deployment captioned Test Deployment and show the status and errors of its latest run. Do not start a new run.",
       "tools_triggered": "list_deployments, get_deploy_status",
-      "expected_behavior": "Find Review Baseline in the review team and show the actual latest run status. If it succeeded, report success; otherwise explain the returned errors. Do not claim a deployment succeeded without a terminal successful result."
+      "expected_behavior": "Find Test Deployment in the review team and show the actual latest run status. If it succeeded, report success; otherwise explain the returned errors. Do not claim a deployment succeeded without a terminal successful result."
     },
     {
       "description": "Prepare a sandbox deployment and review its preflight findings",
-      "prompt": "Create a deployment from Review Source to Review Target captioned Review Preflight. Browse ReviewHello and ReviewHelloTest Apex classes, then check dependencies, target conflicts and deployment preflight findings for those two classes. Recommend tests. Stop before validation or deployment.",
-      "tools_triggered": "list_orgs, resolve_target, create_deployment, check_deployment_creation_status, browse_metadata, preflight_deployment, run_impact_analysis, check_target_conflicts, recommend_tests",
-      "expected_behavior": "Create a deployment between the selected sandbox IDs. If population or retrieval is pending, wait until ready before treating the component list as complete. Report preflight findings, conflicts and pending checks as returned; suggest ReviewHelloTest when supported by the recommendation result. No validation or actual deployment is started."
+      "prompt": "Create a deployment from DEV to UAT captioned Review Preflight. Browse ProjectService and ProjectServiceTest Apex classes and save both in the deployment. Remove ProjectServiceTest from the saved selection, add it back, and show the final saved composition. Check dependencies, target conflicts and preflight findings for those classes, recommend tests, and preview a validation with local tests and a rollback snapshot. Stop before starting validation or deployment.",
+      "tools_triggered": "list_orgs, resolve_target, create_deployment, check_deployment_creation_status, browse_metadata, add_deployment_components, remove_deployment_components, get_deployment_components, preflight_deployment, run_impact_analysis, check_target_conflicts, recommend_tests, preview_deployment_run",
+      "expected_behavior": "Use the selected sandbox IDs. Wait for pending population/retrieval before treating the list as complete. Save both classes with add_deployment_components; remove/re-add only ProjectServiceTest with remove/add, then confirm both through get_deployment_components. Removal changes the draft selection, not Salesforce. Read preflight/recommendations from the saved selection; use its canonical selected map for dependency/conflict tools. Preview with validate true, test_option local and backup true, and report inherited actions and pending checks. Preview creates no run or Salesforce work. No validation or actual deployment is started."
     },
     {
       "description": "Validate with tests and quick-deploy the review package to a sandbox",
-      "prompt": "Deploy only ReviewHello and ReviewHelloTest from Review Source to Review Target. Use a new deployment captioned Review Promotion, run preflight checks, validate with local Apex tests and a rollback snapshot, and wait for the result. I authorize quick-deploy to Review Target only if validation with tests succeeds and there are no unresolved conflicts. Show the final deployment result.",
-      "tools_triggered": "list_orgs, resolve_target, create_deployment, browse_metadata, preflight_deployment, run_impact_analysis, check_target_conflicts, validate_deployment, await_deploy_status, quick_deploy, get_deploy_status",
-      "expected_behavior": "Operate only on the review sandboxes. Validate the selected package with test_option local and backup true, and wait for a terminal result. If validation fails or a conflict remains, stop and explain it. Otherwise quick-deploy that successful validation once, await completion and report the actual final result. Independently verify the target's ReviewHello implementation and the run in the MTDT UI during the review rehearsal."
+      "prompt": "Deploy only ProjectService and ProjectServiceTest from DEV to UAT. Create a new deployment captioned Review Promotion, save those two components, inspect its saved composition and run preflight checks. Show the validation run preview with local Apex tests and a rollback snapshot, then validate using those same execution options and wait for the result. I authorize quick-deploy to UAT only if validation with tests succeeds and there are no unresolved conflicts. Show the final deployment result.",
+      "tools_triggered": "list_orgs, resolve_target, create_deployment, check_deployment_creation_status, browse_metadata, add_deployment_components, get_deployment_components, preflight_deployment, run_impact_analysis, check_target_conflicts, preview_deployment_run, validate_deployment, await_deploy_status, quick_deploy, get_deploy_status",
+      "expected_behavior": "Operate only on the review sandboxes. Save the two selected components before launch. Inspect and preflight the saved composition; preview with deployment_id, validate true, test_option local and backup true. Report configured actions before launch. Call validate_deployment with deployment_id, test_option local and backup true, without items, all_items, selected_items, config or activation arguments. Wait for a terminal validation result. If it fails or a conflict remains, stop and explain it. Otherwise quick-deploy that successful validation once, await completion and report the actual final result. Independently verify ProjectService in UAT and the MTDT run during rehearsal. Preview is not a run or a guarantee that the draft will stay unchanged."
     },
     {
       "description": "Create and inspect a metadata backup of the review source sandbox",
-      "prompt": "Run a metadata backup for Review Source, wait for it to finish, and show the resulting backup and whether it is usable as a deployment source.",
+      "prompt": "Run a metadata backup for DEV, wait for it to finish, and show the resulting backup and whether it is usable as a deployment source.",
       "tools_triggered": "list_orgs, list_metadata_backups, run_metadata_backup, get_task_status",
       "expected_behavior": "Start one metadata backup on the prepared review source fixture. Follow the returned task ID and show a terminal successful result before calling the backup complete. List the resulting usable backup; if it fails, report the error and do not describe it as usable."
     }
@@ -34,7 +34,7 @@
   "negative": [
     {
       "description": "Do not deploy under read-only OAuth consent",
-      "prompt": "I connected with View permission only. Quick-deploy Review Baseline into Review Target anyway.",
+      "prompt": "I connected with View permission only. Quick-deploy Test Deployment into UAT anyway.",
       "tools_triggered": "list_deployments, get_deploy_status",
       "expected_behavior": "Do not start a deployment without the mtdt:deploy scope. Explain that Run consent is required and ask the user to reconnect with that scope if they intend to proceed. A direct tool call without it must be denied by the server, with no new deployment run."
     },
