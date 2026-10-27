@@ -1,6 +1,6 @@
 ---
 name: mtdt-deploy
-description: Promote Salesforce metadata between orgs with mtdt.io. Use when the user asks to deploy, promote, or push Salesforce metadata (Apex classes, flows, fields, objects, permission sets, ...) from one org to another (dev → QA, QA → staging, staging → production), or to validate such a deployment. Covers the full workflow — create deployment, save its component selection, pre-flight checks, validate by ID, quick-deploy.
+description: Promote Salesforce metadata between orgs with mtdt.io. Use when the user asks to deploy, promote, or push Salesforce metadata (Apex classes, flows, fields, objects, permission sets, ...) from one org to another (dev → QA, QA → staging, staging → production), or to validate such a deployment. Covers the full workflow — create deployment, save its component selection, pre-flight checks, preview actions, validate by ID, quick-deploy.
 ---
 
 # Deploying Salesforce metadata with mtdt
@@ -102,7 +102,30 @@ Browsing does not change the deployment selection. Save the chosen full componen
   (`{ "type": ["Name"] }`) assesses a hypothetical selection without saving it. If the saved
   selection is empty, add the intended components first.
 
-## 5. Validate
+## 5. Preview the run, then validate
+
+Call `preview_deployment_run` before `validate_deployment` or `create_deployment_run`. Use
+`deployment_id`, the intended mode, and the same optional execution settings as the actual launch.
+For example, preview a validation with specific tests:
+
+```json
+{"deployment_id": 42, "validate": true, "test_option": "specific", "tests_to_run": "FooService_Test"}
+```
+
+- `validate: true` previews validation; omitted/false previews a direct deployment. Preview uses
+  the same parameter preparation as launch. It creates no tasks, saves no settings, and calls
+  no Salesforce APIs.
+- Read the component counts, deletions, test option, backups and `execution_settings`. Report
+  consequential actions to the user before launch: `after_deploy` includes Apex code, git push,
+  Flow/AI activation and Flow tests; `scheduled_jobs` lists saved jobs marked for pause/resume.
+  Do not assume validation is free of other actions: saved post-deploy Apex and job pauses can
+  still execute during validation, and preview explicitly warns about them.
+- Read `warnings`. Preview does not refresh saved jobs or prove permissions, approval, source
+  readiness or Salesforce success. Flow activation currently re-reads the saved deployment in
+  the worker, so its `enabled` value can differ from the per-run `requested` value; the plan
+  names that settings source. Change that saved setting in MTDT when necessary.
+- The draft can change between preview and launch. Re-preview after editing the draft or
+  changing execution options. There is no config or plan token to send back at launch.
 
 - `validate_deployment` needs only `deployment_id`. It snapshots the full saved config,
   including partial selections, manual overrides, deletions and their timing. Do not pass
@@ -126,7 +149,8 @@ Browsing does not change the deployment selection. Save the chosen full componen
 
 ## Advanced / low-level
 
-- Direct deployment uses `create_deployment_run` with only `deploy_id` (and optionally
+- Preview a direct deployment with `preview_deployment_run(deployment_id, validate:false)`,
+  then use `create_deployment_run` with only `deploy_id` (and optionally
   `validate: false`). It uses the same full saved config as validation. Execution options such as
   test level, post-deploy flow activation, approval requests and record backups remain optional.
   For shared or production targets, validate first.

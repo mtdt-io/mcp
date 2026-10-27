@@ -33,6 +33,26 @@ deploy already consumed it. Re-validate with `validate_deployment` and `test_opt
 `"specific"`, then retry. Salesforce quick-deploy windows also expire (~10 days) — a stale
 validation needs a fresh one.
 
+## Unexpected settings in the run plan
+
+Use `preview_deployment_run` with the intended `validate` mode and execution options before
+starting another run. Its preparation is shared with actual launch, and the call creates no
+state or Salesforce work. `execution_settings` exposes inherited settings; `after_deploy` and
+`scheduled_jobs` highlight the actions they can cause.
+
+- An unexpected `NoTestRun` is inherited from the saved draft. Preview and validate with
+  `test_option: "local"` or `"specific"` + `tests_to_run` when tests are intended.
+- `validation_apex` / `saved_jobs`: validation does not automatically disable saved Apex or job
+  pause settings. Read the code/jobs and report those actions before launch; do not retry blind.
+- `flow_activation_reread`: the worker uses the saved deployment flag, which can differ from a
+  per-run override. Review/change the saved Flow activation setting in MTDT. Preview exposes
+  both `enabled` and `requested`; it does not fix this worker limitation.
+- `flow_tests_target_mismatch`: saved Flow tests belong to a different target; fix the test
+  selection in MTDT before launching.
+- Preview is a snapshot, not a reservation or a successful preflight. After changing the draft
+  or execution options, inspect the plan again. Launch still applies permissions/approval and
+  worker checks; a preview alone is not proof that the run will succeed.
+
 ## Saved composition rejected before a run
 
 Start with `get_deployment_components(deployment_id)` to inspect what is saved.
