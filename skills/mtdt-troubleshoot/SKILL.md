@@ -44,9 +44,10 @@ state or Salesforce work. `execution_settings` exposes inherited settings; `afte
   `test_option: "local"` or `"specific"` + `tests_to_run` when tests are intended.
 - `validation_apex` / `saved_jobs`: validation does not automatically disable saved Apex or job
   pause settings. Read the code/jobs and report those actions before launch; do not retry blind.
-- `flow_activation_reread`: the worker uses the saved deployment flag, which can differ from a
-  per-run override. Review/change the saved Flow activation setting in MTDT. Preview exposes
-  both `enabled` and `requested`; it does not fix this worker limitation.
+- Flow activation comes only from the saved deployment config, including its exclusions.
+  Review/change it in MTDT, then preview again. If a run or preview rejects the old
+  `activate_flows_after_deploy` argument, remove it from the request; configure activation on
+  the deployment instead. There is no per-run activation override.
 - `flow_tests_target_mismatch`: saved Flow tests belong to a different target; fix the test
   selection in MTDT before launching.
 - Preview is a snapshot, not a reservation or a successful preflight. After changing the draft

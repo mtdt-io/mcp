@@ -121,9 +121,10 @@ For example, preview a validation with specific tests:
   Do not assume validation is free of other actions: saved post-deploy Apex and job pauses can
   still execute during validation, and preview explicitly warns about them.
 - Read `warnings`. Preview does not refresh saved jobs or prove permissions, approval, source
-  readiness or Salesforce success. Flow activation currently re-reads the saved deployment in
-  the worker, so its `enabled` value can differ from the per-run `requested` value; the plan
-  names that settings source. Change that saved setting in MTDT when necessary.
+  readiness or Salesforce success. Flow activation and its exclusions are controlled only by
+  the saved deployment config in MTDT; preview shows that current setting. Run and preview
+  tools do not accept `activate_flows_after_deploy`. Change the saved setting when necessary,
+  then preview again.
 - The draft can change between preview and launch. Re-preview after editing the draft or
   changing execution options. There is no config or plan token to send back at launch.
 
@@ -152,7 +153,8 @@ For example, preview a validation with specific tests:
 - Preview a direct deployment with `preview_deployment_run(deployment_id, validate:false)`,
   then use `create_deployment_run` with only `deploy_id` (and optionally
   `validate: false`). It uses the same full saved config as validation. Execution options such as
-  test level, post-deploy flow activation, approval requests and record backups remain optional.
+  test level, approval requests and record backups remain optional. Flow activation is taken
+  from the saved deployment config.
   For shared or production targets, validate first.
 - Configure partial selections, overrides and deletions in the UI for now. MCP can inspect and
   run that saved composition; it cannot author those settings yet. Confirm intended target
