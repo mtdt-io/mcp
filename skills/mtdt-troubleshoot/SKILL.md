@@ -56,7 +56,7 @@ state or Salesforce work. `execution_settings` exposes inherited settings; `afte
 
 ## Saved composition rejected before a run
 
-Start with `get_deployment_components(deployment_id)` to inspect what is saved.
+Start with `get_deployment(deployment_id)` to inspect what is saved.
 `validate_deployment` takes `deployment_id`; `create_deployment_run` takes `deploy_id`. Neither
 accepts a replacement composition. Composition edits follow the UI's last-save-wins model;
 concurrent edits are not detected or rejected.
@@ -70,9 +70,9 @@ concurrent edits are not detected or rejected.
 - `items_not_retrieved` from `add_deployment_components`: a named source component is not in
   this deployment's cache. Run `browse_metadata` for its type and check the spelling against the
   returned rows, then retry the add.
-- `deployment_not_ready`: the archive selection is still being populated. Poll
-  `check_deployment_creation_status`; retry after it is done.
-- `deployment_population_failed`: read the source task error in creation status and fix the
+- `deployment_not_ready`: the archive selection is still being populated. Call
+  `get_deployment` every ~15s; retry once `ready` is `true`.
+- `deployment_population_failed`: read `source.task.error` in `get_deployment` and fix the
   source as described below. Repeating the run cannot repair population.
 - `component_has_overrides`: the requested component has an existing partial selection/smart
   intent. Edit that selection in MTDT. Manual file overrides do not cause this reject: add/remove
@@ -86,9 +86,9 @@ concurrent edits are not detected or rejected.
 
 ## The deployment never populates (repo or backup source)
 
-- `check_deployment_creation_status(deployment_id)` reports each side with the population task
+- `get_deployment(deployment_id)` reports each side's `readiness` with the population task
   behind it, so a failed source unpack reads as `"failed"` with `task.error` instead of an endless
-  `"in progress"`. `"failed"` never recovers by polling. For a backup source: edit the deployment
+  `"in_progress"`. `"failed"` never recovers by polling. For a backup source: edit the deployment
   in the mtdt web app and pick a finished backup that has an archive, or create a new deployment —
   Refresh does not re-unpack a backup. For an org side: re-authenticate the org, then press Refresh.
 - If it shows the source failed with `No value provided for input HTTP label: Key` (or otherwise

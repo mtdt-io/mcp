@@ -14,7 +14,7 @@ production targets.
 | Entity | Purpose | ID used by MCP |
 |---|---|---|
 | Work Item | A project change: a manual card or a tracker ticket. Tracks its delivery along the environment chain. | `work_item_id` (UUID), with explicit `project_id` |
-| Deployment | A reusable source→target draft containing saved components, overrides, deletions and execution settings. | `deployment_id` (number); `create_deployment` returns `deploymentId`, and the low-level run tool calls its input `deploy_id` |
+| Deployment | A reusable source→target draft containing saved components, overrides, deletions and execution settings. | `deployment_id` (number); `create_deployment` and `get_deployment` return it as `deployment_id` (`create_deployment` also as `deploymentId`), and the low-level run tool calls its input `deploy_id` |
 | Run | One attempt to validate or deploy a snapshot of the saved draft. The same deployment can have many runs and outcomes. | Launch returns `task_id` for asynchronous execution; poll deployment status using the deployment ID, never substitute the task ID |
 
 A card can link to several deployments, and a deployment can serve several cards. These
@@ -153,7 +153,7 @@ For the initial deployment, use `create_deployment` with the card IDs instead.
    failed: keep the returned ID and inspect/correct the state in MTDT, rather than creating again.
    The product can link other cards that share donor content. Inspect resulting links; creation
    retains the product's existing best-effort link handling rather than promising an atomic batch.
-7. This creates a **draft only**. Read `get_deployment_components`, inspect the saved composition,
+7. This creates a **draft only**. Read `get_deployment`, inspect the saved composition,
    and use `preview_deployment_run` → `validate_deployment`/deployment by ID as usual. Promotion
    preview describes the assembled composition; run preview describes its execution settings.
 
@@ -171,23 +171,26 @@ For the initial deployment, use `create_deployment` with the card IDs instead.
 
 - Resuming rather than starting fresh? `list_deployments` shows the team's existing deployments
   with source/target labels and each one's latest run — reuse its id instead of creating a
-  duplicate. Read `get_deployment_components(deployment_id)` before editing a resumed draft: its
-  saved composition may already contain components, deletions or overrides configured in the UI.
+  duplicate. Read `get_deployment(deployment_id)` before editing a resumed draft: its saved
+  composition may already contain components, deletions or partial selections configured in the UI,
+  and it shows the saved test level, linked Work Items and recent runs.
 - `create_deployment` with exactly one source (`from_org_id` / `from_repo_id` /
   `from_backup_id` / `from_archive_id`) and `to_org_id`. For Work Items include `project_id` and
-  `work_item_ids` in this call. It returns the `deploymentId` used below; check for an error first.
+  `work_item_ids` in this call. It returns the same card as `get_deployment`, with the
+  `deployment_id` used below; check for an error first.
   Pass `caption` (short title) and, when you know what you are shipping, `description` — on a
   push-to-git deploy it becomes the git commit message (`set_deployment_description` can change
   it later). A backup source must be **usable** — finished, with its archive present: otherwise
   `create_deployment` returns `{ error: "backup_not_usable", reason }` and creates nothing, so pick
   another backup from `list_metadata_backups` (its default view lists only usable ones) or run
   `run_metadata_backup` first and wait for it to finish.
-- **Repo, backup or archive as the source?** The deployment is populated asynchronously — poll
-  `check_deployment_creation_status(deployment_id)` until `deploymentStatus` is `"done"` before
-  browsing. It reports each side (`source` / `target`) with the population task behind it, so
-  `"failed"` comes with `task.error` (a partial or unfinished backup has no archive to unpack; an
-  org may need re-auth). A failed deployment does not recover by polling — tell the user the error
-  and create a new deployment from a usable source.
+- **Repo, backup or archive as the source?** The deployment is populated asynchronously — call
+  `get_deployment(deployment_id)` every ~15s until `ready` is `true` before browsing or validating;
+  a repo, backup or archive side can take several minutes. Each side (`source` / `target`) carries
+  its `readiness` and the population task behind it, so `"failed"` comes with `task.error` (a
+  partial or unfinished backup has no archive to unpack; an org may need re-auth). A failed side
+  does not recover by polling — tell the user the error and create a new deployment from a usable
+  source.
 
 ## 3. Browse, then save the components
 
@@ -225,7 +228,7 @@ Browsing does not change the deployment selection. Save the chosen full componen
 - Repeat adds are no-ops. `remove_deployment_components` takes the same shape and removes the
   components from the saved selection; it does **not** delete them from Salesforce.
 - Saving follows the UI's last-save-wins model; there is no concurrent-edit check.
-- Read `get_deployment_components(deployment_id)` to confirm the saved composition. Add/remove
+- Read `get_deployment(deployment_id)` to confirm the saved composition. Add/remove
   preserve other settings, including saved deletions and overrides. Manual overrides created in
   the UI do not block selection edits, including removing/re-adding their own component. Removing
   a component keeps its override saved; re-adding it reuses that override. Edit override contents,
@@ -292,7 +295,7 @@ For example, preview a validation with specific tests:
   **runs tests** (`"local"`, or `"specific"` + `tests_to_run`). Pass `backup: true` for risky
   deploys (pre-deploy snapshot → rollback). These options do not rewrite the saved config.
 - `empty_selection` means nothing is saved yet: browse, add components, inspect, then retry.
-  `deployment_not_ready` means archive selection is still populating: wait for creation status.
+  `deployment_not_ready` means archive selection is still populating: wait until `get_deployment` reports `ready`.
   Other rejects and recovery steps are covered by the `mtdt-troubleshoot` skill.
 - Wait with `await_deploy_status(deployment_id)` — one call blocks up to ~50s server-side and
   returns the moment the run is terminal; **while it returns `timed_out: true`, call it again**.
