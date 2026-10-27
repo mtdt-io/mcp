@@ -16,13 +16,13 @@ failed" — the metadata is on the target. Read the failure **category** before 
 ## Component failures vs test failures vs coverage
 
 - **Component failures** (compile/metadata errors): the target is missing something the component
-  references. Run `run_impact_analysis` on the same selection — the missing dependency is usually
+  references. Run `check_deployment` with `checks: ["dependencies"]` — the missing dependency is usually
   in its findings; retrieve it with `browse_metadata`, save it with `update_deployment` (`add_components`),
   then call `validate_deployment` by `deployment_id`.
 - **Test failures**: a named Apex test asserted/threw. Read the failure message first — some orgs
   contain intentionally-failing demo/canary tests; if an unrelated pre-existing test fails under
   `test_option: "local"`, switch to `"specific"` with the tests that actually cover your
-  components (`recommend_tests`).
+  components (`check_deployment` with `checks: ["tests"]`).
 - **`codeCoverageWarning` with zero failed tests**: the run "failed" purely on the 75% coverage
   rule — the deployed class has no covering test in the run. Fix: include the test class in the
   saved selection with `update_deployment` (`add_components`) and run it (`test_option: "specific"`,
@@ -143,7 +143,7 @@ concurrent edits are not detected or rejected.
 
 ## The failure a preflight would have named
 
-Before re-validating blind, run `preflight_deployment` with just `deployment_id` to check the saved
+Before re-validating blind, run `check_deployment` with just `deployment_id` to check the saved
 composition — several classic failures show up there with the fix attached: a scheduled Apex (cron) job on a class you are
 overwriting (Salesforce refuses the overwrite until the job is aborted), an Entitlement Process
 whose Business Hours is missing on the target (deploys "Successfully" and silently drops the
