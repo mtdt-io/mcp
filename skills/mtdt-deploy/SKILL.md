@@ -1,6 +1,6 @@
 ---
 name: mtdt-deploy
-description: Promote Salesforce metadata between orgs with mtdt.io. Use when the user asks to deploy, promote, or push Salesforce metadata (Apex classes, flows, fields, objects, permission sets, ...) from one org to another (dev → QA, QA → staging, staging → production), or to validate such a deployment. Also use for creating and editing Work Items, archiving/restoring cards, creating linked deployments, and reading project environments, groups and delivery status. Covers the full workflow — create deployment, save its component selection, pre-flight checks, preview actions, validate by ID, quick-deploy.
+description: Promote Salesforce metadata between orgs with mtdt.io. Use when the user asks to deploy, promote, or push Salesforce metadata (Apex classes, flows, fields, objects, permission sets, ...) from one org to another (dev → QA, QA → staging, staging → production), or to validate such a deployment. Also use for creating and editing Work Items, archiving/restoring cards, creating linked deployments, linking/unlinking existing deployments, and reading project environments, groups and delivery status. Covers the full workflow — create deployment, save its component selection, pre-flight checks, preview actions, validate by ID, quick-deploy.
 ---
 
 # Deploying Salesforce metadata with mtdt
@@ -8,6 +8,22 @@ description: Promote Salesforce metadata between orgs with mtdt.io. Use when the
 You have the `mtdt` MCP server connected. It promotes metadata between the Salesforce orgs
 connected to the user's mtdt.io team. Follow this workflow; do not skip pre-flights on shared or
 production targets.
+
+## Work Items, deployments and runs
+
+| Entity | Purpose | ID used by MCP |
+|---|---|---|
+| Work Item | A project change: a manual card or a tracker ticket. Tracks its delivery along the environment chain. | `work_item_id` (UUID), with explicit `project_id` |
+| Deployment | A reusable source→target draft containing saved components, overrides, deletions and execution settings. | `deployment_id` (number); `create_deployment` returns `deploymentId`, and the low-level run tool calls its input `deploy_id` |
+| Run | One attempt to validate or deploy a snapshot of the saved draft. The same deployment can have many runs and outcomes. | Launch returns `task_id` for asynchronous execution; poll deployment status using the deployment ID, never substitute the task ID |
+
+A card can link to several deployments, and a deployment can serve several cards. These
+associations let recorded runs contribute to delivery status; sharing a deployment does not
+create a group. A group has a separate master and shared group deployment.
+
+Creating a draft, editing its composition or changing a card association does not start a run.
+Save and inspect the composition, preview the run, then validate/deploy by deployment ID.
+A validation checks the package; it is not delivery. Unlinking does not undo changes in Salesforce.
 
 ## Read projects and Work Items
 
@@ -64,10 +80,35 @@ If a project/item is not found, check the explicit IDs and access; do not switch
   org, repo or backup. The environment chain does not replace the requested source.
 - If creation returns `work_item_link_failed`, the returned `deploymentId` already exists.
   `linked_work_item_ids` are confirmed; `unconfirmed_work_item_ids` need inspection (a network error
-  may hide a committed link). Do not repeat creation. Inspect that deployment and complete or
-  correct the links in the UI.
-- MCP does not yet expose standalone linking/unlinking of existing deployments, promotion preview/
-  draft creation or group editing. Use the UI for these operations.
+  may hide a committed link). Do not repeat creation. Inspect that deployment and the cards first;
+  use `link_work_item_deployment` for intended missing associations, or correct them in the UI.
+- MCP does not yet expose promotion preview/draft creation or group editing. Use the UI for
+  these operations.
+
+## Link or unlink an existing deployment
+
+Use `list_deployments` to find the existing draft and `get_work_item` to inspect the card and its
+current links. Both tools below require all three IDs; the server handles the product RPC's link snapshot.
+
+```json
+{"project_id":"<project-uuid>","work_item_id":"<item-uuid>","deployment_id":42}
+```
+
+- `link_work_item_deployment` attaches that deployment to an open card. Restore an archived card
+  explicitly first. The deployment must be visible in the same team; an org comparison is not a
+  deployment. A group assembly belongs to its master, so an invalid attachment returns
+  `group_operation_required`.
+- `unlink_work_item_deployment` removes only that card's association; it also works on archived
+  cards. It does not delete the deployment, change its saved config, cancel a run or roll back
+  Salesforce. A locked group returns `group_operation_required`; use **Unlink deployment from
+  group** in MTDT UI. Do not detach members or unlock a group as an automatic fallback.
+- Both return `linked` and `changed`; repeating the same operation is a no-op (`changed:false`).
+  `work_item_links_changed` means refresh the card/deployment links and confirm the intended
+  operation again, without blind retry. `work_item_link_superseded` means the historical carrier
+  was replaced; inspect the current deployment instead of reattaching that carrier.
+- Inspect `get_work_item` after either operation. Linking a deployment that already has successful
+  runs can immediately change the card's displayed delivery state; unlinking removes that link's
+  contribution. Neither call deploys metadata or creates a group.
 
 ## 1. Resolve the target (and source)
 

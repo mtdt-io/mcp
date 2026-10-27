@@ -1,7 +1,7 @@
 {
   "evidence": {
     "kind": "local-source",
-    "observedAt": "2026-10-27T12:28:31.171118Z",
+    "observedAt": "2026-10-27T13:22:05.431325Z",
     "source": "mtdt-backend/mcp/src/mcp/definitions.ts",
     "live": false
   },
@@ -170,6 +170,86 @@
         "title": "Restore Work Item",
         "readOnlyHint": false,
         "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "link_work_item_deployment",
+      "title": "Link Work Item Deployment",
+      "description": "Attach an existing deployment to an open Work Item. Pass project_id, work_item_id and deployment_id explicitly. Same-team visibility and user edit permission apply. Uses the product link RPC and preserves group rules; an assembled group deployment belongs to its master. Returns linked=true and changed (false if already linked). Does not change saved config, create a run or deploy metadata. Inspect get_work_item afterward: attaching a deployment with successful past runs can change the displayed delivery state. work_item_links_changed requires refreshing and confirming again, not blind retry; work_item_link_superseded preserves the historical carrier.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "project_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "work_item_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "deployment_id": {
+            "type": "integer",
+            "exclusiveMinimum": true,
+            "minimum": 0
+          }
+        },
+        "required": [
+          "project_id",
+          "work_item_id",
+          "deployment_id"
+        ],
+        "additionalProperties": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "additionalProperties": {}
+      },
+      "annotations": {
+        "title": "Link Work Item Deployment",
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "unlink_work_item_deployment",
+      "title": "Unlink Work Item Deployment",
+      "description": "Remove the association between a Work Item and an existing deployment. Pass project_id, work_item_id and deployment_id explicitly. Returns linked=false and changed (false if already absent). Does not delete the deployment, cancel a run or roll back Salesforce; its runs stop contributing through this link to the card delivery state. A locked group returns group_operation_required: use the explicit group operation in the MTDT UI; never automatically unlock or detach group members. work_item_links_changed requires refreshing and confirming again, not blind retry.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "project_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "work_item_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "deployment_id": {
+            "type": "integer",
+            "exclusiveMinimum": true,
+            "minimum": 0
+          }
+        },
+        "required": [
+          "project_id",
+          "work_item_id",
+          "deployment_id"
+        ],
+        "additionalProperties": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "additionalProperties": {}
+      },
+      "annotations": {
+        "title": "Unlink Work Item Deployment",
+        "readOnlyHint": false,
+        "destructiveHint": true,
         "idempotentHint": true,
         "openWorldHint": false
       }

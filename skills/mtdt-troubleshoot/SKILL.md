@@ -147,10 +147,16 @@ web UI where full logs live.
 - `tracker_fields_readonly`: detach the ticket with `update_work_item` and `unlink_ticket:true`
   alone, then edit, or use `force:true` for an intentional user-requested override. Detaching
   retains the text; it does not unlink deployments.
-- `group_operation_required`: leave the active group explicitly in the UI before archiving.
+- `group_operation_required`: leave the active group explicitly in the UI before archiving. For
+  a locked group deployment, use **Unlink deployment from group** in MTDT UI; ordinary
+  `unlink_work_item_deployment` never unlocks the group. An assembled deployment belongs to its master.
   Do not detach deployments or unlock a group automatically.
+- `work_item_links_changed`: inspect current links with `get_work_item` and review the intended
+  operation again; do not retry blindly. `work_item_link_superseded` means the historical carrier
+  was replaced and cannot be reattached; inspect its replacement deployment.
 - `ticket_project_mismatch`: the ticket already has a card in another project; use the returned
   project/item IDs explicitly. Do not create a duplicate or move it silently.
 - `work_item_link_failed`: keep the returned deployment ID. It was created; only the listed
-  `linked_work_item_ids` are confirmed. Inspect `unconfirmed_work_item_ids` and finish linking in
-  the UI. Repeating `create_deployment` creates another draft.
+  `linked_work_item_ids` are confirmed. Inspect `unconfirmed_work_item_ids` and current links
+  before using `link_work_item_deployment` for intended missing associations, or finish in the UI.
+  Repeating `create_deployment` creates another draft.

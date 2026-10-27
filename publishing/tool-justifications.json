@@ -1,6 +1,6 @@
 {
   "purpose": "Draft justifications to enter beside each scanned tool in OpenAI review. Values describe the declared local inventory; compare with live tools/list and observed behavior before submission. These do not override server annotations.",
-  "source": "mtdt-backend/mcp/src/mcp/definitions.ts; local-source inventory observed 2026-10-27T12:28:31.171118Z",
+  "source": "mtdt-backend/mcp/src/mcp/definitions.ts; local-source inventory observed 2026-10-27T13:22:05.431325Z",
   "tools": {
     "list_orgs": {"readOnlyHint": "Lists authorized org records without changing them.", "destructiveHint": "No org, metadata or record is removed or overwritten.", "openWorldHint": "Lists MTDT's stored org connection records; it does not request an arbitrary external destination."},
     "resolve_target": {"readOnlyHint": "Ranks accessible org connection records for a query.", "destructiveHint": "Target lookup does not change the target.", "openWorldHint": "Matches MTDT's stored org labels and connection information."},
@@ -41,6 +41,8 @@
     "create_work_item": {"readOnlyHint": "False: inserts an open Work Item; ticket import returns an existing card without rewriting it.", "destructiveHint": "False: creation does not overwrite existing cards or delete data.", "openWorldHint": "True: ticket import reads the connected tracker; product lifecycle notifications can be queued."},
     "update_work_item": {"readOnlyHint": "False: changes card text or explicitly removes a tracker reference.", "destructiveHint": "True: may overwrite text or remove the ticket association.", "openWorldHint": "False: changes MTDT card data; it does not write to the external tracker."},
     "archive_work_item": {"readOnlyHint": "False: archives an existing card.", "destructiveHint": "True: removes it from the default active list without deleting history or links.", "openWorldHint": "False: changes the stored MTDT status; normal lifecycle notifications remain product side effects."},
-    "unarchive_work_item": {"readOnlyHint": "False: restores an archived card to open.", "destructiveHint": "False: restores visibility without deleting or overwriting card history.", "openWorldHint": "False: updates only the MTDT status."}
+    "unarchive_work_item": {"readOnlyHint": "False: restores an archived card to open.", "destructiveHint": "False: restores visibility without deleting or overwriting card history.", "openWorldHint": "False: updates only the MTDT status."},
+    "link_work_item_deployment": {"readOnlyHint": "False: creates one association between an existing open Work Item and a visible same-team deployment using the user-scoped product RPC.", "destructiveHint": "True: changes MTDT associations and can change the displayed delivery state when prior runs exist; it does not edit configuration or deploy Salesforce metadata.", "openWorldHint": "False: changes the stored MTDT association only, without starting a run or contacting Salesforce."},
+    "unlink_work_item_deployment": {"readOnlyHint": "False: removes one stored Work Item/deployment association, including for an archived card. Repeats are no-ops.", "destructiveHint": "True: removes an association and its contribution to the card delivery state. It does not delete the deployment, cancel a run, roll back Salesforce or automatically unlock a group.", "openWorldHint": "False: changes a stored MTDT association through the product RPC, without an external Salesforce operation."}
   }
 }

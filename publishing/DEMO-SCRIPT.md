@@ -32,3 +32,14 @@ starting them; a successful validation with tests precedes quick-deploy.”
 
 No recording is fabricated or represented as completed by packaging. Supply its real URL in
 the OpenAI Review details form or pass it to the build's `--demo-url` option.
+
+## Work Item association with an existing draft
+
+In a prepared sandbox project, explain: a Work Item tracks a change, a deployment holds the saved
+source→target composition, and each validation/deployment run executes one snapshot. Discover the
+project explicitly, inspect the card with `get_work_item`, and select the existing draft from
+`list_deployments`. Call `link_work_item_deployment` with project/item/deployment IDs, inspect the
+card, unlink with `unlink_work_item_deployment`, then relink. Repeated identical calls should
+return `changed:false`. Show that the draft and saved composition remain intact and no run starts.
+For a locked group, show `group_operation_required` and direct the user to the explicit group UI
+action; do not automatically unlock or detach members.

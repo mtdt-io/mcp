@@ -34,7 +34,7 @@
   "extensions": {
     "com.openai": {
       "publication": {
-        "release_notes": "Adds explicit-project Work Item create/update/archive/restore and one-call deployment creation with Work Item links. Keeps shared delivery reads and the saved-composition preview/validate/deploy flow. Refreshes the 40-tool local inventory and reviewer cases; hosted rollout must be verified separately."
+        "release_notes": "Adds existing-deployment link/unlink for Work Items through user-scoped product RPC, preserving group restrictions and audit. Explains Work Items, reusable deployment drafts and individual runs in the supplied skill. Refreshes the 42-tool local inventory and reviewer examples; verify hosted rollout separately."
       }
     }
   }
