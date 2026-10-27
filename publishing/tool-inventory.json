@@ -1,12 +1,179 @@
 {
   "evidence": {
     "kind": "local-source",
-    "observedAt": "2026-10-27T11:09:54.740808Z",
+    "observedAt": "2026-10-27T12:28:31.171118Z",
     "source": "mtdt-backend/mcp/src/mcp/definitions.ts",
-    "sourceSha256": "268a5d54497ce60b7e2a8fbe564a8bcf4e96c0ed2867ff252edaf0417d1bb8a3",
     "live": false
   },
   "tools": [
+    {
+      "name": "create_work_item",
+      "title": "Create Work Item",
+      "description": "Create an open Work Item in explicit project_id. For manual work provide caption and optional description; for a tracker ticket provide provider and external_id (ticket ID, key or supported URL), and the server reads the tracker text. Requires at least two project environments only when inserting. An existing ticket returns created=false without overwriting text/status/project; a ticket in another project returns ticket_project_mismatch. Manual creation is not idempotent: inspect list_work_items after an uncertain response before repeating.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "project_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "caption": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "provider": {
+            "type": "string",
+            "enum": [
+              "jira",
+              "clickup",
+              "asana",
+              "azure_devops"
+            ]
+          },
+          "external_id": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "project_id"
+        ],
+        "additionalProperties": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "additionalProperties": {}
+      },
+      "annotations": {
+        "title": "Create Work Item",
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": true
+      }
+    },
+    {
+      "name": "update_work_item",
+      "title": "Update Work Item",
+      "description": "Update caption and/or description of a Work Item in explicit project_id; send only changed fields. Uses the product update RPC with force=false by default. Ticket-linked text returns tracker_fields_readonly; unlink_ticket=true alone clears the ticket reference and retains the text, then edit in another call. force=true is an explicit override and does not grant permissions. Does not archive, move projects or change group/deployment links.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "project_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "work_item_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "caption": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "unlink_ticket": {
+            "type": "boolean"
+          },
+          "force": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "project_id",
+          "work_item_id"
+        ],
+        "additionalProperties": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "additionalProperties": {}
+      },
+      "annotations": {
+        "title": "Update Work Item",
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "archive_work_item",
+      "title": "Archive Work Item",
+      "description": "Archive a Work Item in explicit project_id. Already archived is a no-op. Active group membership returns group_operation_required: leave the group explicitly in the UI first. Does not delete the card or detach deployments. Restore with unarchive_work_item.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "project_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "work_item_id": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "project_id",
+          "work_item_id"
+        ],
+        "additionalProperties": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "additionalProperties": {}
+      },
+      "annotations": {
+        "title": "Archive Work Item",
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "unarchive_work_item",
+      "title": "Restore Work Item",
+      "description": "Explicitly restore an archived Work Item in project_id to open. Already open is a no-op. Does not create a deployment or run and does not require project readiness for the existing card.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "project_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "work_item_id": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "project_id",
+          "work_item_id"
+        ],
+        "additionalProperties": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "additionalProperties": {}
+      },
+      "annotations": {
+        "title": "Restore Work Item",
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
     {
       "name": "list_projects",
       "title": "List Projects",
@@ -356,13 +523,27 @@
     {
       "name": "create_deployment",
       "title": "Create Deployment",
-      "description": "Create a deployment between source and target. Source can be an org, repo, metadata backup, or archive. Exactly one of from_org_id, from_repo_id, from_backup_id, or from_archive_id must be specified. Target must be an org. An archive source is unpacked in the background and ALL its components get selected: wait with check_deployment_creation_status until \"done\", then preflight_deployment / recommend_tests / validate_deployment by deployment_id. Optionally pass caption (short title) and description (release note — its plain text becomes the git commit message on a push-to-git deploy and is appended to approval requests); the description can be changed later with set_deployment_description. A backup source must be a FINISHED backup that has an archive — otherwise it returns { error:\"backup_not_usable\", reason } and creates NO deployment.",
+      "description": "Create a deployment between source and target. Optionally pass project_id plus work_item_ids to attach existing open cards in the same call. A late link failure returns error=work_item_link_failed with deploymentId and confirmed/unconfirmed IDs: the deployment EXISTS, so inspect it and finish linking in the UI; do not repeat creation. Source can be an org, repo, metadata backup, or archive. Exactly one of from_org_id, from_repo_id, from_backup_id, or from_archive_id must be specified. Target must be an org. An archive source is unpacked in the background and ALL its components get selected: wait with check_deployment_creation_status until \"done\", then preflight_deployment / recommend_tests / validate_deployment by deployment_id. Optionally pass caption (short title) and description (release note — its plain text becomes the git commit message on a push-to-git deploy and is appended to approval requests); the description can be changed later with set_deployment_description. A backup source must be a FINISHED backup that has an archive — otherwise it returns { error:\"backup_not_usable\", reason } and creates NO deployment.",
       "inputSchema": {
         "type": "object",
         "properties": {
           "team_id": {
             "type": "string",
             "description": "Team ID."
+          },
+          "project_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Required together with work_item_ids. All cards must belong to this project and team."
+          },
+          "work_item_ids": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "minItems": 1,
+            "description": "Work Items to attach during creation; omit to create an independent deployment."
           },
           "from_org_id": {
             "type": "string",
@@ -404,11 +585,27 @@
         "properties": {
           "deploymentId": {
             "type": "number",
-            "description": "Success: the new deployment id."
+            "description": "The created deployment id, including a partial link failure. Never repeat creation when this ID is present."
           },
           "error": {
             "type": "string",
-            "description": "Set to \"backup_not_usable\" when from_backup_id names a backup that cannot be a source; NO deployment is created."
+            "description": "A business refusal, or work_item_link_failed after creation. backup_not_usable and Work Item preflight refusals create no deployment."
+          },
+          "linked_work_item_ids": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Work Item links confirmed by the server."
+          },
+          "unconfirmed_work_item_ids": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Links requiring inspection after a late failure; a network error can hide a committed link."
           },
           "message": {
             "type": "string"

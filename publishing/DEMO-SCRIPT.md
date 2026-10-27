@@ -20,7 +20,10 @@ verify that access works without your own browser session.
 6. Demonstrate all three negative cases: View-only consent, an unspecified production target
    and destructive selection, and inaccessible cross-team data. Show that no unintended run,
    deletion or data disclosure occurred.
-7. Finish by showing where users find setup documentation, support, privacy and terms.
+7. In the configured isolated review project, create Review Card, update its description, archive
+   and restore it, then create Review Card Deployment with project_id/work_item_ids in the same
+   call. Show the card delivery response and deployment link, stopping before a run.
+8. Finish by showing where users find setup documentation, support, privacy and terms.
 
 Suggested narration: “mtdt.io connects the agent to Salesforce DevOps actions already available
 to this MTDT team. Scope consent and team permissions apply to every operation. Preflight

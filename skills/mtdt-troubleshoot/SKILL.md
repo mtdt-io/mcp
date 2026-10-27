@@ -139,3 +139,18 @@ Salesforce Setup if it persists.
 When the cause is genuinely unclear, gather `get_deploy_status` output plus the run's component
 and test failure lists, summarize them for the user, and suggest inspecting the run in the mtdt
 web UI where full logs live.
+
+## Work Items
+
+- `project_setup_required`: configure two environments before inserting a new card. It does not
+  block operations on an existing card. Always supply the intended project ID.
+- `tracker_fields_readonly`: detach the ticket with `update_work_item` and `unlink_ticket:true`
+  alone, then edit, or use `force:true` for an intentional user-requested override. Detaching
+  retains the text; it does not unlink deployments.
+- `group_operation_required`: leave the active group explicitly in the UI before archiving.
+  Do not detach deployments or unlock a group automatically.
+- `ticket_project_mismatch`: the ticket already has a card in another project; use the returned
+  project/item IDs explicitly. Do not create a duplicate or move it silently.
+- `work_item_link_failed`: keep the returned deployment ID. It was created; only the listed
+  `linked_work_item_ids` are confirmed. Inspect `unconfirmed_work_item_ids` and finish linking in
+  the UI. Repeating `create_deployment` creates another draft.

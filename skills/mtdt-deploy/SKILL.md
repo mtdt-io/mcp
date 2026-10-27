@@ -1,6 +1,6 @@
 ---
 name: mtdt-deploy
-description: Promote Salesforce metadata between orgs with mtdt.io. Use when the user asks to deploy, promote, or push Salesforce metadata (Apex classes, flows, fields, objects, permission sets, ...) from one org to another (dev → QA, QA → staging, staging → production), or to validate such a deployment. Also use for reading Work Items, project environments, groups and delivery status. Covers the full workflow — create deployment, save its component selection, pre-flight checks, preview actions, validate by ID, quick-deploy.
+description: Promote Salesforce metadata between orgs with mtdt.io. Use when the user asks to deploy, promote, or push Salesforce metadata (Apex classes, flows, fields, objects, permission sets, ...) from one org to another (dev → QA, QA → staging, staging → production), or to validate such a deployment. Also use for creating and editing Work Items, archiving/restoring cards, creating linked deployments, and reading project environments, groups and delivery status. Covers the full workflow — create deployment, save its component selection, pre-flight checks, preview actions, validate by ID, quick-deploy.
 ---
 
 # Deploying Salesforce metadata with mtdt
@@ -37,9 +37,37 @@ For a group participant, its own `delivery` and the master's `group_delivery` ar
 and deployment ID come from the active group context. Do not describe the master's deployment as
 an independent deployment of each participant.
 
-These Work Item tools only read data. Creation, edits, archiving, linking and promotion of Work
-Items are not exposed through MCP yet. If a project/item is not found, check the explicit IDs and
-access; do not switch projects automatically.
+If a project/item is not found, check the explicit IDs and access; do not switch projects automatically.
+
+## Create and maintain Work Items
+
+- Create manual work with `create_work_item({"project_id":"<project-uuid>","caption":"Billing change","description":"Optional context"})`.
+  For a tracker ticket use `provider` (`jira`, `clickup`, `asana`, `azure_devops`) and `external_id`
+  instead of caption/description. The server reads the ticket's text. Existing tickets return
+  `created:false` without rewriting the card, reopening it or moving projects. A ticket in another
+  project returns `ticket_project_mismatch`; use that project explicitly.
+- Only creation needs two configured environments (`project_setup_required`). Existing-card edits,
+  restore and deployment links remain available when a project's chain is incomplete.
+- `update_work_item` requires project and item IDs and accepts only changed `caption`/`description`;
+  `description:null` clears the description. Ticket-linked text rejects with `tracker_fields_readonly`.
+  To detach the ticket, send `unlink_ticket:true` alone, then edit in a separate call. The current
+  text is retained. Use `force:true` only when the user deliberately requests an override; it does
+  not grant permissions, and a later tracker sync can replace the text.
+- `archive_work_item` and `unarchive_work_item` are separate status actions. Repeating the same
+  status is a no-op; archiving neither deletes the card nor detaches deployments. An active group
+  returns `group_operation_required`: leave the group explicitly in the UI first.
+- Manual creation is not idempotent. After an uncertain response, inspect `list_work_items` before
+  repeating it. Mutation tools require Run (`mtdt:deploy`) consent and the user's edit permission.
+- To create a deployment for existing cards, pass both `project_id` and `work_item_ids` to
+  `create_deployment` alongside its normal source/target. All cards must be open and in that project
+  and team. Creation and linking happen in one MCP call; the chosen source can still be local files,
+  org, repo or backup. The environment chain does not replace the requested source.
+- If creation returns `work_item_link_failed`, the returned `deploymentId` already exists.
+  `linked_work_item_ids` are confirmed; `unconfirmed_work_item_ids` need inspection (a network error
+  may hide a committed link). Do not repeat creation. Inspect that deployment and complete or
+  correct the links in the UI.
+- MCP does not yet expose standalone linking/unlinking of existing deployments, promotion preview/
+  draft creation or group editing. Use the UI for these operations.
 
 ## 1. Resolve the target (and source)
 
@@ -58,7 +86,8 @@ access; do not switch projects automatically.
   duplicate. Read `get_deployment_components(deployment_id)` before editing a resumed draft: its
   saved composition may already contain components, deletions or overrides configured in the UI.
 - `create_deployment` with exactly one source (`from_org_id` / `from_repo_id` /
-  `from_backup_id` / `from_archive_id`) and `to_org_id`. It returns the `deploymentId` used below.
+  `from_backup_id` / `from_archive_id`) and `to_org_id`. For Work Items include `project_id` and
+  `work_item_ids` in this call. It returns the `deploymentId` used below; check for an error first.
   Pass `caption` (short title) and, when you know what you are shipping, `description` — on a
   push-to-git deploy it becomes the git commit message (`set_deployment_description` can change
   it later). A backup source must be **usable** — finished, with its archive present: otherwise

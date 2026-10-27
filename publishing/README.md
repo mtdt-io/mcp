@@ -36,9 +36,10 @@ review evidence and directory prerequisites separately from package validity; us
 Use `--tools-json /path/to/export.json` to inspect a fresh tools/list export. That option does
 not turn a local inventory into proof that every tool was exercised.
 
-The maintained inventory contains 36 tools from the local server source and is marked
+The maintained inventory contains 40 tools from the local server source and is marked
 `live: false`. It includes saved composition get/add/remove, the read-only run preview, and
-project/environment/Work Item reads with explicit project IDs.
+project/environment/Work Item reads with explicit project IDs, card create/update/archive/restore,
+and deployment creation with Work Item links.
 The review cases follow browse → save → inspect → preflight → preview → launch by ID;
 launch tools no longer accept inline composition or Flow activation arguments. After rolling
 out the matching MCP build, compare a fresh live tools/list before submission. The versioned
@@ -50,7 +51,7 @@ Open [Plugins](https://platform.openai.com/plugins) with the owning OpenAI organ
 project. The submitter needs the appropriate management role and verified publishing identity.
 Upload the generated `mtdt-openai-<version>.zip` with MCP included in the initial package.
 
-Use the imported listing, five positive and three negative cases and release notes. Confirm
+Use the imported listing, the positive and negative cases and release notes. Confirm
 the category and publisher shown by the portal. Connect the MCP via OAuth, perform the
 portal's domain-ownership challenge, inspect package/tool checks, and resolve required issues.
 Use `tool-justifications.json` for draft explanations of each tool's annotations, comparing
