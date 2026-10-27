@@ -36,8 +36,9 @@ review evidence and directory prerequisites separately from package validity; us
 Use `--tools-json /path/to/export.json` to inspect a fresh tools/list export. That option does
 not turn a local inventory into proof that every tool was exercised.
 
-The maintained inventory contains 32 tools from the local server source and is marked
-`live: false`. It includes saved composition get/add/remove and the read-only run preview.
+The maintained inventory contains 36 tools from the local server source and is marked
+`live: false`. It includes saved composition get/add/remove, the read-only run preview, and
+project/environment/Work Item reads with explicit project IDs.
 The review cases follow browse → save → inspect → preflight → preview → launch by ID;
 launch tools no longer accept inline composition or Flow activation arguments. After rolling
 out the matching MCP build, compare a fresh live tools/list before submission. The versioned

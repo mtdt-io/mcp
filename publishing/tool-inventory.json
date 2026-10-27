@@ -1,12 +1,138 @@
 {
   "evidence": {
     "kind": "local-source",
-    "observedAt": "2026-10-27T09:30:14.409920Z",
+    "observedAt": "2026-10-27T11:09:54.740808Z",
     "source": "mtdt-backend/mcp/src/mcp/definitions.ts",
-    "sourceSha256": "8bacc24d57febd7cb65157c4ffcda83a5c76ee7cb43a9b56336f988b93533591",
+    "sourceSha256": "268a5d54497ce60b7e2a8fbe564a8bcf4e96c0ed2867ff252edaf0417d1bb8a3",
     "live": false
   },
   "tools": [
+    {
+      "name": "list_projects",
+      "title": "List Projects",
+      "description": "List every project visible to the current user, optionally within team_id. Returns project id, team_id, caption and description. Discover project_id here and pass it explicitly to all project tools, even when only one project exists. Does not select or remember a current project.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "team_id": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "additionalProperties": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "additionalProperties": {}
+      },
+      "annotations": {
+        "title": "List Projects",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "list_project_environments",
+      "title": "List Project Environments",
+      "description": "Read a project and its complete environment chain ordered by position, including org IDs, names and kinds. project_id is required. work_items_ready means at least two environments are configured; reads of existing Work Items remain available in unconfigured projects.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "project_id": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "project_id"
+        ],
+        "additionalProperties": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "additionalProperties": {}
+      },
+      "annotations": {
+        "title": "List Project Environments",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "list_work_items",
+      "title": "List Work Items",
+      "description": "List ALL non-archived Work Items of the explicitly supplied project_id, without a hidden result limit. Set status=archived or all to include archived items. Includes active group/master context and computed delivery: reached/current/next environments, validation, rollback markers, drafts/runs, Done and linked deployment summaries. Uses the same rules as the UI. group_delivery separately describes a member master; own delivery does not silently inherit master history. Readiness is advisory, not promotion approval. Does not create tasks or change data.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "project_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "open",
+              "archived",
+              "all"
+            ]
+          }
+        },
+        "required": [
+          "project_id"
+        ],
+        "additionalProperties": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "additionalProperties": {}
+      },
+      "annotations": {
+        "title": "List Work Items",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "get_work_item",
+      "title": "Get Work Item",
+      "description": "Read one Work Item within an explicitly supplied project_id, including text, tracker reference, active group/master context and computed delivery plus linked deployment summaries. work_item_id alone does not infer the project. Archived items are readable; deleted or inaccessible items are not found. Validation is not delivery; rollback retains the UI historical presence marker. current_environment may be the first working environment even when reached_environment is null. group_delivery separately describes the master history, when applicable. Does not mutate data.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "project_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "work_item_id": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "project_id",
+          "work_item_id"
+        ],
+        "additionalProperties": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "additionalProperties": {}
+      },
+      "annotations": {
+        "title": "Get Work Item",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
     {
       "name": "list_orgs",
       "title": "List Salesforce Orgs",
@@ -97,7 +223,7 @@
     {
       "name": "list_deployments",
       "title": "List Deployments",
-      "description": "START HERE for any deployment you did not create in this conversation — this is the only way to get a deployment_id without creating a new deployment. Lists the team's deployments newest-first with source (org / git repo / metadata backup / metadata set, each labelled), target (label + org_type + is_important so you can tell a production target apart), and the LATEST run's status (status, is_terminal, is_success, is_validation, is_rollback). `has_description` tells you whether the deployment already has a release note (the text itself is not listed — it can be kilobytes of HTML); set or replace it with set_deployment_description. Each row carries owner.id + owner.is_you so you can tell your own work from a teammate's (owner.label is only filled for your own deploys — other users' display names are not readable under row-level security). Use it to answer \"did yesterday's release land?\", \"what went to this org recently?\", or to resume work after losing context; filter with org_id (+ org_role=\"target\" for deployments INTO an org) and created_since/created_until. Org-comparison objects are excluded by default.",
+      "description": "Find an existing deployment without creating one. For deployments linked to a Work Item, list_work_items/get_work_item also return deployment IDs. Lists the team's deployments newest-first with source (org / git repo / metadata backup / metadata set, each labelled), target (label + org_type + is_important so you can tell a production target apart), and the LATEST run's status (status, is_terminal, is_success, is_validation, is_rollback). `has_description` tells you whether the deployment already has a release note (the text itself is not listed — it can be kilobytes of HTML); set or replace it with set_deployment_description. Each row carries owner.id + owner.is_you so you can tell your own work from a teammate's (owner.label is only filled for your own deploys — other users' display names are not readable under row-level security). Use it to answer \"did yesterday's release land?\", \"what went to this org recently?\", or to resume work after losing context; filter with org_id (+ org_role=\"target\" for deployments INTO an org) and created_since/created_until. Org-comparison objects are excluded by default.",
       "inputSchema": {
         "type": "object",
         "properties": {

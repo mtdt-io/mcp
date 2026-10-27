@@ -34,7 +34,7 @@
   "extensions": {
     "com.openai": {
       "publication": {
-        "release_notes": "Updates the saved-composition deployment workflow: add/remove and inspect components, preview inherited execution actions, then validate or deploy by ID. Preserves manual overrides created in MTDT and refreshes the 32-tool inventory and reviewer cases."
+        "release_notes": "Updates the saved-composition deployment workflow: add/remove and inspect components, preview inherited execution actions, then validate or deploy by ID. Preserves manual overrides created in MTDT and adds project-scoped Work Item reads and refreshes the 36-tool inventory and reviewer cases."
       }
     }
   }

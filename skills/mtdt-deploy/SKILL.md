@@ -1,6 +1,6 @@
 ---
 name: mtdt-deploy
-description: Promote Salesforce metadata between orgs with mtdt.io. Use when the user asks to deploy, promote, or push Salesforce metadata (Apex classes, flows, fields, objects, permission sets, ...) from one org to another (dev → QA, QA → staging, staging → production), or to validate such a deployment. Covers the full workflow — create deployment, save its component selection, pre-flight checks, preview actions, validate by ID, quick-deploy.
+description: Promote Salesforce metadata between orgs with mtdt.io. Use when the user asks to deploy, promote, or push Salesforce metadata (Apex classes, flows, fields, objects, permission sets, ...) from one org to another (dev → QA, QA → staging, staging → production), or to validate such a deployment. Also use for reading Work Items, project environments, groups and delivery status. Covers the full workflow — create deployment, save its component selection, pre-flight checks, preview actions, validate by ID, quick-deploy.
 ---
 
 # Deploying Salesforce metadata with mtdt
@@ -8,6 +8,38 @@ description: Promote Salesforce metadata between orgs with mtdt.io. Use when the
 You have the `mtdt` MCP server connected. It promotes metadata between the Salesforce orgs
 connected to the user's mtdt.io team. Follow this workflow; do not skip pre-flights on shared or
 production targets.
+
+## Read projects and Work Items
+
+For status questions, use this read-only route without creating or running a deployment:
+
+1. `list_projects({"team_id":"<optional-team-uuid>"})` discovers project IDs. Omit `team_id`
+   to read all visible projects. Identify the requested project and pass its ID explicitly on
+   every project-scoped call, even if only one project exists. There is no automatic or saved
+   current project.
+2. `list_project_environments({"project_id":"<project-uuid>"})` returns the ordered environment
+   chain with names, kinds, positions and Salesforce org IDs. `work_items_ready` describes whether
+   at least two environments exist; existing cards can still be read in an unconfigured project.
+3. `list_work_items({"project_id":"<project-uuid>"})` returns every non-archived card in that
+   project, without a hidden limit. Use `status:"archived"` or `status:"all"` explicitly for archives.
+4. `get_work_item({"project_id":"<project-uuid>","work_item_id":"<item-uuid>"})` reads one card,
+   its tracker reference, active group/master context and delivery history. Both IDs are required.
+
+Report `delivery.reached_environment` as confirmed historical delivery. `current_environment`
+may instead be the first working environment when nothing has reached an environment yet.
+`validated_into` is checked, not deployed. Rollback keeps the UI's historical presence and adds a
+`rolledBack` marker; it does not prove that the package survives or can be promoted. `next_environment`
+and `readiness_hint` are informative; they do not authorize promotion. Linked deployments and their
+latest run/validation outcomes appear in `delivery.deployments`.
+
+For a group participant, its own `delivery` and the master's `group_delivery` are separate; use
+`based_on_work_item_id` to identify whose history is being described. Group IDs, master ID, state
+and deployment ID come from the active group context. Do not describe the master's deployment as
+an independent deployment of each participant.
+
+These Work Item tools only read data. Creation, edits, archiving, linking and promotion of Work
+Items are not exposed through MCP yet. If a project/item is not found, check the explicit IDs and
+access; do not switch projects automatically.
 
 ## 1. Resolve the target (and source)
 
