@@ -81,27 +81,30 @@ If a project/item is not found, check the explicit IDs and access; do not switch
 - If creation returns `work_item_link_failed`, the returned `deploymentId` already exists.
   `linked_work_item_ids` are confirmed; `unconfirmed_work_item_ids` need inspection (a network error
   may hide a committed link). Do not repeat creation. Inspect that deployment and the cards first;
-  use `link_work_item_deployment` for intended missing associations, or correct them in the UI.
+  use `update_deployment` `link_work_items` for intended missing associations, or correct them in the UI.
 - Use the UI for editing group membership; promotion of an existing group is supported through
   its master as described below.
 
 ## Link or unlink an existing deployment
 
 Use `list_deployments` to find the existing draft and `get_work_item` to inspect the card and its
-current links. Both tools below require all three IDs; the server handles the product RPC's link snapshot.
+current links. Then call `update_deployment` with Work Item ids of the deployment's team; the
+project comes from each card and the server handles the product RPC's link snapshot.
 
 ```json
-{"project_id":"<project-uuid>","work_item_id":"<item-uuid>","deployment_id":42}
+{"deployment_id":42,"link_work_items":["<item-uuid>"],"unlink_work_items":["<other-item-uuid>"]}
 ```
 
-- `link_work_item_deployment` attaches that deployment to an open card. Restore an archived card
-  explicitly first. The deployment must be visible in the same team; an org comparison is not a
-  deployment. A group assembly belongs to its master, so an invalid attachment returns
-  `group_operation_required`.
-- `unlink_work_item_deployment` removes only that card's association; it also works on archived
-  cards. It does not delete the deployment, change its saved config, cancel a run or roll back
-  Salesforce. A locked group returns `group_operation_required`; use **Unlink deployment from
-  group** in MTDT UI. Do not detach members or unlock a group as an automatic fallback.
+- `link_work_items` attaches the deployment to open cards. Restore an archived card explicitly
+  first (`work_item_archived`). An org comparison is not a deployment. A group assembly belongs to
+  its master, so an invalid attachment fails with `group_operation_required`.
+- `unlink_work_items` removes only those cards' associations; it also works on archived cards. It
+  does not delete the deployment, change its saved config, cancel a run or roll back Salesforce. A
+  locked group fails with `group_operation_required`; use **Unlink deployment from group** in MTDT
+  UI. Do not detach members or unlock a group as an automatic fallback.
+- Links are applied after the rest of the edit is saved. A failed link is listed in
+  `changes.work_items.failed` with its error; everything else in that call is saved, so retry only
+  the failed ids.
 - Both return `linked` and `changed`; repeating the same operation is a no-op (`changed:false`).
   `work_item_links_changed` means refresh the card/deployment links and confirm the intended
   operation again, without blind retry. `work_item_link_superseded` means the historical carrier
@@ -180,7 +183,7 @@ For the initial deployment, use `create_deployment` with the card IDs instead.
   `work_item_ids` in this call. It returns the same card as `get_deployment`, with the
   `deployment_id` used below; check for an error first.
   Pass `caption` (short title) and, when you know what you are shipping, `description` — on a
-  push-to-git deploy it becomes the git commit message (`set_deployment_description` can change
+  push-to-git deploy it becomes the git commit message (`update_deployment` can change
   it later). A backup source must be **usable** — finished, with its archive present: otherwise
   `create_deployment` returns `{ error: "backup_not_usable", reason }` and creates nothing, so pick
   another backup from `list_metadata_backups` (its default view lists only usable ones) or run
@@ -219,15 +222,23 @@ For the initial deployment, use `create_deployment` with the card IDs instead.
   names exist in the org.
 
 Browsing does not change the deployment selection. Save the chosen full components with
-`add_deployment_components` (types can be API names such as `ApexClass` or canonical names such as
-`classes`):
+`update_deployment` `add_components` (types can be API names such as `ApexClass` or canonical names
+such as `classes`). The same call can set the test level, caption, description and Work Item links:
 
 ```json
-{"deployment_id": 42, "items": {"ApexClass": ["FooService", "FooService_Test"]}}
+{"deployment_id": 42, "add_components": {"ApexClass": ["FooService", "FooService_Test"]}, "test_option": "specific", "tests_to_run": ["FooService_Test"]}
 ```
 
-- Repeat adds are no-ops. `remove_deployment_components` takes the same shape and removes the
-  components from the saved selection; it does **not** delete them from Salesforce.
+- Repeat adds are no-ops. `remove_components` takes the same shape and removes the components
+  from the saved selection; it does **not** delete them from Salesforce.
+- `test_option` / `tests_to_run` save the test level used by every later `validate_deployment` /
+  `execute_deployment` that gets no `test_option` — the same setting as the Test Level control in
+  the web app. `"relevant"` clears the saved test list; `"specific"` needs `tests_to_run`.
+- Everything is checked before one save, so a refusal (`nothing_to_change`, `conflicting_changes`,
+  `invalid_test_level`, `permission_denied`, `items_not_retrieved`, …) changes nothing. Component
+  edits need the source ready (`deployment_not_ready`); caption, description, test level and links
+  work while it loads. The answer is the `get_deployment` card plus `changes`; `changed:false`
+  means nothing differed.
 - Saving follows the UI's last-save-wins model; there is no concurrent-edit check.
 - Read `get_deployment(deployment_id)` to confirm the saved composition. Add/remove
   preserve other settings, including saved deletions and overrides. Manual overrides created in
@@ -252,11 +263,12 @@ Browsing does not change the deployment selection. Save the chosen full componen
   `[{ "base_component": "Name" }]`, e.g. `{ "classes": [{ "base_component": "FooService" }] }`:
   - `run_impact_analysis` — finds source-org dependencies of your selection you likely must add
     (e.g. a field's global value set, a record type's picklist fields). Add the findings to your
-    saved selection with `add_deployment_components` or explain to the user why not.
+    saved selection with `update_deployment` (`add_components`) or explain to the user why not.
   - `check_target_conflicts` — detects whether anything you are about to overwrite changed on the
     target since it was retrieved. Surfaces honest `verifiable` vs `not-verifiable` buckets; treat
     a conflict as a stop-and-ask.
-- `recommend_tests` — suggests which Apex tests cover a selection; feed `tests_to_run` into the
+- `recommend_tests` — suggests which Apex tests cover a selection; save its `testsToRun` with
+  `update_deployment` (`test_option: "specific"`, `tests_to_run`) or pass them to a single
   validation as `test_option: "specific"`. By default it assesses the saved selection; only
   legacy deployments without a saved selection fall back to the latest run. Optional `items`
   (`{ "type": ["Name"] }`) assesses a hypothetical selection without saving it. If the saved
@@ -335,7 +347,7 @@ execution settings as the actual launch. For example, a validation with specific
   deletions with the user before launching a draft that contains them.
 - `prepare_deployment_run_selected_items_object` is a legacy name normalizer only. It does not
   save anything, and its output is no longer accepted by run tools. Use
-  `add_deployment_components` to save components instead.
+  `update_deployment` (`add_components`) to save components instead.
 - `get_workflow_deployment_recipe` returns the server's current recommended recipe if you need a
   refresher.
 - `get_task_status(task_id)` is the generic poller for any async task id you get back (backup,
@@ -362,7 +374,7 @@ execution settings as the actual launch. For example, a validation with specific
   the user an approver must act — do not try to bypass.
 - **Coverage:** Salesforce requires ≥75% coverage on the components you deploy. A class with no
   covering test will fail validation with a `codeCoverageWarning` even if it compiles. Save the
-  class **together with its test class** using `add_deployment_components`, then validate and run
+  class **together with its test class** using `update_deployment` (`add_components`), then validate and run
   that test (`test_option: "specific"`).
 - **Rollback safety:** for risky deploys pass `backup: true` on `execute_deployment` — it
   snapshots the target pre-deploy so the run can be rolled back from the mtdt UI (a quick deploy

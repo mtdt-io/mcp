@@ -17,7 +17,7 @@ failed" — the metadata is on the target. Read the failure **category** before 
 
 - **Component failures** (compile/metadata errors): the target is missing something the component
   references. Run `run_impact_analysis` on the same selection — the missing dependency is usually
-  in its findings; retrieve it with `browse_metadata`, save it with `add_deployment_components`,
+  in its findings; retrieve it with `browse_metadata`, save it with `update_deployment` (`add_components`),
   then call `validate_deployment` by `deployment_id`.
 - **Test failures**: a named Apex test asserted/threw. Read the failure message first — some orgs
   contain intentionally-failing demo/canary tests; if an unrelated pre-existing test fails under
@@ -25,7 +25,7 @@ failed" — the metadata is on the target. Read the failure **category** before 
   components (`recommend_tests`).
 - **`codeCoverageWarning` with zero failed tests**: the run "failed" purely on the 75% coverage
   rule — the deployed class has no covering test in the run. Fix: include the test class in the
-  saved selection with `add_deployment_components` and run it (`test_option: "specific"`,
+  saved selection with `update_deployment` (`add_components`) and run it (`test_option: "specific"`,
   e.g. `MyClass` + `MyClass_Test`), then re-validate by ID.
 
 ## A full deploy instead of a quick deploy, or a refused deploy
@@ -75,13 +75,18 @@ concurrent edits are not detected or rejected.
 
 - `inline_config_not_supported` or an input-schema error naming old run arguments: stop passing
   `items`, `all_items`, `selected_items`, `config` or destructive-change arguments at launch.
-  Save full components with `add_deployment_components` / `remove_deployment_components`, then
+  Save full components with `update_deployment` (`add_components` / `remove_components`), then
   run by ID. Changing the arguments does not save the previous inline selection automatically.
 - `empty_selection`: browse and save the intended components first. A saved deletion or partial
   selection can also make a draft runnable; inspect it before assuming the whole draft is empty.
-- `items_not_retrieved` from `add_deployment_components`: a named source component is not in
+- `items_not_retrieved` from `update_deployment`: a named source component is not in
   this deployment's cache. Run `browse_metadata` for its type and check the spelling against the
-  returned rows, then retry the add.
+  returned rows, then retry the add. Nothing else from that call was saved.
+- `update_deployment` refusals change nothing: `nothing_to_change` (pass at least one field),
+  `conflicting_changes` (the same component or Work Item on both the add and remove side),
+  `invalid_test_level` (`tests_to_run` without `test_option: "specific"`, or `"specific"` with no
+  tests). A `hint` saying Work Item link changes failed means everything else WAS saved: retry only
+  the ids in `changes.work_items.failed`.
 - `deployment_not_ready`: the archive selection is still being populated. Call
   `get_deployment` every ~15s; retry once `ready` is `true`.
 - `deployment_population_failed`: read `source.task.error` in `get_deployment` and fix the
@@ -163,7 +168,7 @@ web UI where full logs live.
   retains the text; it does not unlink deployments.
 - `group_operation_required`: leave the active group explicitly in the UI before archiving. For
   a locked group deployment, use **Unlink deployment from group** in MTDT UI; ordinary
-  `unlink_work_item_deployment` never unlocks the group. An assembled deployment belongs to its master.
+  `update_deployment` `unlink_work_items` never unlocks the group. An assembled deployment belongs to its master.
   Do not detach deployments or unlock a group automatically.
 - `work_item_links_changed`: inspect current links with `get_work_item` and review the intended
   operation again; do not retry blindly. `work_item_link_superseded` means the historical carrier
@@ -172,7 +177,7 @@ web UI where full logs live.
   project/item IDs explicitly. Do not create a duplicate or move it silently.
 - `work_item_link_failed`: keep the returned deployment ID. It was created; only the listed
   `linked_work_item_ids` are confirmed. Inspect `unconfirmed_work_item_ids` and current links
-  before using `link_work_item_deployment` for intended missing associations, or finish in the UI.
+  before using `update_deployment` `link_work_items` for intended missing associations, or finish in the UI.
   Repeating `create_deployment` creates another draft.
 
 ## Work Item promotion
