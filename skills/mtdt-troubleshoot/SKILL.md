@@ -14,15 +14,16 @@ up to ~50s server-side; while it returns `timed_out: true`, call it again.) Read
 
 - **Component failures** (compile/metadata errors): the target is missing something the component
   references. Run `run_impact_analysis` on the same selection — the missing dependency is usually
-  in its findings; add it and re-validate.
+  in its findings; retrieve it with `browse_metadata`, save it with `add_deployment_components`,
+  then call `validate_deployment` by `deployment_id`.
 - **Test failures**: a named Apex test asserted/threw. Read the failure message first — some orgs
   contain intentionally-failing demo/canary tests; if an unrelated pre-existing test fails under
   `test_option: "local"`, switch to `"specific"` with the tests that actually cover your
   components (`recommend_tests`).
 - **`codeCoverageWarning` with zero failed tests**: the run "failed" purely on the 75% coverage
   rule — the deployed class has no covering test in the run. Fix: include the test class in the
-  selection and run it (`test_option: "specific"`, e.g. `MyClass` + `MyClass_Test`), then
-  re-validate.
+  saved selection with `add_deployment_components` and run it (`test_option: "specific"`,
+  e.g. `MyClass` + `MyClass_Test`), then re-validate by ID.
 
 ## Quick-deploy rejected
 
@@ -32,11 +33,34 @@ deploy already consumed it. Re-validate with `validate_deployment` and `test_opt
 `"specific"`, then retry. Salesforce quick-deploy windows also expire (~10 days) — a stale
 validation needs a fresh one.
 
-## `items_not_retrieved` from validate_deployment
+## Saved composition rejected before a run
 
-A component you named was never retrieved for this deployment — the reject lists exactly which.
-Run `browse_metadata` for that type first (it retrieves on first call) and check the spelling
-against its rows; only retrieved components can be deployed.
+Start with `get_deployment_components(deployment_id)` to inspect what is saved.
+`validate_deployment` takes `deployment_id`; `create_deployment_run` takes `deploy_id`. Neither
+accepts a replacement composition.
+
+- `inline_config_not_supported` or an input-schema error naming old run arguments: stop passing
+  `items`, `all_items`, `selected_items`, `config` or destructive-change arguments at launch.
+  Save full components with `add_deployment_components` / `remove_deployment_components`, then
+  run by ID. Changing the arguments does not save the previous inline selection automatically.
+- `empty_selection`: browse and save the intended components first. A saved deletion or partial
+  selection can also make a draft runnable; inspect it before assuming the whole draft is empty.
+- `items_not_retrieved` from `add_deployment_components`: a named source component is not in
+  this deployment's cache. Run `browse_metadata` for its type and check the spelling against the
+  returned rows, then retry the add.
+- `deployment_not_ready`: the archive selection is still being populated. Poll
+  `check_deployment_creation_status`; retry after it is done.
+- `deployment_population_failed`: read the source task error in creation status and fix the
+  source as described below. Repeating the run cannot repair population.
+- `deployment_config_changed`: someone changed the draft while the edit was being saved.
+  Re-read the composition and reassess the intended edit before retrying.
+- `component_has_overrides` or `component_marked_for_deletion`: the requested component has
+  advanced saved settings. Make that edit in the MTDT UI; do not remove settings to bypass the
+  reject. The tools leave those saved settings intact.
+- `saved_config_blocked`: the same partial-selection checks used by the UI found a blocker.
+  Read `blockers` and resolve the affected partial selection in MTDT before retrying.
+- `permission_denied` mentioning `metadata_deploys.edit`: the user's role cannot edit the draft.
+  Ask a team administrator to grant the appropriate permission; do not switch credentials.
 
 ## The deployment never populates (repo or backup source)
 
@@ -78,8 +102,8 @@ against its rows; only retrieved components can be deployed.
 
 ## The failure a preflight would have named
 
-Before re-validating blind, run `preflight_deployment` on the same selection — several classic
-failures show up there with the fix attached: a scheduled Apex (cron) job on a class you are
+Before re-validating blind, run `preflight_deployment` with just `deployment_id` to check the saved
+composition — several classic failures show up there with the fix attached: a scheduled Apex (cron) job on a class you are
 overwriting (Salesforce refuses the overwrite until the job is aborted), an Entitlement Process
 whose Business Hours is missing on the target (deploys "Successfully" and silently drops the
 binding), and destructive changes whose components the target still references.

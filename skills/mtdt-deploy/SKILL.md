@@ -1,6 +1,6 @@
 ---
 name: mtdt-deploy
-description: Promote Salesforce metadata between orgs with mtdt.io. Use when the user asks to deploy, promote, or push Salesforce metadata (Apex classes, flows, fields, objects, permission sets, ...) from one org to another (dev → QA, QA → staging, staging → production), or to validate such a deployment. Covers the full workflow — create deployment, browse & pick components, pre-flight checks, validate, quick-deploy.
+description: Promote Salesforce metadata between orgs with mtdt.io. Use when the user asks to deploy, promote, or push Salesforce metadata (Apex classes, flows, fields, objects, permission sets, ...) from one org to another (dev → QA, QA → staging, staging → production), or to validate such a deployment. Covers the full workflow — create deployment, save its component selection, pre-flight checks, validate by ID, quick-deploy.
 ---
 
 # Deploying Salesforce metadata with mtdt
@@ -23,23 +23,24 @@ production targets.
 
 - Resuming rather than starting fresh? `list_deployments` shows the team's existing deployments
   with source/target labels and each one's latest run — reuse its id instead of creating a
-  duplicate.
+  duplicate. Read `get_deployment_components(deployment_id)` before editing a resumed draft: its
+  saved composition may already contain components, deletions or overrides configured in the UI.
 - `create_deployment` with exactly one source (`from_org_id` / `from_repo_id` /
-  `from_backup_id`) and `to_org_id`. It returns the `deploymentId` you use everywhere below.
+  `from_backup_id` / `from_archive_id`) and `to_org_id`. It returns the `deploymentId` used below.
   Pass `caption` (short title) and, when you know what you are shipping, `description` — on a
   push-to-git deploy it becomes the git commit message (`set_deployment_description` can change
   it later). A backup source must be **usable** — finished, with its archive present: otherwise
   `create_deployment` returns `{ error: "backup_not_usable", reason }` and creates nothing, so pick
   another backup from `list_metadata_backups` (its default view lists only usable ones) or run
   `run_metadata_backup` first and wait for it to finish.
-- **Repo or backup as the source?** The deployment is populated asynchronously — poll
+- **Repo, backup or archive as the source?** The deployment is populated asynchronously — poll
   `check_deployment_creation_status(deployment_id)` until `deploymentStatus` is `"done"` before
   browsing. It reports each side (`source` / `target`) with the population task behind it, so
   `"failed"` comes with `task.error` (a partial or unfinished backup has no archive to unpack; an
   org may need re-auth). A failed deployment does not recover by polling — tell the user the error
   and create a new deployment from a usable source.
 
-## 3. Browse & pick components
+## 3. Browse, then save the components
 
 - `browse_metadata` with the `deployment_id` and a metadata type — it retrieves the type from the
   source org on first call and returns one compact row per component. Filter server-side with
@@ -60,37 +61,59 @@ production targets.
   yourself), you still browse once for the type — it both retrieves the metadata and confirms the
   names exist in the org.
 
+Browsing does not change the deployment selection. Save the chosen full components with
+`add_deployment_components` (types can be API names such as `ApexClass` or canonical names such as
+`classes`):
+
+```json
+{"deployment_id": 42, "items": {"ApexClass": ["FooService", "FooService_Test"]}}
+```
+
+- Repeat adds are no-ops. `remove_deployment_components` takes the same shape and removes the
+  components from the saved selection; it does **not** delete them from Salesforce.
+- Read `get_deployment_components(deployment_id)` to confirm the saved composition. Add/remove
+  preserve other settings, including saved deletions and overrides. Editing components with
+  partial selections, manual overrides or saved deletions requires the MTDT UI for now.
+- An archive source automatically selects its contents. After population finishes, inspect the
+  saved selection and proceed to pre-flight; there is no need to pass `all_items` at launch.
+
 ## 4. Pre-flight checks (read-only; run them before deploying to shared/prod orgs)
 
-- `preflight_deployment` with `deployment_id` and `items` as `{ "type": ["Name1", …] }` — the
-  same checks a human gets automatically in the Deploy modal: destructive-change impact, which
-  profiles/permission sets grant access to the selection (plus profile-applicability warnings),
+- `preflight_deployment` with just `deployment_id` checks the saved composition, including its
+  deletions and destructive timing — the same checks a human gets in the Deploy modal:
+  destructive-change impact, which profiles/permission sets grant access to the selection
+  (plus profile-applicability warnings),
   record-backup recommendations, scheduled Apex (cron) jobs on classes you'd overwrite, Business
   Hours bindings the target would silently drop, and static-analysis findings. Verdicts are
   **advisory** — read them, act on `suggested_action` where present, and tell the user what you
-  found. Deleting anything? Pass those as `destructive_items`.
+  found. Optional `items` and `destructive_items` let you assess a hypothetical selection;
+  they do not save it. Confirm the final saved composition before launching.
 - Two checks live as their own tools and take `selected` keyed by canonical type →
   `[{ "base_component": "Name" }]`, e.g. `{ "classes": [{ "base_component": "FooService" }] }`:
   - `run_impact_analysis` — finds source-org dependencies of your selection you likely must add
     (e.g. a field's global value set, a record type's picklist fields). Add the findings to your
-    selection or explain to the user why not.
+    saved selection with `add_deployment_components` or explain to the user why not.
   - `check_target_conflicts` — detects whether anything you are about to overwrite changed on the
     target since it was retrieved. Surfaces honest `verifiable` vs `not-verifiable` buckets; treat
     a conflict as a stop-and-ask.
 - `recommend_tests` — suggests which Apex tests cover a selection; feed `tests_to_run` into the
-  validation as `test_option: "specific"`. Pass `items` (same `{ "type": ["Name"] }` shape as
-  validate) to assess exactly that selection; without `items` it assesses the deployment's latest
-  run, then its saved modal selection. `selection_source: "none"` with `NoApex` means it found no
-  selection anywhere — pass `items`.
+  validation as `test_option: "specific"`. By default it assesses the saved selection; only
+  legacy deployments without a saved selection fall back to the latest run. Optional `items`
+  (`{ "type": ["Name"] }`) assesses a hypothetical selection without saving it. If the saved
+  selection is empty, add the intended components first.
 
 ## 5. Validate
 
-- `validate_deployment` with `deployment_id`, `items` as `{ "type": ["Name1", "Name2"] }` (loose
-  type names are fine — they are fuzzy-resolved), and a `test_option` that **runs tests**
-  (`"local"`, or `"specific"` + `tests_to_run`) — a validation that ran tests is what makes
-  quick-deploy possible. Pass `backup: true` for risky deploys (pre-deploy snapshot → rollback).
-- If it returns `items_not_retrieved`, a named component was never retrieved — run
-  `browse_metadata` for that type first and check the spelling against its rows.
+- `validate_deployment` needs only `deployment_id`. It snapshots the full saved config,
+  including partial selections, manual overrides, deletions and their timing. Do not pass
+  `items`, `all_items`, `selected_items` or a replacement `config` at launch.
+- Saved execution settings are used unless explicitly overridden for this run. If no saved test
+  level exists, validation defaults to `local`. To make quick-deploy possible, use a level that
+  **runs tests** (`"local"`, or `"specific"` + `tests_to_run`). Pass `backup: true` for risky
+  deploys (pre-deploy snapshot → rollback). These options do not rewrite the saved config.
+- `empty_selection` means nothing is saved yet: browse, add components, inspect, then retry.
+  `deployment_not_ready` means archive selection is still populating: wait for creation status.
+  Other rejects and recovery steps are covered by the `mtdt-troubleshoot` skill.
 - Wait with `await_deploy_status(deployment_id)` — one call blocks up to ~50s server-side and
   returns the moment the run is terminal; **while it returns `timed_out: true`, call it again**.
   `is_success` + `is_validation` means the validation passed.
@@ -103,13 +126,16 @@ production targets.
 
 ## Advanced / low-level
 
-- Direct (non-validate) deploy, destructive changes (`destructive_changes` — deletes metadata on
-  the target; confirm each item with the user explicitly), post-deploy flow activation, and
-  record backups go through the low-level `create_deployment_run`. For anything shared, validate
-  first.
-- `prepare_deployment_run_selected_items_object` still exists to build the `selected_items`
-  object for `create_deployment_run` by hand, but `browse_metadata` + `validate_deployment`
-  cover the normal flow in two calls.
+- Direct deployment uses `create_deployment_run` with only `deploy_id` (and optionally
+  `validate: false`). It uses the same full saved config as validation. Execution options such as
+  test level, post-deploy flow activation, approval requests and record backups remain optional.
+  For shared or production targets, validate first.
+- Configure partial selections, overrides and deletions in the UI for now. MCP can inspect and
+  run that saved composition; it cannot author those settings yet. Confirm intended target
+  deletions with the user before launching a draft that contains them.
+- `prepare_deployment_run_selected_items_object` is a legacy name normalizer only. It does not
+  save anything, and its output is no longer accepted by run tools. Use
+  `add_deployment_components` to save components instead.
 - `get_workflow_deployment_recipe` returns the server's current recommended recipe if you need a
   refresher.
 - `get_task_status(task_id)` is the generic poller for any async task id you get back (backup,
@@ -135,8 +161,9 @@ production targets.
   "NoTestRun"` (Salesforce rejects it on prod anyway); if mtdt forces `request_approval`, tell
   the user an approver must act — do not try to bypass.
 - **Coverage:** Salesforce requires ≥75% coverage on the components you deploy. A class with no
-  covering test will fail validation with a `codeCoverageWarning` even if it compiles. Fix: deploy
-  the class **together with its test class** and run that test (`test_option: "specific"`).
+  covering test will fail validation with a `codeCoverageWarning` even if it compiles. Save the
+  class **together with its test class** using `add_deployment_components`, then validate and run
+  that test (`test_option: "specific"`).
 - **Rollback safety:** for risky deploys pass `backup: true` on `validate_deployment` (or
   `do_package_backup: true` on `create_deployment_run`) — it snapshots the target pre-deploy so
   the run can be rolled back from the mtdt UI.
