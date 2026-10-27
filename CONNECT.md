@@ -136,6 +136,6 @@ Copy-pasting one client's snippet into another silently fails — the required `
 
 Salesforce DevOps tools in your agent: find orgs and deployment sources, create and edit
 deployments, browse metadata, pre-deploy checks (missing dependencies, target conflicts, Apex test
-recommendations), validate with tests, deploy (an eligible validation is quick-deployed
-automatically), compare orgs, back up metadata, and Work Items. Every launch answers at once with
+recommendations), validate with tests, deploy the current draft or quick-deploy an explicitly selected
+validation, compare orgs, back up metadata, and Work Items. Every launch answers at once with
 the run's state; follow it with `get_deployment_run`.

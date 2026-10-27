@@ -28,16 +28,16 @@ failed" — the metadata is on the target. Read the failure **category** before 
   saved selection with `update_deployment` (`add_components`) and run it (`test_option: "specific"`,
   e.g. `MyClass` + `MyClass_Test`), then re-validate by ID.
 
-## A full deploy instead of a quick deploy, or a refused deploy
+## A refused quick deployment
 
-`execute_deployment` quick-deploys only the latest validation, and only when it is a
-**Succeeded validation that ran tests** on the same deployment. `quick_deploy_skipped_reason`
-(and `get_deployment_run`'s `quick_deploy_ineligible_reason` on that validation) says why it ran
-a full deploy instead: the last validation failed, ran with `NoTestRun`, is older than ~10 days,
-a newer deploy reached the org, the saved composition changed, or a backup was requested.
-Re-validate with `validate_deployment` and `test_option: "local"` or `"specific"`, then
-dry-run `execute_deployment` again. A quick deploy that Salesforce still rejects usually means
-something else was deployed to the target since the validation.
+`execute_deployment` always performs a full deployment of the current saved draft.
+`execute_quick_deployment` instead needs `deployment_id` and an explicit `validation_run_id`.
+Use `get_deployment_run` for that exact run and read `quick_deploy_ineligible_reason`.
+It must be a successful validation that ran tests and still has a usable SF job ID within its
+lifetime. Draft edits or a newer validation do not invalidate the chosen immutable package.
+A refusal never switches to full deployment. Revalidate with tests, or explicitly choose a full
+deployment after reviewing that plan. Salesforce may still refuse a quick deploy if other changes
+reached the target meanwhile.
 
 - `run_in_progress`: a run of this deployment is still queued, running, finishing or waiting.
   Follow `run` with `get_deployment_run`; a run waiting for approval needs a person in mtdt.
@@ -47,7 +47,7 @@ something else was deployed to the target since the validation.
 
 ## Unexpected settings in the run plan
 
-Call `validate_deployment` or `execute_deployment` with `dry_run: true` and the intended
+Call `validate_deployment`, `execute_deployment` or `execute_quick_deployment` with `dry_run: true` and the intended
 execution options before starting another run. Its preparation is shared with actual launch, and
 the call creates no state or Salesforce work. `execution_settings` exposes inherited settings; `after_deploy` and
 `scheduled_jobs` highlight the actions they can cause.

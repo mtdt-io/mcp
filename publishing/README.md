@@ -36,7 +36,7 @@ review evidence and directory prerequisites separately from package validity; us
 Use `--tools-json /path/to/export.json` to inspect a fresh tools/list export. That option does
 not turn a local inventory into proof that every tool was exercised.
 
-The maintained inventory contains the 21 tools of `mtdt-backend/mcp/test-snapshots/tools-list.json`
+The maintained inventory contains the 22 tools of `mtdt-backend/mcp/test-snapshots/tools-list.json`
 (the recorded tools/list of the local server) and is marked `live: false`: deployments
 (list, create, get, update — components, Apex test level, caption, description, Work Item links —,
 browse metadata, pre-deploy checks), runs (validate, execute — mtdt quick-deploys an eligible

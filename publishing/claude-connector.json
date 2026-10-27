@@ -6,7 +6,7 @@
   "listing": {
     "name": "mtdt.io",
     "one_liner": "Salesforce DevOps: metadata deployments, preflight checks, validation and backups.",
-    "description": "Work with the Salesforce orgs connected to your mtdt.io team. Find orgs, inspect deployments, browse metadata, and prepare a deployment from an org, Git repository, usable metadata backup or uploaded metadata archive (ZIP). Review dependencies, target conflicts, permission warnings and backup recommendations before validating with Apex tests. Follow validation and deployment results and deploy; a successful validation with tests is quick-deployed automatically. Compare two orgs, start a metadata backup, upload and register a metadata archive, and move Work Items through a project's environments. Validation runs without changing the target org; deployment overwrites metadata in the target org.",
+    "description": "Work with the Salesforce orgs connected to your mtdt.io team. Find orgs, inspect deployments, browse metadata, and prepare a deployment from an org, Git repository, usable metadata backup or uploaded metadata archive (ZIP). Review dependencies, target conflicts, permission warnings and backup recommendations before validating with Apex tests. Follow validation and deployment results and deploy; a specific successful validation can be quick-deployed by its run ID. Compare two orgs, start a metadata backup, upload and register a metadata archive, and move Work Items through a project's environments. Validation runs without changing the target org; deployment overwrites metadata in the target org.",
     "suggested_categories": [
       "Developer Tools"
     ],

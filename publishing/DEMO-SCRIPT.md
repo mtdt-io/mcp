@@ -16,8 +16,8 @@ verify that access works without your own browser session.
    starting a run for this case.
 4. Run Review Promotion: save and inspect the two-class composition, then show the validation plan
    with local tests and a rollback snapshot. Launch by ID with those same options and follow
-   `get_deployment_run`. Show the successful validation, then the `execute_deployment` dry run
-   choosing a quick deploy of it, then the completed run. Verify ProjectService in UAT
+   `get_deployment_run`. Show the successful validation, then the `execute_quick_deployment` dry run with that exact `validation_run_id`,
+   then launch that validation once and show the completed run. Verify ProjectService in UAT
    independently. If a check fails, show the stop and the actual error instead of proceeding.
 5. Start one DEV metadata backup and follow it in `list_sources` until it is usable.
 6. Demonstrate all three negative cases: View-only consent, an unspecified production target

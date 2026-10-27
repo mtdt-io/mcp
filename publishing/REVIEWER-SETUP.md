@@ -44,7 +44,7 @@ the review connection and cover tools outside those eight cases too, including l
 request_archive_upload and register_archive, and update_deployment for the caption, description
 and test level. Exercise the saved-composition path explicitly: add both classes, remove/re-add
 the test class and inspect the result with get_deployment. Run validate_deployment and
-execute_deployment with dry_run:true and the intended options before each launch; confirm a dry
+the chosen execute_deployment or execute_quick_deployment (explicit validation_run_id) with dry_run:true and the intended options before each launch; confirm a dry
 run creates no run, and launch by deployment ID.
 Creating or editing manual override contents still uses MTDT; existing manual overrides do not
 block MCP selection edits and must survive removal/re-add of their component. Exercise low-level

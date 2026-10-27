@@ -16,8 +16,8 @@ Deploy metadata between Salesforce orgs through [mtdt.io](https://mtdt.io): find
 deployment sources (git repos, metadata backups, uploaded archives), create a deployment and edit
 its components and test level, browse metadata, run the pre-deploy checks (missing dependencies,
 target conflicts, profile & permission warnings, record-backup recommendations, Apex test
-recommendations), validate with tests, and deploy — mtdt quick-deploys an eligible validation by
-itself. Compare two orgs, back up org metadata, and move Work Items through a project's
+recommendations), validate with tests, and deploy: use `execute_deployment` for the current saved draft or `execute_quick_deployment`
+for an explicitly selected validation package. Compare two orgs, back up org metadata, and move Work Items through a project's
 environments. Every launch answers at once with the run's state; your agent follows it with
 `get_deployment_run`.
 

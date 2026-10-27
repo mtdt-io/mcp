@@ -1,8 +1,8 @@
 {
   "evidence": {
     "kind": "local-source",
-    "observedAt": "2026-10-27T20:16:25.531259Z",
-    "source": "mtdt-backend/mcp/test-snapshots/tools-list.json (tools/list recorded from mtdt-backend/mcp/src/mcp/definitions.ts)",
+    "observedAt": "2026-10-27T21:32:58.333528+00:00",
+    "source": "mtdt-backend/mcp/test-snapshots/tools-list.json (22 tools: explicit full and quick execution)",
     "live": false
   },
   "tools": [
@@ -433,7 +433,7 @@
     {
       "name": "get_deployment_run",
       "title": "Get Deployment Run",
-      "description": "Read one run of a deployment: the latest, or run_id (from get_deployment.recent_runs or a launch response). Answers immediately with state: \"queued\", \"running\" or \"finishing\" (Salesforce is done; post-deploy steps such as post-deploy Apex, flow activation or git push still run) — call again every 15-30 s, never faster; \"waiting\" (waiting_for \"approval\": an approver must act in mtdt; \"schedule\": it starts at scheduled_at) — stop polling and tell the user; \"succeeded\", \"failed\" and \"cancelled\" are final. outcome is the one line to report; for a failure read component_failures, test_failures and code_coverage_warnings. For a validation, quick_deploy_eligible says whether execute_deployment can quick-deploy it, and quick_deploy_ineligible_reason says why not (no tests ran, older than 10 days, a newer deploy reached the org, a newer validation exists, or the saved composition changed); Salesforce can still refuse if something else was deployed to the target meanwhile. Also returns test_level, counts, sf_deploy_id, folder_sharing_check and post_deploy results. A deployment without runs answers state \"no_run\". Read-only.",
+      "description": "Read one run of a deployment: the latest, or run_id (from get_deployment.recent_runs or a launch response). Answers immediately with state: \"queued\", \"running\" or \"finishing\" (Salesforce is done; post-deploy steps such as post-deploy Apex, flow activation or git push still run) — call again every 15-30 s, never faster; \"waiting\" (waiting_for \"approval\": an approver must act in mtdt; \"schedule\": it starts at scheduled_at) — stop polling and tell the user; \"succeeded\", \"failed\" and \"cancelled\" are final. outcome is the one line to report; for a failure read component_failures, test_failures and code_coverage_warnings. For a validation, quick_deploy_eligible says whether execute_quick_deployment can deploy this selected snapshot, and quick_deploy_ineligible_reason says why not (no tests ran, older than 10 days, a newer deploy reached the org, it was already promoted, or its SF job ID is unavailable); Salesforce can still refuse if something else was deployed to the target meanwhile. Also returns test_level, counts, sf_deploy_id, folder_sharing_check and post_deploy results. A deployment without runs answers state \"no_run\". Read-only.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -521,7 +521,7 @@
           },
           "quick_deploy_eligible": {
             "type": "boolean",
-            "description": "Validations only: whether execute_deployment can quick-deploy this validation."
+            "description": "Validations only: whether execute_quick_deployment can deploy this explicitly selected validation."
           },
           "quick_deploy_ineligible_reason": {
             "type": "string"
@@ -2839,7 +2839,7 @@
               "default",
               "NoTestRun"
             ],
-            "description": "Apex test level for this run only. Omit to use the level saved with update_deployment, or local if none is saved. Inspect the plan with dry_run:true first. Tests must run for a later quick deploy by execute_deployment. \"relevant\" lets Salesforce select tests automatically; \"specific\" needs tests_to_run; \"NoTestRun\" fails on production targets."
+            "description": "Apex test level for this run only. Omit to use the level saved with update_deployment, or local if none is saved. Inspect the plan with dry_run:true first. Tests must run for a later execute_quick_deployment of this validation. \"relevant\" lets Salesforce select tests automatically; \"specific\" needs tests_to_run; \"NoTestRun\" fails on production targets."
           },
           "tests_to_run": {
             "type": "string",
@@ -3010,7 +3010,7 @@
     {
       "name": "execute_deployment",
       "title": "Execute Deployment (Real Deploy)",
-      "description": "Deploy for real: deploys the saved deployment to its target org, overwriting target metadata and applying saved deletions. Only on an explicit user instruction, after confirming the target with the user. Call it with dry_run:true first and show the plan. A target marked important in mtdt (dry_run shows confirmation_required:true) is refused with \"confirmation_required\" until the call carries confirm_important_target:true: ask the user to confirm this deploy to that org and set it only after they said yes, like the confirmation dialog of the web app; a request for approval needs it too. mtdt chooses the mode: when the latest validation is eligible (get_deployment_run quick_deploy_eligible) it quick-deploys that validation without re-running tests (mode \"quick_deploy\"); otherwise it runs a full deploy of the saved config with the saved or passed test level (mode \"full_deploy\", quick_deploy_skipped_reason says why). use_quick_deploy:false forces a full deploy; backup or objects_to_backup also force one. When you may not deploy to this target directly but may request approval, it requests approval like the web app and answers state \"waiting\" with waiting_for \"approval\": tell the user an approver must act in mtdt. Refusals come back as { error, message }: \"permission_denied\" (neither right), \"run_in_progress\" (a run is still active; follow it with get_deployment_run), \"scheduling_not_supported\" (scheduled_at with a full deploy), \"confirmation_required\" (important target, see above; checked after the others), or a saved-config reject. Returns { mode, run_id, task_id, state, waiting_for, outcome } immediately; then call get_deployment_run every 15-30 s until state is succeeded, failed or cancelled.",
+      "description": "Deploy for real: run a full deploy of the CURRENT saved draft to its target org, with saved or passed test/backup settings, overwrites and deletions. It never chooses a previous validation or quick-deploys. Only on an explicit user instruction after confirming the target. Call with dry_run:true first and show the plan, including post-deploy actions. An important org requires confirm_important_target:true after the user confirmed this specific deploy. Uses team deploy permissions or requests approval when the role allows that; state waiting/approval needs an approver in mtdt. Refuses run_in_progress, permission_denied, confirmation_required, saved-config errors or scheduling_not_supported (full deploys cannot be scheduled). To deploy an explicitly chosen validation package, call execute_quick_deployment with validation_run_id instead. Returns mode full_deploy and the new run; follow get_deployment_run every 15-30 s.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -3028,7 +3028,7 @@
               "default",
               "NoTestRun"
             ],
-            "description": "Apex test level for a full deploy. Omit to use the level saved with update_deployment. Ignored for a quick deploy (the validation already ran its tests). \"NoTestRun\" fails on production targets."
+            "description": "Apex test level for this full deploy. Omit to use the level saved with update_deployment. \"NoTestRun\" fails on production targets."
           },
           "tests_to_run": {
             "type": "string",
@@ -3036,14 +3036,14 @@
           },
           "backup": {
             "type": "boolean",
-            "description": "Take the pre-deploy \"Metadata Backup\" so this deploy can be rolled back. Forces a full deploy: a quick deploy takes no backup."
+            "description": "Take the pre-deploy \"Metadata Backup\" so this deploy can be rolled back."
           },
           "objects_to_backup": {
             "type": "array",
             "items": {
               "type": "string"
             },
-            "description": "Object API names whose RECORDS to back up before deploying. Forces a full deploy."
+            "description": "Object API names whose RECORDS to back up before deploying."
           },
           "request_approval": {
             "type": "boolean",
@@ -3051,15 +3051,11 @@
           },
           "scheduled_at": {
             "type": "string",
-            "description": "ISO datetime to defer a QUICK deploy (at most 10 days after its validation). A full deploy cannot be scheduled."
+            "description": "A full deploy cannot be scheduled: this returns scheduling_not_supported. Use execute_quick_deployment to schedule a specific validation."
           },
           "comment": {
             "type": "string",
             "description": "Comment shown on the approval request and in the audit."
-          },
-          "use_quick_deploy": {
-            "type": "boolean",
-            "description": "Default true: quick-deploy the latest validation when it is eligible. false forces a full deploy."
           },
           "confirm_important_target": {
             "type": "boolean",
@@ -3067,7 +3063,7 @@
           },
           "dry_run": {
             "type": "boolean",
-            "description": "Return the plan without creating anything: quick or full deploy and why, whether approval will be requested, components, deletions, backups, post-deploy Apex, git push, jobs, activations, and any refusal that would apply."
+            "description": "Return the plan without creating anything: full deploy, whether approval will be requested, components, deletions, backups, post-deploy Apex, git push, jobs, activations, and any refusal that would apply."
           }
         },
         "required": [
@@ -3177,11 +3173,8 @@
           },
           "mode": {
             "type": "string",
-            "description": "\"quick_deploy\" (promotes the latest eligible validation, no test re-run) or \"full_deploy\"."
-          },
-          "quick_deploy_skipped_reason": {
-            "type": "string",
-            "description": "full_deploy: why the latest validation was not quick-deployed."
+            "const": "full_deploy",
+            "description": "Always a full deploy of the current saved draft."
           },
           "note": {
             "type": "string"
@@ -3225,6 +3218,189 @@
       },
       "annotations": {
         "title": "Execute Deployment (Real Deploy)",
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      }
+    },
+    {
+      "name": "execute_quick_deployment",
+      "title": "Execute Quick Deployment (Selected Validation)",
+      "description": "Deploy for real: quick-deploy the EXACT package of the explicitly selected validation_run_id, without re-running Apex tests. Requires deployment_id and validation_run_id (an mtdt run_id, not task_id); the server checks ownership and resolves its Salesforce job ID. No latest-validation lookup and no full-deploy fallback. A changed draft or a newer validation does not replace the package you chose. Call with dry_run:true first and show that validation snapshot and quick workflow; quick deploy does not run saved post-deploy Apex, Git push, record backups or scheduled-job pauses. Metadata rollback backup is attempted from persisted validation artifacts; flow activation uses saved deployment settings at execution, Flow tests and agent publication use validation data. Only on explicit user instruction, after confirming the target and selected validation. Important targets require confirm_important_target:true after the user said yes. Team permissions, approval and active-run gates apply as for execute_deployment. An ineligible validation returns validation_not_eligible without creating a task; choose a different action explicitly. scheduled_at can defer this quick deploy within the Salesforce validation lifetime. Follow the returned run with get_deployment_run.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "deployment_id": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "description": "Deployment that owns the validation."
+          },
+          "validation_run_id": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "description": "Explicit validation run_id from validate_deployment or get_deployment_run; not task_id or the Salesforce ID. The server resolves the SF job ID from this run."
+          },
+          "request_approval": {
+            "type": "boolean",
+            "description": "Request approval instead of deploying directly. Omit to follow the team role and target policy."
+          },
+          "scheduled_at": {
+            "type": "string",
+            "description": "ISO datetime to defer this quick deploy, within the validation lifetime."
+          },
+          "comment": {
+            "type": "string",
+            "description": "Comment for the approval request and audit."
+          },
+          "confirm_important_target": {
+            "type": "boolean",
+            "description": "Set only after the user confirmed this specific deploy to an important org."
+          },
+          "dry_run": {
+            "type": "boolean",
+            "description": "Show the selected validation package and actual quick workflow without creating a task."
+          }
+        },
+        "required": [
+          "deployment_id",
+          "validation_run_id"
+        ],
+        "additionalProperties": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "run_id": {
+            "type": "number",
+            "description": "The new run; pass to get_deployment_run."
+          },
+          "task_id": {
+            "type": "number"
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "queued",
+              "running",
+              "waiting",
+              "finishing",
+              "succeeded",
+              "failed",
+              "cancelled"
+            ],
+            "description": "\"waiting\" with waiting_for \"approval\" means an approver must act in mtdt before anything is deployed."
+          },
+          "waiting_for": {
+            "type": "string",
+            "enum": [
+              "approval",
+              "schedule"
+            ]
+          },
+          "outcome": {
+            "type": "string"
+          },
+          "hint": {
+            "type": "string"
+          },
+          "dry_run": {
+            "type": "boolean",
+            "description": "true: nothing was created; the fields describe the run that would start."
+          },
+          "components_count": {
+            "type": "number"
+          },
+          "would_refuse": {
+            "type": "object",
+            "additionalProperties": {},
+            "description": "dry_run: the refusal a real call would return now (run_in_progress, permission_denied, scheduling_not_supported)."
+          },
+          "run": {
+            "type": "object",
+            "properties": {
+              "run_id": {
+                "type": "number"
+              },
+              "task_id": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "created_at": {
+                "type": "string"
+              },
+              "is_validation": {
+                "type": "boolean"
+              },
+              "state": {
+                "type": "string",
+                "enum": [
+                  "queued",
+                  "running",
+                  "waiting",
+                  "finishing",
+                  "succeeded",
+                  "failed",
+                  "cancelled"
+                ]
+              },
+              "waiting_for": {
+                "type": "string",
+                "enum": [
+                  "approval",
+                  "schedule"
+                ]
+              },
+              "outcome": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "run_id",
+              "task_id",
+              "created_at",
+              "is_validation",
+              "state",
+              "outcome"
+            ],
+            "additionalProperties": false,
+            "description": "run_in_progress: the active run; follow it with get_deployment_run."
+          },
+          "mode": {
+            "type": "string",
+            "const": "quick_deploy"
+          },
+          "deployment_id": {
+            "type": "number"
+          },
+          "validation_run_id": {
+            "type": "number"
+          },
+          "sf_deploy_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "approval_will_be_requested": {
+            "type": "boolean"
+          },
+          "confirmation_required": {
+            "type": "boolean"
+          },
+          "error": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": {}
+      },
+      "annotations": {
+        "title": "Execute Quick Deployment (Selected Validation)",
         "readOnlyHint": false,
         "destructiveHint": true,
         "idempotentHint": false,

@@ -329,27 +329,33 @@ execution settings as the actual launch. For example, a validation with specific
   A succeeded validation carries `quick_deploy_eligible`; when it is `false`,
   `quick_deploy_ineligible_reason` says why.
 
-## 6. Deploy for real with `execute_deployment`
+## 6. Choose the deployment explicitly
 
-- Only on an **explicit user instruction**, after confirming the target org with the user.
-  Call `execute_deployment` with `dry_run: true` first and show the plan.
-- mtdt chooses the mode. When the latest validation succeeded, ran tests, is younger than 10 days
-  and the saved composition has not changed since (`get_deployment_run` shows
-  `quick_deploy_eligible: true`), it **quick-deploys** that validation without re-running tests
-  (`mode: "quick_deploy"`). Otherwise it runs a **full deploy** of the saved config with the saved
-  or passed test level (`mode: "full_deploy"`), and `quick_deploy_skipped_reason` says why.
-  `use_quick_deploy: false`, `backup: true` or `objects_to_backup` force a full deploy.
-- Approval works like the Deploy button in the web app: without the right to deploy to this
-  target directly but with the right to request approval, the run is created waiting for an
-  approver (`state: "waiting"`, `waiting_for: "approval"`) — tell the user. With neither right
-  it answers `permission_denied`.
-- `scheduled_at` defers a quick deploy only; a full deploy answers `scheduling_not_supported`.
-- Follow the run with `get_deployment_run` the same way as a validation.
+- Only on an **explicit user instruction**, after confirming the target and package with the user.
+  Call the chosen tool with `dry_run: true` first and show its plan.
+- **Full deployment of the current saved draft:** `execute_deployment({deployment_id})`.
+  It always uses the saved composition, raw overrides, deletions and saved or passed test and backup
+  settings. It does not select a validation or switch to quick deploy.
+- **Exact package of a selected validation:**
+  `execute_quick_deployment({deployment_id, validation_run_id})`. Use the validation's mtdt `run_id`
+  from `validate_deployment` / `get_deployment_run`, not `task_id` or the SF job ID. The server checks
+  that it belongs to this deployment and resolves its SF ID. It never picks the latest validation.
+  A changed draft or newer validation does not change the chosen package.
+- A quick-deploy dry run describes the chosen validation snapshot. It does not promise full-workflow
+  post-deploy Apex, Git push, record backup or scheduled-job pauses. Metadata rollback backup is
+  attempted from validation artifacts; flow activation reads saved deployment settings at execution,
+  and Flow tests and agent publication reuse validation data.
+- An ineligible quick deploy answers `validation_not_eligible`; there is **no full-deploy fallback**.
+  Revalidate or explicitly choose a full deployment after reviewing it with the user.
+- Both tools honor role/approval policy and require `confirm_important_target: true` for an important
+  target only after the user confirmed this specific deploy. Without direct permission but with
+  approval permission they answer `state: "waiting", waiting_for: "approval"`.
+- `scheduled_at` is available on `execute_quick_deployment`; a full deploy returns `scheduling_not_supported`.
+- Follow the returned `run_id` with `get_deployment_run` every 15–30 s until terminal, or stop at waiting.
 
 ## Advanced / low-level
 
-- A direct deploy without a fresh validation is `execute_deployment` with
-  `use_quick_deploy: false` (dry-run it first). It uses the same full saved config as validation.
+- A direct full deploy is `execute_deployment` (dry-run it first). It uses the same full saved config as validation.
   Execution options such as test level, approval requests and record backups remain optional.
   Flow activation is taken from the saved deployment config. For shared or production targets,
   validate first.
@@ -375,14 +381,14 @@ execution settings as the actual launch. For example, a validation with specific
   *source* (`from_backup_id`) for restores.
 - **Record (data) backup before a risky deploy** — when `check_deployment` recommends it
   (`record_backups/recommended` verdict), pass the objects as `objects_to_backup` on
-  `execute_deployment`; mtdt snapshots the records before deploying (this forces a full deploy).
+  `execute_deployment`; mtdt snapshots the records before deploying.
 
 ## Guardrails
 
 - **Production / `is_important` targets:** always validate first; never `test_option:
   "NoTestRun"` (Salesforce rejects it on prod anyway); if mtdt forces `request_approval`, tell
   the user an approver must act — do not try to bypass.
-- **Important targets need the user's yes for each deploy:** `execute_deployment` to an org marked
+- **Important targets need the user's yes for each deploy:** `execute_deployment` or `execute_quick_deployment` to an org marked
   important in mtdt answers `confirmation_required` (its dry run shows `confirmation_required: true`)
   and creates nothing. Ask the user to confirm deploying to that org, then call again with
   `confirm_important_target: true` — only after they said yes, never on your own. The same holds
@@ -392,5 +398,4 @@ execution settings as the actual launch. For example, a validation with specific
   class **together with its test class** using `update_deployment` (`add_components`), then validate and run
   that test (`test_option: "specific"`).
 - **Rollback safety:** for risky deploys pass `backup: true` on `execute_deployment` — it
-  snapshots the target pre-deploy so the run can be rolled back from the mtdt UI (a quick deploy
-  takes no backup, so this forces a full deploy).
+  snapshots the target pre-deploy so the run can be rolled back from the mtdt UI. Quick deploy attempts a metadata rollback backup from the persisted validation artifacts.
