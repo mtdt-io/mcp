@@ -196,8 +196,12 @@ For the initial deployment, use `create_deployment` with the card IDs instead.
   `name_contains`, `modified_since` (ISO date), or `modified_by` (display names).
 - If it returns `{ status: "retrieving", partial: true, task_ids }`, the retrieval is still
   running and `components` holds only what has landed so far — **call it again with the same
-  args** (safe to repeat; duplicates are impossible). Treat the list as complete only at
-  `status: "ready"` (0 components is a valid ready).
+  args** (safe to repeat; duplicates are impossible).
+- `{ status: "names_ready", task_ids }` means every component **name** of the type is listed
+  while Salesforce is still reading the contents. The list is complete: pick and save components
+  now instead of polling. A validation started before the contents arrive reads them itself.
+- Treat the list as complete only at `status: "names_ready"` or `"ready"` (0 components is a
+  valid ready).
 - `{ status: "retrieval_failed", failed_tasks: [{ id, status, error }] }` means the retrieval
   failed on the Salesforce side for **part** of that type (large Profiles timing out is the
   classic). The component **names** in `components` are complete — only the bodies of some of them
