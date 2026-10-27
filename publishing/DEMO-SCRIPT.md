@@ -43,3 +43,15 @@ card, unlink with `unlink_work_item_deployment`, then relink. Repeated identical
 return `changed:false`. Show that the draft and saved composition remain intact and no run starts.
 For a locked group, show `group_operation_required` and direct the user to the explicit group UI
 action; do not automatically unlock or detach members.
+
+## Work Item promotion preview and draft
+
+Use a prepared card delivered into UAT. Explain that promotion creates a draft for the next
+project environment; it does not execute that draft. Call `preview_work_item_promotion` with
+explicit project/card/from-environment IDs. Show the target, donors, full fold including overrides
+and deletions, verdict, existing carriers and delta options. If the verdict offers creation, use
+`create_work_item_promotion` with the unchanged fingerprint and reviewed mode/replacements.
+For a group pass its master and preview stack version, full mode only. Keep the returned
+`deployment_id`, inspect its saved composition and links, then stop before run launch. A stale
+scope/version requires preview/review again. If already promoted or an equivalent draft exists,
+show/reuse that carrier; do not force a duplicate draft for the demo.

@@ -82,8 +82,8 @@ If a project/item is not found, check the explicit IDs and access; do not switch
   `linked_work_item_ids` are confirmed; `unconfirmed_work_item_ids` need inspection (a network error
   may hide a committed link). Do not repeat creation. Inspect that deployment and the cards first;
   use `link_work_item_deployment` for intended missing associations, or correct them in the UI.
-- MCP does not yet expose promotion preview/draft creation or group editing. Use the UI for
-  these operations.
+- Use the UI for editing group membership; promotion of an existing group is supported through
+  its master as described below.
 
 ## Link or unlink an existing deployment
 
@@ -109,6 +109,53 @@ current links. Both tools below require all three IDs; the server handles the pr
 - Inspect `get_work_item` after either operation. Linking a deployment that already has successful
   runs can immediately change the card's displayed delivery state; unlinking removes that link's
   contribution. Neither call deploys metadata or creates a group.
+
+## Promote a Work Item to the next project environment
+
+Use this path when the change has already reached an environment and should move onward.
+For the initial deployment, use `create_deployment` with the card IDs instead.
+
+1. Read the card with `get_work_item` and the chain with `list_project_environments`. Pass
+   `project_id`, `work_item_id` and the environment **from which** to promote:
+
+   ```json
+   {"project_id":"<project-uuid>","work_item_id":"<item-uuid>","from_environment_id":"<environment-uuid>"}
+   ```
+
+   `preview_work_item_promotion` calls the same read-only operation as the MTDT Promote dialog.
+   The product derives the next environment and donors from their delivered runs. It returns
+   `verdict`, pending/blocking deployments, existing `carriers`, the **full** `fold` (components,
+   smart overrides and deletions), delta options, `scope_fingerprint` and optional `stack` context.
+   A green card alone does not prove readiness. Preview does not create a draft or start a run.
+2. Review the verdict: `not_ready` needs its pending work resolved; `reopen` means open/reuse the
+   existing carrier; `already_promoted` means this hop is complete. Read any `blocker` and donor
+   reasons. If a full or delta creation is offered, explain the target, composition and deletions.
+3. Call `create_work_item_promotion` with the same three IDs and unchanged `scope_fingerprint`:
+
+   ```json
+   {"project_id":"<project-uuid>","work_item_id":"<item-uuid>","from_environment_id":"<environment-uuid>","scope_fingerprint":"<preview.scope_fingerprint>"}
+   ```
+
+   Optional `caption` names the draft. `mode` defaults to `full`; `delta` requires
+   `delta_allowed:true` and selects only the calculated difference from the preview's full fold.
+   For replacement in full mode, pass explicitly reviewed open carrier IDs as `supersede` using
+   `preview.supersedable`; do not silently choose replacements. Delivered carriers cannot be
+   replaced, and delta cannot replace the carrier whose contents it subtracts.
+4. For an existing group use its master, pass `stack_version: preview.stack.version` and full
+   mode without `supersede`. The product assembles the participants into one group deployment
+   and locks the group as in the UI; this is distinct from an ordinary card/deployment link.
+5. `scope_changed` or `stack_changed` requires a fresh preview and another review; do not silently
+   retry with a replacement fingerprint/version. Other product refusals retain their code and
+   details. Creating is not idempotent: after an uncertain response, inspect the card's carriers
+   before repeating it.
+6. Success returns `deployment_id` (also the original product `id`), `to_environment_id` and
+   `mode`. If `supersede_failed` is present, the new draft exists but replacing some old carriers
+   failed: keep the returned ID and inspect/correct the state in MTDT, rather than creating again.
+   The product can link other cards that share donor content. Inspect resulting links; creation
+   retains the product's existing best-effort link handling rather than promising an atomic batch.
+7. This creates a **draft only**. Read `get_deployment_components`, inspect the saved composition,
+   and use `preview_deployment_run` → `validate_deployment`/deployment by ID as usual. Promotion
+   preview describes the assembled composition; run preview describes its execution settings.
 
 ## 1. Resolve the target (and source)
 

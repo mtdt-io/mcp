@@ -1,7 +1,7 @@
 {
   "evidence": {
     "kind": "local-source",
-    "observedAt": "2026-10-27T13:22:05.431325Z",
+    "observedAt": "2026-10-27T14:49:28.851724Z",
     "source": "mtdt-backend/mcp/src/mcp/definitions.ts",
     "live": false
   },
@@ -251,6 +251,116 @@
         "readOnlyHint": false,
         "destructiveHint": true,
         "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "preview_work_item_promotion",
+      "title": "Preview Work Item Promotion",
+      "description": "Preview promotion using the existing MTDT product operation, without creating a draft or run. Pass explicit project_id, work_item_id and from_environment_id. The server derives the next environment and donors; returns the product verdict, blockers/pending deployments, existing carriers, full fold (components, smart overrides and deletions), delta options, scope_fingerprint and optional group stack/version. A green board cell is not promotion approval. Review the result before create_work_item_promotion; reopen reuses an existing draft, not a new create.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "project_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "work_item_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "from_environment_id": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "project_id",
+          "work_item_id",
+          "from_environment_id"
+        ],
+        "additionalProperties": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "additionalProperties": {}
+      },
+      "annotations": {
+        "title": "Preview Work Item Promotion",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "create_work_item_promotion",
+      "title": "Create Work Item Promotion Draft",
+      "description": "Create a promotion DRAFT through the existing product operation, never a validation or real deployment run. Pass the same project/item/from_environment IDs and scope_fingerprint from preview_work_item_promotion. Defaults to full; delta is a restriction of preview full fold and requires delta_allowed. Explicit supersede replaces open drafts in full mode only; review supersedable/carriers first, never replace a delivered carrier. For a group pass stack_version from preview; the product requires full assembly. Stale scope/stack and all product refusals are preserved. Returns deployment_id (also product id), to_environment_id, mode and optional superseded/supersede_failed: when an ID exists, keep it even if a replacement failed, never blindly repeat creation. Product links may include other cards sharing donor content; inspect the resulting cards/links. Read the saved draft, preview_deployment_run, then validate/deploy by ID separately.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "project_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "work_item_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "from_environment_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "scope_fingerprint": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Opaque fingerprint returned by preview_work_item_promotion; pass unchanged."
+          },
+          "caption": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "full",
+              "delta"
+            ]
+          },
+          "supersede": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "exclusiveMinimum": true,
+              "minimum": 0
+            },
+            "description": "Explicit open draft IDs to replace. Full mode only; use preview.supersedable after reviewing replacement."
+          },
+          "stack_version": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "For a group, pass preview.stack.version unchanged; group promotion requires full mode."
+          }
+        },
+        "required": [
+          "project_id",
+          "work_item_id",
+          "from_environment_id",
+          "scope_fingerprint"
+        ],
+        "additionalProperties": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "additionalProperties": {}
+      },
+      "annotations": {
+        "title": "Create Work Item Promotion Draft",
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
         "openWorldHint": false
       }
     },

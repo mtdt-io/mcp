@@ -34,7 +34,7 @@
   "extensions": {
     "com.openai": {
       "publication": {
-        "release_notes": "Adds existing-deployment link/unlink for Work Items through user-scoped product RPC, preserving group restrictions and audit. Explains Work Items, reusable deployment drafts and individual runs in the supplied skill. Refreshes the 42-tool local inventory and reviewer examples; verify hosted rollout separately."
+        "release_notes": "Adds thin MCP wrappers for existing Work Item promotion preview and draft creation; product full/delta, group, fingerprint, audit and partial-result rules are unchanged. Retains existing Work Item lifecycle, links and saved-run flow. Updates supplied skills/examples and the 44-tool local inventory; hosted rollout requires separate verification."
       }
     }
   }

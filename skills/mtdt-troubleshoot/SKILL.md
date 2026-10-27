@@ -160,3 +160,21 @@ web UI where full logs live.
   `linked_work_item_ids` are confirmed. Inspect `unconfirmed_work_item_ids` and current links
   before using `link_work_item_deployment` for intended missing associations, or finish in the UI.
   Repeating `create_deployment` creates another draft.
+
+## Work Item promotion
+
+- `scope_changed` / `stack_changed`: the promotion changed since preview. Read
+  `preview_work_item_promotion` again and review the new donors/carriers or group version before
+  creating. Do not blindly substitute the new fingerprint and retry.
+- `not_ready` / `nothing_reached_env`: inspect pending deployments and surviving deliveries into
+  the source environment. Validation alone does not count as delivery. A green board marker can
+  survive rollback while promotion correctly refuses to use that run.
+- `no_next_environment`: this is the last environment in the project chain.
+- `stack_member`: promote through the group's master. Group creation requires the preview's
+  `stack_version`, full mode and no supersede; do not detach participants as a workaround.
+- `already_promoted` / preview `reopen`: inspect the existing carrier rather than create another.
+  `delta_not_available` carries its reason. `open_draft_exists` needs review of the existing
+  open carriers; delta never permits superseding them.
+- A successful create with `supersede_failed` still created `deployment_id`. Keep that ID and
+  inspect the replacement marks and links in MTDT. A generic failure or lost response also needs
+  inspecting the card before retry, because creation is not idempotent.

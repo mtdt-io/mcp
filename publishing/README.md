@@ -36,10 +36,11 @@ review evidence and directory prerequisites separately from package validity; us
 Use `--tools-json /path/to/export.json` to inspect a fresh tools/list export. That option does
 not turn a local inventory into proof that every tool was exercised.
 
-The maintained inventory contains 42 tools from the local server source and is marked
+The maintained inventory contains 44 tools from the local server source and is marked
 `live: false`. It includes saved composition get/add/remove, the read-only run preview, and
 project/environment/Work Item reads with explicit project IDs, card create/update/archive/restore,
-deployment creation with Work Item links, and standalone existing-deployment link/unlink.
+deployment creation with Work Item links, standalone existing-deployment link/unlink, and
+wrappers for the existing product promotion preview/create-draft operations.
 The supplied deploy skill explains Work Items, reusable deployment drafts and individual runs.
 The review cases follow browse → save → inspect → preflight → preview → launch by ID;
 launch tools no longer accept inline composition or Flow activation arguments. After rolling
