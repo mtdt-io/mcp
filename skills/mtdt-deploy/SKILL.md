@@ -29,17 +29,20 @@ A validation checks the package; it is not delivery. Unlinking does not undo cha
 
 For status questions, use this read-only route without creating or running a deployment:
 
-1. `list_projects({"team_id":"<optional-team-uuid>"})` discovers project IDs. Omit `team_id`
-   to read all visible projects. Identify the requested project and pass its ID explicitly on
-   every project-scoped call, even if only one project exists. There is no automatic or saved
-   current project.
-2. `list_project_environments({"project_id":"<project-uuid>"})` returns the ordered environment
-   chain with names, kinds, positions and Salesforce org IDs. `work_items_ready` describes whether
-   at least two environments exist; existing cards can still be read in an unconfigured project.
-3. `list_work_items({"project_id":"<project-uuid>"})` returns every non-archived card in that
-   project, without a hidden limit. Use `status:"archived"` or `status:"all"` explicitly for archives.
-4. `get_work_item({"project_id":"<project-uuid>","work_item_id":"<item-uuid>"})` reads one card,
-   its tracker reference, active group/master context and delivery history. Both IDs are required.
+1. `list_projects({"team_id":"<optional-team-uuid>"})` discovers project IDs together with each
+   project's ordered environment chain (names, kinds, positions, Salesforce org IDs) and
+   `work_items_ready` (at least two environments; existing cards can still be read in an
+   unconfigured project). Omit `team_id` to read all visible projects. There is no automatic or
+   saved current project.
+2. `list_work_items({"project_id":"<project-uuid>"})` returns every non-archived card in that
+   project as one short row (key, caption, status, current/reached/next environment names,
+   `validated_into`, `done`, linked `deployment_ids`, group), without a hidden limit. Use
+   `status:"archived"` or `status:"all"` explicitly for archives. To find a card without knowing
+   its project, pass `q` (key or caption text) or `deployment_id` (cards linked to that deployment)
+   instead of `project_id`; rows then carry `project_id`.
+3. `get_work_item({"key":"KAN-6"})` or `get_work_item({"work_item_id":"<item-uuid>"})` reads one
+   card in full: tracker reference, active group/master context and delivery history. Add
+   `project_id` only when it answers `ambiguous_work_item` (the key exists in several projects).
 
 Report `delivery.reached_environment` as confirmed historical delivery. `current_environment`
 may instead be the first working environment when nothing has reached an environment yet.
@@ -69,9 +72,11 @@ If a project/item is not found, check the explicit IDs and access; do not switch
   To detach the ticket, send `unlink_ticket:true` alone, then edit in a separate call. The current
   text is retained. Use `force:true` only when the user deliberately requests an override; it does
   not grant permissions, and a later tracker sync can replace the text.
-- `archive_work_item` and `unarchive_work_item` are separate status actions. Repeating the same
-  status is a no-op; archiving neither deletes the card nor detaches deployments. An active group
-  returns `group_operation_required`: leave the group explicitly in the UI first.
+- `update_work_item` with `status:"archived"` archives the card and `status:"open"` restores it.
+  Repeating the same status is a no-op; archiving neither deletes the card nor detaches deployments.
+  An active group returns `group_operation_required`: leave the group explicitly in the UI first.
+  Text and status may go in one call: the text is saved first, then the status, and the answer
+  reports `text_changed` and `status_changed`.
 - Manual creation is not idempotent. After an uncertain response, inspect `list_work_items` before
   repeating it. Mutation tools require Run (`mtdt:deploy`) consent and the user's edit permission.
 - To create a deployment for existing cards, pass both `project_id` and `work_item_ids` to
@@ -118,48 +123,51 @@ project comes from each card and the server handles the product RPC's link snaps
 Use this path when the change has already reached an environment and should move onward.
 For the initial deployment, use `create_deployment` with the card IDs instead.
 
-1. Read the card with `get_work_item` and the chain with `list_project_environments`. Pass
-   `project_id`, `work_item_id` and the environment **from which** to promote:
+1. Read the card with `get_work_item` and the chain with `list_projects`. Call
+   `promote_work_item` with `dry_run: true`, `project_id`, `work_item_id` and the environment
+   **from which** to promote:
 
    ```json
-   {"project_id":"<project-uuid>","work_item_id":"<item-uuid>","from_environment_id":"<environment-uuid>"}
+   {"project_id":"<project-uuid>","work_item_id":"<item-uuid>","from_environment_id":"<environment-uuid>","dry_run":true}
    ```
 
-   `preview_work_item_promotion` calls the same read-only operation as the MTDT Promote dialog.
+   The dry run calls the same read-only operation as the MTDT Promote dialog (the tool, dry run
+   included, needs Run (`mtdt:deploy`) consent).
    The product derives the next environment and donors from their delivered runs. It returns
    `verdict`, pending/blocking deployments, existing `carriers`, the **full** `fold` (components,
    smart overrides and deletions), delta options, `scope_fingerprint` and optional `stack` context.
-   A green card alone does not prove readiness. Preview does not create a draft or start a run.
+   A green card alone does not prove readiness. The dry run does not create a draft or start a run.
 2. Review the verdict: `not_ready` needs its pending work resolved; `reopen` means open/reuse the
    existing carrier; `already_promoted` means this hop is complete. Read any `blocker` and donor
    reasons. If a full or delta creation is offered, explain the target, composition and deletions.
-3. Call `create_work_item_promotion` with the same three IDs and unchanged `scope_fingerprint`:
+3. Call `promote_work_item` again without `dry_run`, with the same three IDs and the dry run's
+   unchanged `scope_fingerprint` (without it the answer is `dry_run_required`):
 
    ```json
-   {"project_id":"<project-uuid>","work_item_id":"<item-uuid>","from_environment_id":"<environment-uuid>","scope_fingerprint":"<preview.scope_fingerprint>"}
+   {"project_id":"<project-uuid>","work_item_id":"<item-uuid>","from_environment_id":"<environment-uuid>","scope_fingerprint":"<scope_fingerprint from the dry run>"}
    ```
 
    Optional `caption` names the draft. `mode` defaults to `full`; `delta` requires
-   `delta_allowed:true` and selects only the calculated difference from the preview's full fold.
+   `delta_allowed:true` and selects only the calculated difference from the dry run's full fold.
    For replacement in full mode, pass explicitly reviewed open carrier IDs as `supersede` using
-   `preview.supersedable`; do not silently choose replacements. Delivered carriers cannot be
+   the dry run's `supersedable`; do not silently choose replacements. Delivered carriers cannot be
    replaced, and delta cannot replace the carrier whose contents it subtracts.
-4. For an existing group use its master, pass `stack_version: preview.stack.version` and full
+4. For an existing group use its master, pass `stack_version` = the dry run's `stack.version` and full
    mode without `supersede`. The product assembles the participants into one group deployment
    and locks the group as in the UI; this is distinct from an ordinary card/deployment link.
-5. `scope_changed` or `stack_changed` requires a fresh preview and another review; do not silently
+5. `scope_changed` or `stack_changed` requires a fresh dry run and another review; do not silently
    retry with a replacement fingerprint/version. Other product refusals retain their code and
    details. Creating is not idempotent: after an uncertain response, inspect the card's carriers
    before repeating it.
-6. Success returns `deployment_id` (also the original product `id`), `to_environment_id` and
-   `mode`. If `supersede_failed` is present, the new draft exists but replacing some old carriers
+6. Success returns the new draft's `get_deployment` card plus `deployment_id` (also the original
+   product `id`), `to_environment_id` and `mode`. If `supersede_failed` is present, the new draft exists but replacing some old carriers
    failed: keep the returned ID and inspect/correct the state in MTDT, rather than creating again.
    The product can link other cards that share donor content. Inspect resulting links; creation
    retains the product's existing best-effort link handling rather than promising an atomic batch.
-7. This creates a **draft only**. Read `get_deployment`, inspect the saved composition,
-   and call `validate_deployment` / `execute_deployment` with `dry_run: true` before running them
-   by ID as usual. Promotion preview describes the assembled composition; a dry run describes the
-   execution settings.
+7. This creates a **draft only**. Inspect the saved composition in the returned card, run
+   `check_deployment`, and call `validate_deployment` / `execute_deployment` with `dry_run: true`
+   before running them by ID as usual. The promotion dry run describes the assembled composition;
+   the validate/execute dry runs describe the execution settings.
 
 ## 1. Resolve the target (and source)
 
