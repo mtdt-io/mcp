@@ -1,6 +1,6 @@
 ---
 name: mtdt-deploy
-description: Promote Salesforce metadata between orgs with mtdt.io. Use when the user asks to deploy, promote, or push Salesforce metadata (Apex classes, flows, fields, objects, permission sets, ...) from one org to another (dev → QA, QA → staging, staging → production), or to validate such a deployment. Also use for creating and editing Work Items, archiving/restoring cards, creating linked deployments, linking/unlinking existing deployments, and reading project environments, groups and delivery status. Covers the full workflow — create deployment, save its component selection, pre-flight checks, preview actions, validate by ID, quick-deploy.
+description: Promote Salesforce metadata between orgs with mtdt.io. Use when the user asks to deploy, promote, or push Salesforce metadata (Apex classes, flows, fields, objects, permission sets, ...) from one org to another (dev → QA, QA → staging, staging → production), or to validate such a deployment. Also use for creating and editing Work Items, archiving/restoring cards, creating linked deployments, linking/unlinking existing deployments, and reading project environments, groups and delivery status. Covers the full workflow — create deployment, save its component selection, pre-flight checks, dry-run actions, validate by ID, then deploy for real (quick deploy when eligible).
 ---
 
 # Deploying Salesforce metadata with mtdt
@@ -14,7 +14,7 @@ production targets.
 | Entity | Purpose | ID used by MCP |
 |---|---|---|
 | Work Item | A project change: a manual card or a tracker ticket. Tracks its delivery along the environment chain. | `work_item_id` (UUID), with explicit `project_id` |
-| Deployment | A reusable source→target draft containing saved components, overrides, deletions and execution settings. | `deployment_id` (number); `create_deployment` and `get_deployment` return it as `deployment_id` (`create_deployment` also as `deploymentId`), and the low-level run tool calls its input `deploy_id` |
+| Deployment | A reusable source→target draft containing saved components, overrides, deletions and execution settings. | `deployment_id` (number); `create_deployment` and `get_deployment` return it as `deployment_id` (`create_deployment` also as `deploymentId`) |
 | Run | One attempt to validate or deploy a snapshot of the saved draft. The same deployment can have many runs and outcomes. | Launch returns `task_id` for asynchronous execution; poll deployment status using the deployment ID, never substitute the task ID |
 
 A card can link to several deployments, and a deployment can serve several cards. These
@@ -22,7 +22,7 @@ associations let recorded runs contribute to delivery status; sharing a deployme
 create a group. A group has a separate master and shared group deployment.
 
 Creating a draft, editing its composition or changing a card association does not start a run.
-Save and inspect the composition, preview the run, then validate/deploy by deployment ID.
+Save and inspect the composition, dry-run the run, then validate/deploy by deployment ID.
 A validation checks the package; it is not delivery. Unlinking does not undo changes in Salesforce.
 
 ## Read projects and Work Items
@@ -154,8 +154,9 @@ For the initial deployment, use `create_deployment` with the card IDs instead.
    The product can link other cards that share donor content. Inspect resulting links; creation
    retains the product's existing best-effort link handling rather than promising an atomic batch.
 7. This creates a **draft only**. Read `get_deployment`, inspect the saved composition,
-   and use `preview_deployment_run` → `validate_deployment`/deployment by ID as usual. Promotion
-   preview describes the assembled composition; run preview describes its execution settings.
+   and call `validate_deployment` / `execute_deployment` with `dry_run: true` before running them
+   by ID as usual. Promotion preview describes the assembled composition; a dry run describes the
+   execution settings.
 
 ## 1. Resolve the target (and source)
 
@@ -261,30 +262,28 @@ Browsing does not change the deployment selection. Save the chosen full componen
   (`{ "type": ["Name"] }`) assesses a hypothetical selection without saving it. If the saved
   selection is empty, add the intended components first.
 
-## 5. Preview the run, then validate
+## 5. Dry-run the validation, then validate
 
-Call `preview_deployment_run` before `validate_deployment` or `create_deployment_run`. Use
-`deployment_id`, the intended mode, and the same optional execution settings as the actual launch.
-For example, preview a validation with specific tests:
+Call `validate_deployment` with `dry_run: true` first, with `deployment_id` and the same optional
+execution settings as the actual launch. For example, a validation with specific tests:
 
 ```json
-{"deployment_id": 42, "validate": true, "test_option": "specific", "tests_to_run": "FooService_Test"}
+{"deployment_id": 42, "dry_run": true, "test_option": "specific", "tests_to_run": "FooService_Test"}
 ```
 
-- `validate: true` previews validation; omitted/false previews a direct deployment. Preview uses
-  the same parameter preparation as launch. It creates no tasks, saves no settings, and calls
-  no Salesforce APIs.
+- A dry run uses the same parameter preparation as launch. It creates no tasks, saves no
+  settings, does not touch view history and calls no Salesforce APIs.
 - Read the component counts, deletions, test option, backups and `execution_settings`. Report
   consequential actions to the user before launch: `after_deploy` includes Apex code, git push,
   Flow/AI activation and Flow tests; `scheduled_jobs` lists saved jobs marked for pause/resume.
   Do not assume validation is free of other actions: saved post-deploy Apex and job pauses can
-  still execute during validation, and preview explicitly warns about them.
-- Read `warnings`. Preview does not refresh saved jobs or prove permissions, approval, source
-  readiness or Salesforce success. Flow activation and its exclusions are controlled only by
-  the saved deployment config in MTDT; preview shows that current setting. Run and preview
-  tools do not accept `activate_flows_after_deploy`. Change the saved setting when necessary,
-  then preview again.
-- The draft can change between preview and launch. Re-preview after editing the draft or
+  still execute during validation, and the dry run explicitly warns about them.
+- Read `warnings` and `would_refuse`. A dry run does not refresh saved jobs or prove permissions,
+  approval, source readiness or Salesforce success. Flow activation and its exclusions are
+  controlled only by the saved deployment config in MTDT; the dry run shows that current setting.
+  The run tools do not accept `activate_flows_after_deploy`. Change the saved setting when
+  necessary, then dry-run again.
+- The draft can change between the dry run and launch. Dry-run again after editing the draft or
   changing execution options. There is no config or plan token to send back at launch.
 
 - `validate_deployment` needs only `deployment_id`. It snapshots the full saved config,
@@ -295,6 +294,8 @@ For example, preview a validation with specific tests:
   **runs tests** (`"local"`, or `"specific"` + `tests_to_run`). Pass `backup: true` for risky
   deploys (pre-deploy snapshot → rollback). These options do not rewrite the saved config.
 - `empty_selection` means nothing is saved yet: browse, add components, inspect, then retry.
+  `run_in_progress` means a run of this deployment is still queued, running, finishing or
+  waiting: follow `run` with `get_deployment_run` instead of starting another one.
   `deployment_not_ready` means archive selection is still populating: wait until `get_deployment` reports `ready`.
   Other rejects and recovery steps are covered by the `mtdt-troubleshoot` skill.
 - The launch returns `{ run_id, task_id, state, outcome }` right away. Follow it with
@@ -305,21 +306,30 @@ For example, preview a validation with specific tests:
   A succeeded validation carries `quick_deploy_eligible`; when it is `false`,
   `quick_deploy_ineligible_reason` says why.
 
-## 6. Quick-deploy (the safe path to a real deployment)
+## 6. Deploy for real with `execute_deployment`
 
-- After a successful validation-with-tests whose `get_deployment_run` shows
-  `quick_deploy_eligible: true`: `quick_deploy` with just the `deployment_id` (it auto-derives the
-  validation job) — this performs the **real deployment** without re-running tests. Follow it with
-  `get_deployment_run` the same way; if it comes back `waiting` for approval, tell the user.
+- Only on an **explicit user instruction**, after confirming the target org with the user.
+  Call `execute_deployment` with `dry_run: true` first and show the plan.
+- mtdt chooses the mode. When the latest validation succeeded, ran tests, is younger than 10 days
+  and the saved composition has not changed since (`get_deployment_run` shows
+  `quick_deploy_eligible: true`), it **quick-deploys** that validation without re-running tests
+  (`mode: "quick_deploy"`). Otherwise it runs a **full deploy** of the saved config with the saved
+  or passed test level (`mode: "full_deploy"`), and `quick_deploy_skipped_reason` says why.
+  `use_quick_deploy: false`, `backup: true` or `objects_to_backup` force a full deploy.
+- Approval works like the Deploy button in the web app: without the right to deploy to this
+  target directly but with the right to request approval, the run is created waiting for an
+  approver (`state: "waiting"`, `waiting_for: "approval"`) — tell the user. With neither right
+  it answers `permission_denied`.
+- `scheduled_at` defers a quick deploy only; a full deploy answers `scheduling_not_supported`.
+- Follow the run with `get_deployment_run` the same way as a validation.
 
 ## Advanced / low-level
 
-- Preview a direct deployment with `preview_deployment_run(deployment_id, validate:false)`,
-  then use `create_deployment_run` with only `deploy_id` (and optionally
-  `validate: false`). It uses the same full saved config as validation. Execution options such as
-  test level, approval requests and record backups remain optional. Flow activation is taken
-  from the saved deployment config.
-  For shared or production targets, validate first.
+- A direct deploy without a fresh validation is `execute_deployment` with
+  `use_quick_deploy: false` (dry-run it first). It uses the same full saved config as validation.
+  Execution options such as test level, approval requests and record backups remain optional.
+  Flow activation is taken from the saved deployment config. For shared or production targets,
+  validate first.
 - Configure partial selections, overrides and deletions in the UI for now. MCP can inspect and
   run that saved composition; it cannot author those settings yet. Confirm intended target
   deletions with the user before launching a draft that contains them.
@@ -343,7 +353,7 @@ For example, preview a validation with specific tests:
   *source* (`from_backup_id`) for restores.
 - **Record (data) backup before a risky deploy** — when `preflight_deployment` recommends it
   (`record_backups/recommended` verdict), pass the objects as `objects_to_backup` on
-  `create_deployment_run`; mtdt snapshots the records before deploying.
+  `execute_deployment`; mtdt snapshots the records before deploying (this forces a full deploy).
 
 ## Guardrails
 
@@ -354,6 +364,6 @@ For example, preview a validation with specific tests:
   covering test will fail validation with a `codeCoverageWarning` even if it compiles. Save the
   class **together with its test class** using `add_deployment_components`, then validate and run
   that test (`test_option: "specific"`).
-- **Rollback safety:** for risky deploys pass `backup: true` on `validate_deployment` (or
-  `do_package_backup: true` on `create_deployment_run`) — it snapshots the target pre-deploy so
-  the run can be rolled back from the mtdt UI.
+- **Rollback safety:** for risky deploys pass `backup: true` on `execute_deployment` — it
+  snapshots the target pre-deploy so the run can be rolled back from the mtdt UI (a quick deploy
+  takes no backup, so this forces a full deploy).

@@ -28,41 +28,49 @@ failed" — the metadata is on the target. Read the failure **category** before 
   saved selection with `add_deployment_components` and run it (`test_option: "specific"`,
   e.g. `MyClass` + `MyClass_Test`), then re-validate by ID.
 
-## Quick-deploy rejected
+## A full deploy instead of a quick deploy, or a refused deploy
 
-`quick_deploy` only works after a **Succeeded validation that ran tests** on the same deployment.
-`get_deployment_run` on that validation shows `quick_deploy_eligible` and, when false,
-`quick_deploy_ineligible_reason`. If it reports no eligible validation: the last validation failed, ran with `NoTestRun`, or a real
-deploy already consumed it. Re-validate with `validate_deployment` and `test_option: "local"` or
-`"specific"`, then retry. Salesforce quick-deploy windows also expire (~10 days) — a stale
-validation needs a fresh one.
+`execute_deployment` quick-deploys only the latest validation, and only when it is a
+**Succeeded validation that ran tests** on the same deployment. `quick_deploy_skipped_reason`
+(and `get_deployment_run`'s `quick_deploy_ineligible_reason` on that validation) says why it ran
+a full deploy instead: the last validation failed, ran with `NoTestRun`, is older than ~10 days,
+a newer deploy reached the org, the saved composition changed, or a backup was requested.
+Re-validate with `validate_deployment` and `test_option: "local"` or `"specific"`, then
+dry-run `execute_deployment` again. A quick deploy that Salesforce still rejects usually means
+something else was deployed to the target since the validation.
+
+- `run_in_progress`: a run of this deployment is still queued, running, finishing or waiting.
+  Follow `run` with `get_deployment_run`; a run waiting for approval needs a person in mtdt.
+- `permission_denied`: you can neither deploy to this target directly nor request approval. Ask
+  a team administrator; do not switch credentials.
+- `scheduling_not_supported`: only a quick deploy can be scheduled.
 
 ## Unexpected settings in the run plan
 
-Use `preview_deployment_run` with the intended `validate` mode and execution options before
-starting another run. Its preparation is shared with actual launch, and the call creates no
-state or Salesforce work. `execution_settings` exposes inherited settings; `after_deploy` and
+Call `validate_deployment` or `execute_deployment` with `dry_run: true` and the intended
+execution options before starting another run. Its preparation is shared with actual launch, and
+the call creates no state or Salesforce work. `execution_settings` exposes inherited settings; `after_deploy` and
 `scheduled_jobs` highlight the actions they can cause.
 
-- An unexpected `NoTestRun` is inherited from the saved draft. Preview and validate with
+- An unexpected `NoTestRun` is inherited from the saved draft. Dry-run and validate with
   `test_option: "local"` or `"specific"` + `tests_to_run` when tests are intended.
 - `validation_apex` / `saved_jobs`: validation does not automatically disable saved Apex or job
   pause settings. Read the code/jobs and report those actions before launch; do not retry blind.
 - Flow activation comes only from the saved deployment config, including its exclusions.
-  Review/change it in MTDT, then preview again. If a run or preview rejects the old
+  Review/change it in MTDT, then dry-run again. If a run or dry run rejects the old
   `activate_flows_after_deploy` argument, remove it from the request; configure activation on
   the deployment instead. There is no per-run activation override.
 - `flow_tests_target_mismatch`: saved Flow tests belong to a different target; fix the test
   selection in MTDT before launching.
-- Preview is a snapshot, not a reservation or a successful preflight. After changing the draft
+- A dry run is a snapshot, not a reservation or a successful preflight. After changing the draft
   or execution options, inspect the plan again. Launch still applies permissions/approval and
-  worker checks; a preview alone is not proof that the run will succeed.
+  worker checks; a dry run alone is not proof that the run will succeed.
 
 ## Saved composition rejected before a run
 
 Start with `get_deployment(deployment_id)` to inspect what is saved.
-`validate_deployment` takes `deployment_id`; `create_deployment_run` takes `deploy_id`. Neither
-accepts a replacement composition. Composition edits follow the UI's last-save-wins model;
+`validate_deployment` and `execute_deployment` take `deployment_id`. Neither accepts a
+replacement composition. Composition edits follow the UI's last-save-wins model;
 concurrent edits are not detected or rejected.
 
 - `inline_config_not_supported` or an input-schema error naming old run arguments: stop passing
