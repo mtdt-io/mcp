@@ -14,7 +14,7 @@ production targets.
 | Entity | Purpose | ID used by MCP |
 |---|---|---|
 | Work Item | A project change: a manual card or a tracker ticket. Tracks its delivery along the environment chain. | `work_item_id` (UUID), with explicit `project_id` |
-| Deployment | A reusable source→target draft containing saved components, overrides, deletions and execution settings. | `deployment_id` (number); `create_deployment` and `get_deployment` return it as `deployment_id` (`create_deployment` also as `deploymentId`) |
+| Deployment | A reusable source→target draft containing saved components, overrides, deletions and execution settings. | `deployment_id` (number); `create_deployment` and `get_deployment` return it as `deployment_id` |
 | Run | One attempt to validate or deploy a snapshot of the saved draft. The same deployment can have many runs and outcomes. | Launch returns `task_id` for asynchronous execution; poll deployment status using the deployment ID, never substitute the task ID |
 
 A card can link to several deployments, and a deployment can serve several cards. These
@@ -83,7 +83,7 @@ If a project/item is not found, check the explicit IDs and access; do not switch
   `create_deployment` alongside its normal source/target. All cards must be open and in that project
   and team. Creation and linking happen in one MCP call; the chosen source can still be local files,
   org, repo or backup. The environment chain does not replace the requested source.
-- If creation returns `work_item_link_failed`, the returned `deploymentId` already exists.
+- If creation returns `work_item_link_failed`, the returned `deployment_id` already exists.
   `linked_work_item_ids` are confirmed; `unconfirmed_work_item_ids` need inspection (a network error
   may hide a committed link). Do not repeat creation. Inspect that deployment and the cards first;
   use `update_deployment` `link_work_items` for intended missing associations, or correct them in the UI.
@@ -171,12 +171,14 @@ For the initial deployment, use `create_deployment` with the card IDs instead.
 
 ## 1. Resolve the target (and source)
 
-- `list_orgs` to see connected orgs, or `resolve_target` with the user's free-text name ("QA",
-  "acme prod"). **Never assume the top hit** — confirm with the user, especially when a candidate
-  has `org_type: production` or `is_important: true`.
-- Source can be an org, a git repo (`list_git_repos`), or a metadata backup
-  (`list_metadata_backups`). `list_metadata_backups` returns only the backups actually usable as a
-  deploy source by default (status done with the archive present), each with a human `label` — pass
+- `list_orgs` to see connected orgs, or `list_orgs` with `query`: the user's free-text name ("QA",
+  "acme prod"), part of the URL, or an org type ("production", "sandbox"). **Never assume the top
+  hit** — confirm with the user, especially when a candidate has `org_type: production` or
+  `is_important: true`.
+- Source can be an org, or a git repo, metadata backup or uploaded archive from `list_sources`
+  (`kind` narrows to `repos` / `backups` / `archives`); each row's `use_as` names the
+  `create_deployment` parameter that takes its id. Backups are listed only when actually usable as a
+  deploy source (status done with the archive present), each with a human `label` — pass
   `include_unusable: true` to also see the rest, each carrying an `unusable_reason`.
 
 ## 2. Create the deployment (or resume one)
@@ -194,7 +196,7 @@ For the initial deployment, use `create_deployment` with the card IDs instead.
   push-to-git deploy it becomes the git commit message (`update_deployment` can change
   it later). A backup source must be **usable** — finished, with its archive present: otherwise
   `create_deployment` returns `{ error: "backup_not_usable", reason }` and creates nothing, so pick
-  another backup from `list_metadata_backups` (its default view lists only usable ones) or run
+  another backup from `list_sources` with `kind: "backups"` (it lists only usable ones) or run
   `run_metadata_backup` first and wait for it to finish.
 - **Repo, backup or archive as the source?** The deployment is populated asynchronously — call
   `get_deployment(deployment_id)` every ~15s until `ready` is `true` before browsing or validating;
@@ -354,20 +356,22 @@ execution settings as the actual launch. For example, a validation with specific
 - Configure partial selections, overrides and deletions in the UI for now. MCP can inspect and
   run that saved composition; it cannot author those settings yet. Confirm intended target
   deletions with the user before launching a draft that contains them.
-- `get_workflow_deployment_recipe` returns the server's current recommended recipe if you need a
-  refresher.
-- `get_task_status(task_id)` is the generic poller for any async task id you get back (backup,
-  comparison, retrieval) when there is no dedicated status tool.
+- Every long operation has its own status: runs → `get_deployment_run`, retrievals →
+  `browse_metadata` / `get_deployment`, backups → `list_sources`, comparisons → `compare_orgs`.
+  There is no generic task poller.
 
 ## Adjacent intents on the same connection
 
-- **"What differs between these two orgs?"** — create a deployment between them, then
-  `start_full_metadata_deployment_comparison(deployment_id)` (returns a `comparisonId`), poll
-  `get_full_metadata_deployment_comparison_status(comparison_id)`, and read
-  `get_latest_full_metadata_deployment_comparison` — a full org-to-org metadata diff, no
-  deploy involved.
-- **"Back up the org's metadata"** — `run_metadata_backup(org_id)` starts a backup task; track
-  it with `get_task_status(task_id)`. A finished backup also becomes a valid deploy
+- **"What differs between these two orgs?"** — `compare_orgs` with `from_org_id` (or
+  `from_backup_id`) and `to_org_id`, or `deployment_id` for the two sides of an existing deployment.
+  No draft deployment is needed. It reuses the latest comparison of that pair (and says how old it
+  is) unless `start_new: true`. While `state` is `running` (a full comparison takes 7–11 minutes),
+  wait and call it again with the same arguments; when `done` it gives counts per metadata type
+  (only in source / only in target / different / same), and `types: [...]` lists the component
+  names of those types. A git repo cannot be compared.
+- **"Back up the org's metadata"** — `run_metadata_backup(org_id)` returns the new `backup_id`;
+  follow it with `list_sources(kind: "backups", org_id, include_unusable: true)` every minute or
+  two until it shows `usable_as_source: true`. A finished backup also becomes a valid deploy
   *source* (`from_backup_id`) for restores.
 - **Record (data) backup before a risky deploy** — when `check_deployment` recommends it
   (`record_backups/recommended` verdict), pass the objects as `objects_to_backup` on

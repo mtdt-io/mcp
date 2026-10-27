@@ -112,7 +112,7 @@ concurrent edits are not detected or rejected.
   reports there was nothing to download), the backup had no stored package — it finished without an
   archive, so there was never anything to unpack. Newer MCP versions reject such a backup up front
   at `create_deployment` as `{ error: "backup_not_usable", reason: "no_archive" }` and create no
-  deployment at all; pick a usable backup from `list_metadata_backups` or run a fresh one.
+  deployment at all; pick a usable backup from `list_sources` (`kind: "backups"`) or run a fresh one.
 
 ## Retrieval looks stuck
 
