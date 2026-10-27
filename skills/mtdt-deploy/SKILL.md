@@ -372,6 +372,11 @@ execution settings as the actual launch. For example, a validation with specific
 - **Production / `is_important` targets:** always validate first; never `test_option:
   "NoTestRun"` (Salesforce rejects it on prod anyway); if mtdt forces `request_approval`, tell
   the user an approver must act — do not try to bypass.
+- **Important targets need the user's yes for each deploy:** `execute_deployment` to an org marked
+  important in mtdt answers `confirmation_required` (its dry run shows `confirmation_required: true`)
+  and creates nothing. Ask the user to confirm deploying to that org, then call again with
+  `confirm_important_target: true` — only after they said yes, never on your own. The same holds
+  for a request for approval; validations are not asked.
 - **Coverage:** Salesforce requires ≥75% coverage on the components you deploy. A class with no
   covering test will fail validation with a `codeCoverageWarning` even if it compiles. Save the
   class **together with its test class** using `update_deployment` (`add_components`), then validate and run
