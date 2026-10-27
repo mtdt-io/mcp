@@ -5,10 +5,13 @@ description: Diagnose failed or stuck Salesforce deployments run through mtdt.io
 
 # Troubleshooting mtdt deployments
 
-Start from `get_deploy_status` for the deployment — it returns a derived status plus the failure
-details you need. (To *wait* on a still-running run, use `await_deploy_status` instead — it blocks
-up to ~50s server-side; while it returns `timed_out: true`, call it again.) Read the failure
-**category** before proposing fixes:
+Start from `get_deployment_run` for the deployment — it returns the run's `state`, a one-line
+`outcome` and the failure details you need (`component_failures`, `test_failures`,
+`code_coverage_warnings`). It answers immediately: while `state` is `queued`, `running` or
+`finishing`, call it again every 15–30 s. `waiting` (approval or schedule) does not change by
+polling — tell the user. `finishing` means Salesforce is done and post-deploy steps still run; if
+one of them fails the run turns `failed` with "Deployed to Salesforce, but a post-deploy step
+failed" — the metadata is on the target. Read the failure **category** before proposing fixes:
 
 ## Component failures vs test failures vs coverage
 
@@ -28,7 +31,8 @@ up to ~50s server-side; while it returns `timed_out: true`, call it again.) Read
 ## Quick-deploy rejected
 
 `quick_deploy` only works after a **Succeeded validation that ran tests** on the same deployment.
-If it reports no eligible validation: the last validation failed, ran with `NoTestRun`, or a real
+`get_deployment_run` on that validation shows `quick_deploy_eligible` and, when false,
+`quick_deploy_ineligible_reason`. If it reports no eligible validation: the last validation failed, ran with `NoTestRun`, or a real
 deploy already consumed it. Re-validate with `validate_deployment` and `test_option: "local"` or
 `"specific"`, then retry. Salesforce quick-deploy windows also expire (~10 days) — a stale
 validation needs a fresh one.
@@ -138,7 +142,7 @@ mtdt deliberately waits when **any** deployment is already running on the target
 ones started outside mtdt). This resolves itself; check the target org's deployment status in
 Salesforce Setup if it persists.
 
-When the cause is genuinely unclear, gather `get_deploy_status` output plus the run's component
+When the cause is genuinely unclear, gather `get_deployment_run` output plus the run's component
 and test failure lists, summarize them for the user, and suggest inspecting the run in the mtdt
 web UI where full logs live.
 

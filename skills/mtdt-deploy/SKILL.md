@@ -297,15 +297,20 @@ For example, preview a validation with specific tests:
 - `empty_selection` means nothing is saved yet: browse, add components, inspect, then retry.
   `deployment_not_ready` means archive selection is still populating: wait until `get_deployment` reports `ready`.
   Other rejects and recovery steps are covered by the `mtdt-troubleshoot` skill.
-- Wait with `await_deploy_status(deployment_id)` — one call blocks up to ~50s server-side and
-  returns the moment the run is terminal; **while it returns `timed_out: true`, call it again**.
-  `is_success` + `is_validation` means the validation passed.
+- The launch returns `{ run_id, task_id, state, outcome }` right away. Follow it with
+  `get_deployment_run(deployment_id)`: it answers immediately, so **call it every 15–30 s while
+  `state` is `queued`, `running` or `finishing`**, never faster. `succeeded`, `failed` and
+  `cancelled` are final. When `state` is `waiting` (`waiting_for: "approval"` — an approver must
+  act in mtdt; `"schedule"` — it starts at `scheduled_at`), **stop polling and tell the user**.
+  A succeeded validation carries `quick_deploy_eligible`; when it is `false`,
+  `quick_deploy_ineligible_reason` says why.
 
 ## 6. Quick-deploy (the safe path to a real deployment)
 
-- After a successful validation-with-tests: `quick_deploy` with just the `deployment_id` (it
-  auto-derives the validation job) — this performs the **real deployment** without re-running
-  tests. Wait with `await_deploy_status` again.
+- After a successful validation-with-tests whose `get_deployment_run` shows
+  `quick_deploy_eligible: true`: `quick_deploy` with just the `deployment_id` (it auto-derives the
+  validation job) — this performs the **real deployment** without re-running tests. Follow it with
+  `get_deployment_run` the same way; if it comes back `waiting` for approval, tell the user.
 
 ## Advanced / low-level
 
