@@ -33,19 +33,19 @@ created, then restore the full-scope connection for subsequent cases. Do not mis
 refusal for a server permission check; verify both where applicable.
 
 For the promotion case, verify the new class on UAT through Salesforce Setup or an
-independent Metadata API retrieve, and inspect its MTDT run result. For backups, inspect the
-terminal task result and confirm the resulting archive is usable. Record the client, date,
+independent Metadata API retrieve, and inspect its MTDT run result. For backups, follow list_sources
+until the backup is usable_as_source. Record the client, date,
 fixture labels, case outcomes and independent observations in the `tt` preparation task.
 
 The eight directory cases are a review sample. Claude additionally requires every tool to be
 exercised. Use `tool-inventory.json` as the starting list; collect a current tools/list from
-the review connection and cover tools outside those eight cases too, including
-get_deployment_components, add_deployment_components, remove_deployment_components,
-preview_deployment_run, set_deployment_description,
-comparison start/status/latest, the legacy run-selection normalizer, create_deployment_run and
-the workflow recipe. Exercise the saved-selection path explicitly: add both classes, remove/re-add
-the test class and inspect the result. Preview with the intended mode/options before each new
-validation/direct run; confirm preview creates no run, and launch by ID without inline composition.
+the review connection and cover tools outside those eight cases too, including list_sources
+(repos, backups, archives), compare_orgs (reuse of the latest comparison and start_new),
+request_archive_upload and register_archive, and update_deployment for the caption, description
+and test level. Exercise the saved-composition path explicitly: add both classes, remove/re-add
+the test class and inspect the result with get_deployment. Run validate_deployment and
+execute_deployment with dry_run:true and the intended options before each launch; confirm a dry
+run creates no run, and launch by deployment ID.
 Creating or editing manual override contents still uses MTDT; existing manual overrides do not
 block MCP selection edits and must survive removal/re-add of their component. Exercise low-level
 writes only in the isolated review sandboxes. Check prompts/resources and graceful invalid-input/permission failures.

@@ -36,16 +36,17 @@ review evidence and directory prerequisites separately from package validity; us
 Use `--tools-json /path/to/export.json` to inspect a fresh tools/list export. That option does
 not turn a local inventory into proof that every tool was exercised.
 
-The maintained inventory contains 44 tools from the local server source and is marked
-`live: false`. It includes saved composition get/add/remove, the read-only run preview, and
-project/environment/Work Item reads with explicit project IDs, card create/update/archive/restore,
-deployment creation with Work Item links, standalone existing-deployment link/unlink, and
-wrappers for the existing product promotion preview/create-draft operations.
-The supplied deploy skill explains Work Items, reusable deployment drafts and individual runs.
-The review cases follow browse → save → inspect → preflight → preview → launch by ID;
-launch tools no longer accept inline composition or Flow activation arguments. After rolling
-out the matching MCP build, compare a fresh live tools/list before submission. The versioned
-justifications must cover exactly the same tool names as the inventory.
+The maintained inventory contains the 21 tools of `mtdt-backend/mcp/test-snapshots/tools-list.json`
+(the recorded tools/list of the local server) and is marked `live: false`: deployments
+(list, create, get, update — components, Apex test level, caption, description, Work Item links —,
+browse metadata, pre-deploy checks), runs (validate, execute — mtdt quick-deploys an eligible
+validation by itself —, get run), Work Items (projects with environments, list/search, get,
+create, update incl. archive/restore, promote with dry run), and sources and service tools
+(orgs with search, repos/backups/archives, org comparison, metadata backup, archive upload and
+registration). The supplied deploy skill explains Work Items, reusable deployment drafts and
+individual runs. The review cases follow browse → save → inspect → check → dry run → launch by
+ID. After rolling out the matching MCP build, compare a fresh live tools/list before submission.
+The versioned justifications must cover exactly the same tool names as the inventory.
 
 ## OpenAI / Codex directory
 

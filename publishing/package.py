@@ -19,7 +19,7 @@ from datetime import datetime, timezone
 
 ROOT = Path(__file__).resolve().parent.parent
 DIST = ROOT / "dist"
-ENDPOINT = "https://mcp.mtdt.io/mcp"
+ENDPOINT = "https://mcp.mtdt.io"
 ICON = "assets/mtdt-icon.png"
 SKILLS = ("mtdt-deploy", "mtdt-troubleshoot")
 
