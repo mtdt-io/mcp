@@ -74,9 +74,11 @@ concurrent edits are not detected or rejected.
   `check_deployment_creation_status`; retry after it is done.
 - `deployment_population_failed`: read the source task error in creation status and fix the
   source as described below. Repeating the run cannot repair population.
-- `component_has_overrides` or `component_marked_for_deletion`: the requested component has
-  advanced saved settings. Make that edit in the MTDT UI; do not remove settings to bypass the
-  reject. The tools leave those saved settings intact.
+- `component_has_overrides`: the requested component has an existing partial selection/smart
+  intent. Edit that selection in MTDT. Manual file overrides do not cause this reject: add/remove
+  preserves them, and a removed component can be re-added with its saved override intact.
+- `component_marked_for_deletion`: the component has a saved deletion. Change that intent in
+  MTDT before editing its selection; the tools leave the saved deletion intact.
 - `saved_config_blocked`: the same partial-selection checks used by the UI found a blocker.
   Read `blockers` and resolve the affected partial selection in MTDT before retrying.
 - `permission_denied` mentioning `metadata_deploys.edit`: the user's role cannot edit the draft.

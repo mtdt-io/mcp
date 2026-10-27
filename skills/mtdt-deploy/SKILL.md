@@ -73,8 +73,10 @@ Browsing does not change the deployment selection. Save the chosen full componen
   components from the saved selection; it does **not** delete them from Salesforce.
 - Saving follows the UI's last-save-wins model; there is no concurrent-edit check.
 - Read `get_deployment_components(deployment_id)` to confirm the saved composition. Add/remove
-  preserve other settings, including saved deletions and overrides. Editing components with
-  partial selections, manual overrides or saved deletions requires the MTDT UI for now.
+  preserve other settings, including saved deletions and overrides. Manual overrides created in
+  the UI do not block selection edits, including removing/re-adding their own component. Removing
+  a component keeps its override saved; re-adding it reuses that override. Edit override contents,
+  partial selections or deletion intent in the MTDT UI for now.
 - An archive source automatically selects its contents. After population finishes, inspect the
   saved selection and proceed to pre-flight; there is no need to pass `all_items` at launch.
 
