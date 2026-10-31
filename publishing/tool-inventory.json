@@ -1,11 +1,76 @@
 {
   "evidence": {
     "kind": "local-source",
-    "observedAt": "2026-10-27T21:32:58.333528+00:00",
-    "source": "mtdt-backend/mcp/test-snapshots/tools-list.json (22 tools: explicit full and quick execution)",
+    "observedAt": "2026-10-31T22:23:08.772229+00:00",
+    "source": "mtdt-backend/mcp/test-snapshots/tools-list.json at dfc700c6 (23 tools: explicit full and quick execution, get_workflow_deployment_recipe)",
     "live": false
   },
   "tools": [
+    {
+      "name": "get_workflow_deployment_recipe",
+      "title": "Get Workflow Deployment Recipe",
+      "description": "Get the recommended Salesforce metadata deployment workflow, including current tools, validation, full and quick deployment alternatives, and guardrails. Read-only.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "recipe": {
+            "type": "object",
+            "properties": {
+              "goal": {
+                "type": "string"
+              },
+              "steps": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "tool": {
+                      "type": "string"
+                    },
+                    "purpose": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "tool",
+                    "purpose"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "notes": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            },
+            "required": [
+              "goal",
+              "steps",
+              "notes"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "recipe"
+        ],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "title": "Get Workflow Deployment Recipe",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
     {
       "name": "create_work_item",
       "title": "Create Work Item",
@@ -534,7 +599,8 @@
           },
           "counts": {
             "type": "object",
-            "additionalProperties": {}
+            "additionalProperties": {},
+            "description": "Component counts: components_validated for validations, components_deployed for deploys, plus components_total. Also includes tests_completed, tests_total and test_errors."
           },
           "component_failures": {
             "type": "array",

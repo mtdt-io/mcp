@@ -36,14 +36,15 @@ review evidence and directory prerequisites separately from package validity; us
 Use `--tools-json /path/to/export.json` to inspect a fresh tools/list export. That option does
 not turn a local inventory into proof that every tool was exercised.
 
-The maintained inventory contains the 22 tools of `mtdt-backend/mcp/test-snapshots/tools-list.json`
+The maintained inventory contains the 23 tools of `mtdt-backend/mcp/test-snapshots/tools-list.json`
 (the recorded tools/list of the local server) and is marked `live: false`: deployments
 (list, create, get, update — components, Apex test level, caption, description, Work Item links —,
 browse metadata, pre-deploy checks), runs (validate, execute — mtdt quick-deploys an eligible
 validation by itself —, get run), Work Items (projects with environments, list/search, get,
 create, update incl. archive/restore, promote with dry run), and sources and service tools
 (orgs with search, repos/backups/archives, org comparison, metadata backup, archive upload and
-registration). The supplied deploy skill explains Work Items, reusable deployment drafts and
+registration), and `get_workflow_deployment_recipe`, which returns the same deploy workflow as the
+server instructions as structured data. The supplied deploy skill explains Work Items, reusable deployment drafts and
 individual runs. The review cases follow browse → save → inspect → check → dry run → launch by
 ID. After rolling out the matching MCP build, compare a fresh live tools/list before submission.
 The versioned justifications must cover exactly the same tool names as the inventory.
