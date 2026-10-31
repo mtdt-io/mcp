@@ -101,7 +101,7 @@ concurrent edits are not detected or rejected.
 - `permission_denied` mentioning `metadata_deploys.edit`: the user's role cannot edit the draft.
   Ask a team administrator to grant the appropriate permission; do not switch credentials.
 
-## The deployment never populates (repo or backup source)
+## The deployment never populates (repo, backup, or archive source)
 
 - `get_deployment(deployment_id)` reports each side's `readiness` with the population task
   behind it, so a failed source unpack reads as `"failed"` with `task.error` instead of an endless
@@ -113,6 +113,24 @@ concurrent edits are not detected or rejected.
   archive, so there was never anything to unpack. Newer MCP versions reject such a backup up front
   at `create_deployment` as `{ error: "backup_not_usable", reason: "no_archive" }` and create no
   deployment at all; pick a usable backup from `list_sources` (`kind: "backups"`) or run a fresh one.
+
+## Uploading or deploying a zip archive
+
+- `register_archive` → `"not_uploaded"`: the `curl` upload did not happen or failed. Rerun it and
+  check it answers HTTP 200; if the link already expired (it lives only `expires_in_seconds`,
+  sometimes 2 minutes), call `request_archive_upload` again and run the new command at once.
+- `"invalid_archive"`: the zip is neither an SFDX project (`force-app/...`) nor a Metadata API
+  package (`package.xml` next to the type folders) — or not a zip at all. `"archive_empty"`: it
+  holds no deployable components. `"too_large"`: the limit is 50 MB. No archive is created on any
+  of these.
+- `check_deployment` with `all_items` → `"archive_not_ready"`: the archive is still being unpacked
+  for the deployment — wait until `get_deployment` reports `ready`. `"archive_unpack_failed"`: read
+  `source.task.error` there and create a new deployment from a valid archive.
+  `"all_items_not_supported"`: the deployment's source is not an archive — save the components with
+  `update_deployment` and check without `all_items`.
+- No shell to run `curl`: the zip cannot travel through the MCP connection. Ask the user to upload
+  it on the Archives page of the mtdt web app (then `list_sources` `kind: "archives"`), or to push the project to a
+  connected git repo and deploy from the repo.
 
 ## Retrieval looks stuck
 

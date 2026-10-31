@@ -1,6 +1,6 @@
 ---
 name: mtdt-deploy
-description: Promote Salesforce metadata between orgs with mtdt.io. Use when the user asks to deploy, promote, or push Salesforce metadata (Apex classes, flows, fields, objects, permission sets, ...) from one org to another (dev → QA, QA → staging, staging → production), or to validate such a deployment. Also use for creating and editing Work Items, archiving/restoring cards, creating linked deployments, linking/unlinking existing deployments, and reading project environments, groups and delivery status. Covers the full workflow — create deployment, save its component selection, check it (check_deployment), dry-run actions, validate by ID, then deploy for real (quick deploy when eligible).
+description: Promote Salesforce metadata between orgs with mtdt.io. Use when the user asks to deploy, promote, or push Salesforce metadata (Apex classes, flows, fields, objects, permission sets, ...) from one org to another (dev → QA, QA → staging, staging → production), to deploy a local zip (SFDX project or Metadata API package) to an org, or to validate such a deployment. Also use for creating and editing Work Items, archiving/restoring cards, creating linked deployments, linking/unlinking existing deployments, and reading project environments, groups and delivery status. Covers the full workflow — create deployment, save its component selection, check it (check_deployment), dry-run actions, validate by ID, then deploy for real (quick deploy when eligible).
 ---
 
 # Deploying Salesforce metadata with mtdt
@@ -180,6 +180,13 @@ For the initial deployment, use `create_deployment` with the card IDs instead.
   `create_deployment` parameter that takes its id. Backups are listed only when actually usable as a
   deploy source (status done with the archive present), each with a human `label` — pass
   `include_unusable: true` to also see the rest, each carrying an `unusable_reason`.
+  A zip or project the user has locally is always uploaded fresh, see
+  [Deploying a local zip](#deploying-a-local-zip): an archive with the same name in
+  `list_sources` is an earlier upload, not this file.
+- **Changes in local files?** If the user's changes are in the working directory (an SFDX
+  project, a Metadata API folder, or a zip of either) and they did not name a source org, those
+  files are the source: zip them and follow [Deploying a local zip](#deploying-a-local-zip). Do
+  not pick an org whose metadata only looks related.
 
 ## 2. Create the deployment (or resume one)
 
@@ -285,6 +292,9 @@ budget come back in `pending`: call again with `checks` set to them. Lists longe
 (`total` says how many). For a deployment created from an archive the saved selection already holds
 every archive component; `all_items: true` checks the whole archive explicitly.
 
+A check sends nothing to Salesforce, so it is not a validation. When the user asked to validate or
+check a deploy, run `validate_deployment` and report its outcome.
+
 ## 5. Dry-run the validation, then validate
 
 Call `validate_deployment` with `dry_run: true` first, with `deployment_id` and the same optional
@@ -353,6 +363,40 @@ execution settings as the actual launch. For example, a validation with specific
 - `scheduled_at` is available on `execute_quick_deployment`; a full deploy returns `scheduling_not_supported`.
 - Follow the returned `run_id` with `get_deployment_run` every 15–30 s until terminal, or stop at waiting.
 
+## Deploying a local zip
+
+Use this when the user (or you) already has the package as a zip — an SFDX project
+(`force-app/...`, with or without `sfdx-project.json`) or a Metadata API package (`package.xml`
+next to the type folders). The zip goes straight to mtdt storage with `curl`; **never** read it
+into the conversation or pass its contents through tool calls.
+
+1. Have the zip ready first (build it with `zip -r release.zip force-app` if needed; 50 MB max).
+   Upload it even if `list_sources` (`kind: "archives"`) shows an archive with the same name: that
+   archive is an earlier upload and may differ from the local files. Reuse an existing archive
+   only when the user points to it.
+2. `request_archive_upload(team_id, file_name)` returns `path` and a ready `curl` command. Replace
+   `<LOCAL_ZIP_PATH>` and run it **right away** — the link lives only `expires_in_seconds`
+   (can be as little as 2 minutes). The upload must answer HTTP 200; if the link expired, request
+   a new one.
+3. `register_archive(team_id, path, caption)` converts SFDX source to Metadata API format and
+   creates the archive (it shows up on the Archives page). It returns `archive_id`,
+   `component_count` and `types` — counts only.
+4. `create_deployment` with `from_archive_id` = `archive_id` and `to_org_id`. Every component of
+   the archive is selected automatically; call `get_deployment` until `ready` is `true`. No
+   `browse_metadata` or `update_deployment` `add_components` is needed.
+5. `check_deployment` with `all_items: true`. When its `tests` lists the archive's own test
+   classes, validate with `test_option: "specific"` and those tests: `"local"` also needs a 75%
+   average across the whole target org, which the archive cannot fix.
+6. `validate_deployment` by `deployment_id` as in section 5 above (dry run first; no `items` or
+   `all_items` at launch). Validation may count a few more components than `register_archive`
+   did: an object whose fields are shipped is sent as its own component too.
+7. Follow the run with `get_deployment_run`, then choose the deployment explicitly as in section 6.
+
+**No shell?** There is no way to upload the zip through the MCP connection itself. Ask the user to
+upload it on the Archives page of the mtdt web app (then find it with `list_sources`
+`kind: "archives"` and continue from step 4), or to push the project to a connected git repo and
+deploy from the repo.
+
 ## Advanced / low-level
 
 - A direct full deploy is `execute_deployment` (dry-run it first). It uses the same full saved config as validation.
@@ -396,6 +440,10 @@ execution settings as the actual launch. For example, a validation with specific
 - **Coverage:** Salesforce requires ≥75% coverage on the components you deploy. A class with no
   covering test will fail validation with a `codeCoverageWarning` even if it compiles. Save the
   class **together with its test class** using `update_deployment` (`add_components`), then validate and run
-  that test (`test_option: "specific"`).
+  that test (`test_option: "specific"`). A validation that ends failed with every component
+  deployed and no failed tests failed on coverage: read `code_coverage_warnings` in
+  `get_deployment_run`. With `test_option: "local"` Salesforce also requires a 75% average across
+  the whole target org, which the package cannot fix; validate again with `"specific"` and the
+  package's test classes.
 - **Rollback safety:** for risky deploys pass `backup: true` on `execute_deployment` — it
   snapshots the target pre-deploy so the run can be rolled back from the mtdt UI. Quick deploy attempts a metadata rollback backup from the persisted validation artifacts.

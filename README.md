@@ -17,7 +17,8 @@ deployment sources (git repos, metadata backups, uploaded archives), create a de
 its components and test level, browse metadata, run the pre-deploy checks (missing dependencies,
 target conflicts, profile & permission warnings, record-backup recommendations, Apex test
 recommendations), validate with tests, and deploy: use `execute_deployment` for the current saved draft or `execute_quick_deployment`
-for an explicitly selected validation package. Compare two orgs, back up org metadata, and move Work Items through a project's
+for an explicitly selected validation package. A zip the agent already has (SFDX project or Metadata API package) can be uploaded straight to
+mtdt and deployed whole. Compare two orgs, back up org metadata, and move Work Items through a project's
 environments. Every launch answers at once with the run's state; your agent follows it with
 `get_deployment_run`.
 
@@ -31,8 +32,8 @@ doesn't just *have* the tools — it knows the playbook.
 
 - **`mtdt-deploy`** — the full promotion workflow: resolve the target safely (production targets
   get confirmed, never assumed), browse & pick components, the pre-flight battery (the same
-  checks a human gets in the Deploy modal), validation-first flow, quick-deploy, and the
-  guardrails: the 75% coverage rule, rollback snapshots, approval gates.
+  checks a human gets in the Deploy modal), validation-first flow, quick-deploy, deploying a
+  local zip, and the guardrails: the 75% coverage rule, rollback snapshots, approval gates.
 - **`mtdt-troubleshoot`** — reading failed runs: component vs test vs coverage failures,
   quick-deploy prerequisites and expiry, stuck retrievals, auth pitfalls — each with the fix,
   not just the diagnosis.
