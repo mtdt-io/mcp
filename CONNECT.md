@@ -14,7 +14,7 @@ no tokens to copy.**
 Requirements:
 
 - An mtdt.io account with at least one connected Salesforce org.
-- MFA-enrolled mtdt accounts are not yet supported by the MCP connection (coming).
+- If your account or team requires MFA, complete the second factor during browser sign-in.
 - On the consent screen you grant **View** (`mtdt:read`) and optionally **Run** (`mtdt:deploy`)
   privileges. Deploy-capable tools refuse without the Run scope, and always respect your team's
   mtdt roles — approval-gated targets stay approval-gated.
@@ -55,7 +55,7 @@ To sign in: run `/mcp` inside a session and pick **Authenticate**, or `claude mc
 
 ## Cursor
 
-[![Add mtdt to Cursor](https://cursor.com/deeplink/mcp-install-dark.svg)](https://cursor.com/en/install-mcp?name=mtdt&config=eyJ1cmwiOiJodHRwczovL21jcC5tdGR0LmlvL21jcCJ9)
+[![Add mtdt to Cursor](https://cursor.com/deeplink/mcp-install-dark.svg)](https://cursor.com/en/install-mcp?name=mtdt&config=eyJ1cmwiOiJodHRwczovL21jcC5tdGR0LmlvIn0=)
 
 Or manually in `~/.cursor/mcp.json` (global) or `.cursor/mcp.json` (project):
 
@@ -134,7 +134,8 @@ Copy-pasting one client's snippet into another silently fails — the required `
 
 ## What you get
 
-Salesforce DevOps tools in your agent: list orgs, create deployments, retrieve metadata,
-impact analysis, target-conflict checks, Apex test recommendations, validate with tests,
-quick-deploy. Long-running deploys are awaitable server-side (`await_deploy_status`) so your
-agent doesn't busy-poll.
+Salesforce DevOps tools in your agent: find orgs and deployment sources, create and edit
+deployments, browse metadata, pre-deploy checks (missing dependencies, target conflicts, Apex test
+recommendations), validate with tests, deploy the current draft or quick-deploy an explicitly selected
+validation, compare orgs, back up metadata, and Work Items. Every launch answers at once with
+the run's state; follow it with `get_deployment_run`.

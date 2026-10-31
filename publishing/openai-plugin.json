@@ -1,0 +1,41 @@
+{
+  "name": "mtdt",
+  "version": "0.3.0",
+  "description": "mtdt.io MCP: Salesforce DevOps platform connector (metadata deployments, backups and more)",
+  "author": {
+    "name": "mtdt.io",
+    "email": "support@mtdt.io",
+    "url": "https://mtdt.io"
+  },
+  "homepage": "https://mtdt.io",
+  "repository": "https://github.com/mtdt-io/mcp",
+  "keywords": ["salesforce", "devops", "metadata", "deployments", "backups"],
+  "skills": "./skills/",
+  "mcpServers": "./.mcp.json",
+  "interface": {
+    "displayName": "mtdt.io",
+    "shortDescription": "Salesforce deploys and backups",
+    "longDescription": "Use mtdt.io to work with the Salesforce orgs connected to your team. Find source and target orgs, inspect deployment history, and prepare deployments from an org, a Git repository, or a usable metadata backup. Browse metadata, save the component selection, and preview execution settings before launch. Run pre-deployment checks for dependencies, target conflicts, permissions, and backup recommendations. Validate a selected package with Apex tests, follow its status, and quick-deploy a successful validation. You can also start metadata backups and inspect their progress.\n\nThe package includes deployment and troubleshooting skills. It connects to the hosted mtdt.io MCP server using browser-based OAuth sign-in. You need an mtdt.io account and connected Salesforce orgs. Viewing requires the mtdt:read scope; tools that create deployments, retrieve metadata, validate, or run backups require mtdt:deploy. Your team roles and target approval policies still apply. Validation checks the package without deploying its metadata to the target; quick-deploy and direct deployment can overwrite target metadata. Preflight findings are advisory. Review the run preview before launch: saved actions such as Apex scripts and scheduled-job pauses can have effects even during validation.",
+    "developerName": "mtdt.io",
+    "category": "Developer Tools",
+    "capabilities": ["Salesforce metadata deployments", "Deployment run previews", "Deployment preflight checks", "Metadata backups"],
+    "websiteURL": "https://mtdt.io",
+    "supportURL": "https://mtdt.io/#contact",
+    "privacyPolicyURL": "https://docs.mtdt.io/docs/legal-information/privacy-policy/",
+    "termsOfServiceURL": "https://docs.mtdt.io/docs/legal-information/terms/",
+    "defaultPrompt": [
+      "Show my connected Salesforce orgs and recent deployments.",
+      "Check a Salesforce metadata deployment before validation.",
+      "Help me understand why my last deployment failed."
+    ],
+    "composerIcon": "./assets/mtdt-icon.png",
+    "logo": "./assets/mtdt-icon.png"
+  },
+  "extensions": {
+    "com.openai": {
+      "publication": {
+        "release_notes": "Adds thin MCP wrappers for existing Work Item promotion preview and draft creation; product full/delta, group, fingerprint, audit and partial-result rules are unchanged. Retains existing Work Item lifecycle, links and saved-run flow. Updates supplied skills/examples and the 44-tool local inventory; hosted rollout requires separate verification."
+      }
+    }
+  }
+}

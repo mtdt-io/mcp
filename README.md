@@ -12,12 +12,15 @@ speaks MCP.
 
 ## What your agent gets
 
-Deploy metadata between Salesforce orgs through [mtdt.io](https://mtdt.io): list orgs, create
-deployments, browse/retrieve metadata, pre-deploy checks (impact analysis, target conflicts,
-profile & permission warnings, record-backup recommendations), Apex test recommendations,
-validate with tests, quick-deploy. A zip the agent already has (SFDX project or Metadata API
-package) can be uploaded straight to mtdt and deployed whole. Long-running deploys are awaitable
-server-side (`await_deploy_status`) so your agent doesn't busy-poll.
+Deploy metadata between Salesforce orgs through [mtdt.io](https://mtdt.io): find orgs and
+deployment sources (git repos, metadata backups, uploaded archives), create a deployment and edit
+its components and test level, browse metadata, run the pre-deploy checks (missing dependencies,
+target conflicts, profile & permission warnings, record-backup recommendations, Apex test
+recommendations), validate with tests, and deploy: use `execute_deployment` for the current saved draft or `execute_quick_deployment`
+for an explicitly selected validation package. A zip the agent already has (SFDX project or Metadata API package) can be uploaded straight to
+mtdt and deployed whole. Compare two orgs, back up org metadata, and move Work Items through a project's
+environments. Every launch answers at once with the run's state; your agent follows it with
+`get_deployment_run`.
 
 Deploy-capable tools require the **Run** (`mtdt:deploy`) consent scope and always respect your
 team's mtdt roles — approval-gated targets stay approval-gated.
@@ -54,10 +57,24 @@ Quick versions:
 | Client | One-liner |
 |---|---|
 | Claude Code | `claude mcp add --transport http mtdt https://mcp.mtdt.io` |
-| Cursor | [![Add mtdt to Cursor](https://cursor.com/deeplink/mcp-install-dark.svg)](https://cursor.com/en/install-mcp?name=mtdt&config=eyJ1cmwiOiJodHRwczovL21jcC5tdGR0LmlvL21jcCJ9) |
+| Cursor | [![Add mtdt to Cursor](https://cursor.com/deeplink/mcp-install-dark.svg)](https://cursor.com/en/install-mcp?name=mtdt&config=eyJ1cmwiOiJodHRwczovL21jcC5tdGR0LmlvIn0=) |
 | OpenAI Codex | `codex mcp add mtdt --url https://mcp.mtdt.io` |
 | OpenCode | `"mcp": { "mtdt": { "type": "remote", "url": "https://mcp.mtdt.io" } }` |
 
 ## Notes
 
 - Requires an mtdt.io account with at least one connected Salesforce org.
+
+## Privacy and support
+
+The connector processes requested Salesforce metadata and deployment/backup information
+through the MTDT service. Scope consent, team roles and target approval policies apply to the
+signed-in account. Review the [privacy policy](https://docs.mtdt.io/docs/legal-information/privacy-policy/)
+and [terms of service](https://docs.mtdt.io/docs/legal-information/terms/) before connecting.
+For support, email support@mtdt.io or use the [contact form](https://mtdt.io/#contact).
+
+## Directory packages
+
+Maintainers can build the OpenAI/Codex and Claude distribution ZIPs with
+`python3 publishing/package.py build`. Submission materials and instructions are in
+[publishing/README.md](publishing/README.md).

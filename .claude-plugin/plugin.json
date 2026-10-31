@@ -1,9 +1,13 @@
 {
   "name": "mtdt",
   "description": "Salesforce DevOps from your IDE: promote metadata between orgs via mtdt.io — impact analysis, conflict checks, test recommendations, validate + quick-deploy.",
-  "version": "0.2.2",
+  "version": "0.3.0",
   "author": {
     "name": "mtdt.io",
+    "email": "support@mtdt.io",
     "url": "https://mtdt.io"
-  }
+  },
+  "homepage": "https://mtdt.io",
+  "repository": "https://github.com/mtdt-io/mcp",
+  "keywords": ["salesforce", "devops", "metadata", "deployments", "backups"]
 }

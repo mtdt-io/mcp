@@ -5,51 +5,114 @@ description: Diagnose failed or stuck Salesforce deployments run through mtdt.io
 
 # Troubleshooting mtdt deployments
 
-Start from `get_deploy_status` for the deployment — it returns a derived status plus the failure
-details you need. (To *wait* on a still-running run, use `await_deploy_status` instead — it blocks
-up to ~50s server-side; while it returns `timed_out: true`, call it again.) Read the failure
-**category** before proposing fixes:
+Start from `get_deployment_run` for the deployment — it returns the run's `state`, a one-line
+`outcome` and the failure details you need (`component_failures`, `test_failures`,
+`code_coverage_warnings`). It answers immediately: while `state` is `queued`, `running` or
+`finishing`, call it again every 15–30 s. `waiting` (approval or schedule) does not change by
+polling — tell the user. `finishing` means Salesforce is done and post-deploy steps still run; if
+one of them fails the run turns `failed` with "Deployed to Salesforce, but a post-deploy step
+failed" — the metadata is on the target. Read the failure **category** before proposing fixes:
 
 ## Component failures vs test failures vs coverage
 
 - **Component failures** (compile/metadata errors): the target is missing something the component
-  references. Run `run_impact_analysis` on the same selection — the missing dependency is usually
-  in its findings; add it and re-validate.
+  references. Run `check_deployment` with `checks: ["dependencies"]` — the missing dependency is usually
+  in its findings; retrieve it with `browse_metadata`, save it with `update_deployment` (`add_components`),
+  then call `validate_deployment` by `deployment_id`.
 - **Test failures**: a named Apex test asserted/threw. Read the failure message first — some orgs
   contain intentionally-failing demo/canary tests; if an unrelated pre-existing test fails under
   `test_option: "local"`, switch to `"specific"` with the tests that actually cover your
-  components (`recommend_tests`).
+  components (`check_deployment` with `checks: ["tests"]`).
 - **`codeCoverageWarning` with zero failed tests**: the run "failed" purely on the 75% coverage
   rule — the deployed class has no covering test in the run. Fix: include the test class in the
-  selection and run it (`test_option: "specific"`, e.g. `MyClass` + `MyClass_Test`), then
-  re-validate.
+  saved selection with `update_deployment` (`add_components`) and run it (`test_option: "specific"`,
+  e.g. `MyClass` + `MyClass_Test`), then re-validate by ID.
 
-## Quick-deploy rejected
+## A refused quick deployment
 
-`quick_deploy` only works after a **Succeeded validation that ran tests** on the same deployment.
-If it reports no eligible validation: the last validation failed, ran with `NoTestRun`, or a real
-deploy already consumed it. Re-validate with `validate_deployment` and `test_option: "local"` or
-`"specific"`, then retry. Salesforce quick-deploy windows also expire (~10 days) — a stale
-validation needs a fresh one.
+`execute_deployment` always performs a full deployment of the current saved draft.
+`execute_quick_deployment` instead needs `deployment_id` and an explicit `validation_run_id`.
+Use `get_deployment_run` for that exact run and read `quick_deploy_ineligible_reason`.
+It must be a successful validation that ran tests and still has a usable SF job ID within its
+lifetime. Draft edits or a newer validation do not invalidate the chosen immutable package.
+A refusal never switches to full deployment. Revalidate with tests, or explicitly choose a full
+deployment after reviewing that plan. Salesforce may still refuse a quick deploy if other changes
+reached the target meanwhile.
 
-## `items_not_retrieved` from validate_deployment
+- `run_in_progress`: a run of this deployment is still queued, running, finishing or waiting.
+  Follow `run` with `get_deployment_run`; a run waiting for approval needs a person in mtdt.
+- `permission_denied`: you can neither deploy to this target directly nor request approval. Ask
+  a team administrator; do not switch credentials.
+- `scheduling_not_supported`: only a quick deploy can be scheduled.
 
-A component you named was never retrieved for this deployment — the reject lists exactly which.
-Run `browse_metadata` for that type first (it retrieves on first call) and check the spelling
-against its rows; only retrieved components can be deployed.
+## Unexpected settings in the run plan
+
+Call `validate_deployment`, `execute_deployment` or `execute_quick_deployment` with `dry_run: true` and the intended
+execution options before starting another run. Its preparation is shared with actual launch, and
+the call creates no state or Salesforce work. `execution_settings` exposes inherited settings; `after_deploy` and
+`scheduled_jobs` highlight the actions they can cause.
+
+- An unexpected `NoTestRun` is inherited from the saved draft. Dry-run and validate with
+  `test_option: "local"` or `"specific"` + `tests_to_run` when tests are intended.
+- `validation_apex` / `saved_jobs`: validation does not automatically disable saved Apex or job
+  pause settings. Read the code/jobs and report those actions before launch; do not retry blind.
+- Flow activation comes only from the saved deployment config, including its exclusions.
+  Review/change it in MTDT, then dry-run again. If a run or dry run rejects the old
+  `activate_flows_after_deploy` argument, remove it from the request; configure activation on
+  the deployment instead. There is no per-run activation override.
+- `flow_tests_target_mismatch`: saved Flow tests belong to a different target; fix the test
+  selection in MTDT before launching.
+- A dry run is a snapshot, not a reservation or a successful preflight. After changing the draft
+  or execution options, inspect the plan again. Launch still applies permissions/approval and
+  worker checks; a dry run alone is not proof that the run will succeed.
+
+## Saved composition rejected before a run
+
+Start with `get_deployment(deployment_id)` to inspect what is saved.
+`validate_deployment` and `execute_deployment` take `deployment_id`. Neither accepts a
+replacement composition. Composition edits follow the UI's last-save-wins model;
+concurrent edits are not detected or rejected.
+
+- `inline_config_not_supported` or an input-schema error naming old run arguments: stop passing
+  `items`, `all_items`, `selected_items`, `config` or destructive-change arguments at launch.
+  Save full components with `update_deployment` (`add_components` / `remove_components`), then
+  run by ID. Changing the arguments does not save the previous inline selection automatically.
+- `empty_selection`: browse and save the intended components first. A saved deletion or partial
+  selection can also make a draft runnable; inspect it before assuming the whole draft is empty.
+- `items_not_retrieved` from `update_deployment`: a named source component is not in
+  this deployment's cache. Run `browse_metadata` for its type and check the spelling against the
+  returned rows, then retry the add. Nothing else from that call was saved.
+- `update_deployment` refusals change nothing: `nothing_to_change` (pass at least one field),
+  `conflicting_changes` (the same component or Work Item on both the add and remove side),
+  `invalid_test_level` (`tests_to_run` without `test_option: "specific"`, or `"specific"` with no
+  tests). A `hint` saying Work Item link changes failed means everything else WAS saved: retry only
+  the ids in `changes.work_items.failed`.
+- `deployment_not_ready`: the archive selection is still being populated. Call
+  `get_deployment` every ~15s; retry once `ready` is `true`.
+- `deployment_population_failed`: read `source.task.error` in `get_deployment` and fix the
+  source as described below. Repeating the run cannot repair population.
+- `component_has_overrides`: the requested component has an existing partial selection/smart
+  intent. Edit that selection in MTDT. Manual file overrides do not cause this reject: add/remove
+  preserves them, and a removed component can be re-added with its saved override intact.
+- `component_marked_for_deletion`: the component has a saved deletion. Change that intent in
+  MTDT before editing its selection; the tools leave the saved deletion intact.
+- `saved_config_blocked`: the same partial-selection checks used by the UI found a blocker.
+  Read `blockers` and resolve the affected partial selection in MTDT before retrying.
+- `permission_denied` mentioning `metadata_deploys.edit`: the user's role cannot edit the draft.
+  Ask a team administrator to grant the appropriate permission; do not switch credentials.
 
 ## The deployment never populates (repo, backup, or archive source)
 
-- `check_deployment_creation_status(deployment_id)` reports each side with the population task
+- `get_deployment(deployment_id)` reports each side's `readiness` with the population task
   behind it, so a failed source unpack reads as `"failed"` with `task.error` instead of an endless
-  `"in progress"`. `"failed"` never recovers by polling. For a backup source: edit the deployment
+  `"in_progress"`. `"failed"` never recovers by polling. For a backup source: edit the deployment
   in the mtdt web app and pick a finished backup that has an archive, or create a new deployment —
   Refresh does not re-unpack a backup. For an org side: re-authenticate the org, then press Refresh.
 - If it shows the source failed with `No value provided for input HTTP label: Key` (or otherwise
   reports there was nothing to download), the backup had no stored package — it finished without an
   archive, so there was never anything to unpack. Newer MCP versions reject such a backup up front
   at `create_deployment` as `{ error: "backup_not_usable", reason: "no_archive" }` and create no
-  deployment at all; pick a usable backup from `list_metadata_backups` or run a fresh one.
+  deployment at all; pick a usable backup from `list_sources` (`kind: "backups"`) or run a fresh one.
 
 ## Uploading or deploying a zip archive
 
@@ -60,13 +123,13 @@ against its rows; only retrieved components can be deployed.
   package (`package.xml` next to the type folders) — or not a zip at all. `"archive_empty"`: it
   holds no deployable components. `"too_large"`: the limit is 50 MB. No archive is created on any
   of these.
-- `all_items` → `"archive_not_ready"`: the archive is still being unpacked for the deployment —
-  wait until `check_deployment_creation_status` reports `"done"`. `"archive_unpack_failed"`: read
+- `check_deployment` with `all_items` → `"archive_not_ready"`: the archive is still being unpacked
+  for the deployment — wait until `get_deployment` reports `ready`. `"archive_unpack_failed"`: read
   `source.task.error` there and create a new deployment from a valid archive.
-  `"all_items_not_supported"`: the deployment's source is not an archive — name the components in
-  `items`.
+  `"all_items_not_supported"`: the deployment's source is not an archive — save the components with
+  `update_deployment` and check without `all_items`.
 - No shell to run `curl`: the zip cannot travel through the MCP connection. Ask the user to upload
-  it on the Archives page of the mtdt web app (then `list_archives`), or to push the project to a
+  it on the Archives page of the mtdt web app (then `list_sources` `kind: "archives"`), or to push the project to a
   connected git repo and deploy from the repo.
 
 ## Retrieval looks stuck
@@ -74,7 +137,9 @@ against its rows; only retrieved components can be deployed.
 - `browse_metadata` returning `{ status: "retrieving", partial: true }` just means the retrieval
   is still running and the rows so far are an incomplete snapshot — call it again with the same
   args (safe to repeat; duplicate tasks are impossible). `task_ids` names the JIT tasks still
-  running. Rows usually appear within seconds to a couple of minutes depending on type size.
+  running. The names usually arrive within seconds — the answer then turns into
+  `status: "names_ready"` and the list is complete — while the contents can take a couple of
+  minutes more depending on type size.
   Transient Salesforce errors (HTTP 404/timeouts) self-heal on a retry before escalating.
 - `browse_metadata` returning `{ status: "retrieval_failed", failed_tasks }` is a retrieval that
   failed on the Salesforce side for part of the type, not an empty type: read
@@ -86,8 +151,9 @@ against its rows; only retrieved components can be deployed.
 
 ## Auth / access
 
-- **"MFA-enrolled user" refusal at connect time**: the mtdt MCP currently supports non-MFA
-  accounts only; the user should connect with a non-MFA account or use the web app.
+- **"MFA required" at connect time**: sign in again and complete the second factor in the
+  browser. If sign-in never asks for it, ask the mtdt administrator to enable the MFA step for
+  the account. Do not work around the team's MFA policy by switching to an unprotected account.
 - **Permission errors on deploy actions**: the user's mtdt role may lack direct-deploy on that
   target — mtdt then forces an approval request; that is policy, not a bug.
 - **`reauth_required: true` on an org** (in `list_orgs`): the Salesforce connection needs
@@ -95,8 +161,8 @@ against its rows; only retrieved components can be deployed.
 
 ## The failure a preflight would have named
 
-Before re-validating blind, run `preflight_deployment` on the same selection — several classic
-failures show up there with the fix attached: a scheduled Apex (cron) job on a class you are
+Before re-validating blind, run `check_deployment` with just `deployment_id` to check the saved
+composition — several classic failures show up there with the fix attached: a scheduled Apex (cron) job on a class you are
 overwriting (Salesforce refuses the overwrite until the job is aborted), an Entitlement Process
 whose Business Hours is missing on the target (deploys "Successfully" and silently drops the
 binding), and destructive changes whose components the target still references.
@@ -107,6 +173,45 @@ mtdt deliberately waits when **any** deployment is already running on the target
 ones started outside mtdt). This resolves itself; check the target org's deployment status in
 Salesforce Setup if it persists.
 
-When the cause is genuinely unclear, gather `get_deploy_status` output plus the run's component
+When the cause is genuinely unclear, gather `get_deployment_run` output plus the run's component
 and test failure lists, summarize them for the user, and suggest inspecting the run in the mtdt
 web UI where full logs live.
+
+## Work Items
+
+- `project_setup_required`: configure two environments before inserting a new card. It does not
+  block operations on an existing card. Always supply the intended project ID.
+- `tracker_fields_readonly`: detach the ticket with `update_work_item` and `unlink_ticket:true`
+  alone, then edit, or use `force:true` for an intentional user-requested override. Detaching
+  retains the text; it does not unlink deployments.
+- `group_operation_required`: leave the active group explicitly in the UI before archiving. For
+  a locked group deployment, use **Unlink deployment from group** in MTDT UI; ordinary
+  `update_deployment` `unlink_work_items` never unlocks the group. An assembled deployment belongs to its master.
+  Do not detach deployments or unlock a group automatically.
+- `work_item_links_changed`: inspect current links with `get_work_item` and review the intended
+  operation again; do not retry blindly. `work_item_link_superseded` means the historical carrier
+  was replaced and cannot be reattached; inspect its replacement deployment.
+- `ticket_project_mismatch`: the ticket already has a card in another project; use the returned
+  project/item IDs explicitly. Do not create a duplicate or move it silently.
+- `work_item_link_failed`: keep the returned deployment ID. It was created; only the listed
+  `linked_work_item_ids` are confirmed. Inspect `unconfirmed_work_item_ids` and current links
+  before using `update_deployment` `link_work_items` for intended missing associations, or finish in the UI.
+  Repeating `create_deployment` creates another draft.
+
+## Work Item promotion
+
+- `scope_changed` / `stack_changed`: the promotion changed since the dry run. Call
+  `promote_work_item` with `dry_run: true` again and review the new donors/carriers or group version before
+  creating. Do not blindly substitute the new fingerprint and retry.
+- `not_ready` / `nothing_reached_env`: inspect pending deployments and surviving deliveries into
+  the source environment. Validation alone does not count as delivery. A green board marker can
+  survive rollback while promotion correctly refuses to use that run.
+- `no_next_environment`: this is the last environment in the project chain.
+- `stack_member`: promote through the group's master. Group creation requires the dry run's
+  `stack_version`, full mode and no supersede; do not detach participants as a workaround.
+- `already_promoted` / dry-run `reopen`: inspect the existing carrier rather than create another.
+  `delta_not_available` carries its reason. `open_draft_exists` needs review of the existing
+  open carriers; delta never permits superseding them.
+- A successful create with `supersede_failed` still created `deployment_id`. Keep that ID and
+  inspect the replacement marks and links in MTDT. A generic failure or lost response also needs
+  inspecting the card before retry, because creation is not idempotent.

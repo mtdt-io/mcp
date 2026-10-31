@@ -1,0 +1,73 @@
+{
+  "connection": {
+    "server_url": "https://mcp.mtdt.io",
+    "url_mode": "universal"
+  },
+  "listing": {
+    "name": "mtdt.io",
+    "one_liner": "Salesforce DevOps: metadata deployments, preflight checks, validation and backups.",
+    "description": "Work with the Salesforce orgs connected to your mtdt.io team. Find orgs, inspect deployments, browse metadata, and prepare a deployment from an org, Git repository, usable metadata backup or uploaded metadata archive (ZIP). Review dependencies, target conflicts, permission warnings and backup recommendations before validating with Apex tests. Follow validation and deployment results and deploy; a specific successful validation can be quick-deployed by its run ID. Compare two orgs, start a metadata backup, upload and register a metadata archive, and move Work Items through a project's environments. Validation runs without changing the target org; deployment overwrites metadata in the target org.",
+    "suggested_categories": [
+      "Developer Tools"
+    ],
+    "documentation_url": "https://docs.mtdt.io/docs/mcp/",
+    "privacy_policy_url": "https://docs.mtdt.io/docs/legal-information/privacy-policy/",
+    "support_contact": "support@mtdt.io",
+    "support_url": "https://mtdt.io/#contact",
+    "icon_file": "assets/mtdt-icon.png",
+    "suggested_slug": "mtdt"
+  },
+  "use_cases": [
+    {
+      "use_case": "Deploy Salesforce metadata between orgs",
+      "example_prompt": "Deploy ProjectService and ProjectServiceTest from DEV to UAT: run preflight checks, validate with local Apex tests, and quick-deploy only if validation succeeds."
+    },
+    {
+      "use_case": "Troubleshoot a deployment",
+      "example_prompt": "Show the status and errors of the latest run of the deployment captioned Test Deployment."
+    },
+    {
+      "use_case": "Back up org metadata",
+      "example_prompt": "Run a metadata backup for DEV and tell me when it is ready to use as a deployment source."
+    }
+  ],
+  "prerequisites": "An mtdt.io account with connected Salesforce orgs.",
+  "access": "read_and_write",
+  "company": {
+    "brand": "mtdt.io",
+    "legal_entity": "Shiny Friday Deployment Club LLC",
+    "website": "https://mtdt.io",
+    "proposed_review_contact": "support@mtdt.io"
+  },
+  "authentication": {
+    "type": "oauth_anthropic_creds",
+    "flow": "authorization_code_pkce_s256",
+    "issuer": "https://identity.mtdt.io/realms/mtdt",
+    "protected_resource_metadata_url": "https://mcp.mtdt.io/.well-known/oauth-protected-resource",
+    "authorization_endpoint": "https://identity.mtdt.io/realms/mtdt/protocol/openid-connect/auth",
+    "token_endpoint": "https://identity.mtdt.io/realms/mtdt/protocol/openid-connect/token",
+    "scopes": [
+      "mtdt:read",
+      "mtdt:deploy",
+      "email",
+      "profile",
+      "offline_access"
+    ],
+    "notes": "Users authenticate individually. Team roles and target approval policy apply in addition to OAuth scopes. Complete MFA when the account or team requires it. Reviewer access is supplied privately in the portal.",
+    "client_id": "claude-ai",
+    "client_auth": "client_secret_basic (secret transferred to Anthropic by their secure method, never stored here)",
+    "redirect_uri": "https://claude.ai/api/mcp/auth_callback"
+  },
+  "data_handling": {
+    "api_ownership_draft": "The connector exposes MTDT's own Salesforce DevOps APIs. MTDT accesses Salesforce orgs and optional connected Git repositories on behalf of the authenticated team, using the integrations the team authorized.",
+    "data_draft": "Requested tool arguments and results may include org and team identifiers, Salesforce metadata and Apex source, deployment selections, run results, test failures, backup details and user/display names. Treat these as potentially personal or customer-confidential data.",
+    "declared_services": [
+      "https://mcp.mtdt.io",
+      "https://identity.mtdt.io/realms/mtdt"
+    ],
+    "privacy_policy": "https://docs.mtdt.io/docs/legal-information/privacy-policy/",
+    "terms": "https://docs.mtdt.io/docs/legal-information/terms/",
+    "retention_draft": "Tool activity is processed by the MTDT service under its published policies. The plugin's skills do not create a separate hosted datastore. Deployment/backup artifacts, account data and operational logs have different retention rules; use the published policy and the review team's configured retention rather than promising a single retention period.",
+    "owner_attestations": "The submitter must confirm API authorization, data categories, health-data suitability, sponsored content, audience/age and all policy acknowledgments against actual usage. These are proposed answers, not signed attestations."
+  }
+}

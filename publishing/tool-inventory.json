@@ -1,0 +1,3477 @@
+{
+  "evidence": {
+    "kind": "local-source",
+    "observedAt": "2026-10-31T22:23:08.772229+00:00",
+    "source": "mtdt-backend/mcp/test-snapshots/tools-list.json at dfc700c6 (23 tools: explicit full and quick execution, get_workflow_deployment_recipe)",
+    "live": false
+  },
+  "tools": [
+    {
+      "name": "get_workflow_deployment_recipe",
+      "title": "Get Workflow Deployment Recipe",
+      "description": "Get the recommended Salesforce metadata deployment workflow, including current tools, validation, full and quick deployment alternatives, and guardrails. Read-only.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "recipe": {
+            "type": "object",
+            "properties": {
+              "goal": {
+                "type": "string"
+              },
+              "steps": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "tool": {
+                      "type": "string"
+                    },
+                    "purpose": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "tool",
+                    "purpose"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "notes": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            },
+            "required": [
+              "goal",
+              "steps",
+              "notes"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "recipe"
+        ],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "title": "Get Workflow Deployment Recipe",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "create_work_item",
+      "title": "Create Work Item",
+      "description": "Create an open Work Item in a project, by hand or from a tracker ticket. Pass project_id explicitly. For manual work provide caption and optional description; for a tracker ticket provide provider and external_id (ticket ID, key or supported URL), and the server reads the tracker text. Requires at least two project environments only when inserting. An existing ticket returns created=false without overwriting text/status/project; a ticket in another project returns ticket_project_mismatch. Manual creation is not idempotent: inspect list_work_items after an uncertain response before repeating.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "project_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "caption": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "provider": {
+            "type": "string",
+            "enum": [
+              "jira",
+              "clickup",
+              "asana",
+              "azure_devops"
+            ]
+          },
+          "external_id": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "project_id"
+        ],
+        "additionalProperties": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "additionalProperties": {}
+      },
+      "annotations": {
+        "title": "Create Work Item",
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      }
+    },
+    {
+      "name": "update_work_item",
+      "title": "Update Work Item",
+      "description": "Edit, archive or restore a Work Item: caption and/or description, status, or unlink its tracker ticket, in explicit project_id; send only what changes. status \"archived\" archives it and \"open\" restores it; already in that status is a no-op; active group membership returns group_operation_required (leave the group in the UI first); archiving does not delete the card or detach its deployments, restoring creates no deployment. Text and status in one call: the text is saved first, then the status, and the answer reports text_changed and status_changed (a status refusal after a saved text change says so). Uses the product update RPC with force=false by default. Ticket-linked text returns tracker_fields_readonly; unlink_ticket=true clears the ticket reference and keeps the text, then edit in another call. force=true is an explicit override and does not grant permissions. Does not move projects or change group/deployment links.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "project_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "work_item_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "caption": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "unlink_ticket": {
+            "type": "boolean"
+          },
+          "force": {
+            "type": "boolean"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "open",
+              "archived"
+            ],
+            "description": "\"archived\" archives the Work Item, \"open\" restores it. Already in that status is a no-op."
+          }
+        },
+        "required": [
+          "project_id",
+          "work_item_id"
+        ],
+        "additionalProperties": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "additionalProperties": {}
+      },
+      "annotations": {
+        "title": "Update Work Item",
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "promote_work_item",
+      "title": "Promote Work Item",
+      "description": "Promote a Work Item to its next environment by creating a deployment draft (nothing is deployed; validate and execute that deployment afterwards). dry_run:true shows what would be promoted. Pass explicit project_id, work_item_id and from_environment_id; the server derives the next environment and donors. dry_run returns the product verdict, blockers/pending deployments, existing carriers, the full fold (components, smart overrides and deletions), delta options, scope_fingerprint and, for a group, stack with its version — review it with the user. A green board cell is not promotion approval; reopen reuses an existing draft. The real call needs scope_fingerprint (and stack_version for a group) from the dry run, otherwise dry_run_required; a stale scope or stack and every product refusal come back unchanged. Defaults to full; delta restricts the full fold and requires delta_allowed. supersede replaces explicit open drafts in full mode only; never replace a delivered carrier. Returns the new draft's get_deployment card plus deployment_id (also the product id), to_environment_id, mode and optional superseded/supersede_failed: when an id exists keep it, never blindly repeat. Product links may include other cards sharing donor content. Continue with check_deployment, then validate_deployment and execute_deployment by deployment_id (dry_run first).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "project_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "work_item_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "from_environment_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "dry_run": {
+            "type": "boolean",
+            "description": "true: show what would be promoted (verdict, blockers, carriers, fold, delta options, scope_fingerprint, group stack) without creating anything."
+          },
+          "scope_fingerprint": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Opaque fingerprint returned by the dry run; pass unchanged. Required for the real call."
+          },
+          "caption": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "full",
+              "delta"
+            ]
+          },
+          "supersede": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "exclusiveMinimum": 0
+            },
+            "description": "Explicit open draft IDs to replace. Full mode only; use the supersedable list from the dry run after reviewing replacement."
+          },
+          "stack_version": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "For a group, pass stack.version from the dry run unchanged; group promotion requires full mode."
+          }
+        },
+        "required": [
+          "project_id",
+          "work_item_id",
+          "from_environment_id"
+        ],
+        "additionalProperties": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "additionalProperties": {}
+      },
+      "annotations": {
+        "title": "Promote Work Item",
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "list_projects",
+      "title": "List Projects",
+      "description": "List every project visible to the current user, optionally within team_id. Each project carries id, team_id, caption, description, its environment chain ordered by position (id, name, kind, position, org id, primary branch) and work_items_ready (at least two environments; reads of existing Work Items work either way). Discover project_id and environment ids here and pass them explicitly; no current project is selected or remembered.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "team_id": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "additionalProperties": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "additionalProperties": {}
+      },
+      "annotations": {
+        "title": "List Projects",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "list_work_items",
+      "title": "List Work Items",
+      "description": "List Work Items, one short row each: id, key (tracker key), caption, status, current / reached / next environment names, validated_into (environment a validation succeeded into), done, has_running_run, linked deployment_ids and group context. Pass project_id for one project (all non-archived cards, no hidden limit); q searches key and caption case-insensitively, and deployment_id returns the cards linked to that deployment — with either, project_id is optional and the search covers every project you can see (rows then carry project_id). status=archived or all includes archived cards. Full delivery, presences, board cells and group stacks are in get_work_item. Readiness is advisory, not promotion approval. Does not change data.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "project_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Required unless q or deployment_id is given; without it the search covers every project you can see."
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "open",
+              "archived",
+              "all"
+            ]
+          },
+          "q": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200,
+            "description": "Case-insensitive search in the tracker key and caption."
+          },
+          "deployment_id": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "description": "Only the Work Items linked to this deployment."
+          }
+        },
+        "additionalProperties": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "additionalProperties": {}
+      },
+      "annotations": {
+        "title": "List Work Items",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "get_work_item",
+      "title": "Get Work Item",
+      "description": "Read one Work Item by work_item_id or tracker key (e.g. \"KAN-6\"): text, tracker reference, active group/master context, computed delivery (reached/current/next environments, validation, rollback markers, board cells, presences, drafts/runs, Done), its linked deployment summaries and its own group stacks. project_id is needed only when a key matches cards in several projects (ambiguous_work_item lists the candidates). Archived items are readable; deleted or inaccessible ones are not found. Validation is not delivery; rollback keeps the UI historical presence marker. current_environment may be the first working environment even when reached_environment is null. group_delivery separately describes the master history, when applicable. Environments are listed in full once at the top; delivery refers to them by id and name. Does not mutate data.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "project_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Needed only when a key matches Work Items in several projects."
+          },
+          "work_item_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "key": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200,
+            "description": "Tracker key such as \"KAN-6\" (case-insensitive), instead of work_item_id."
+          }
+        },
+        "additionalProperties": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "additionalProperties": {}
+      },
+      "annotations": {
+        "title": "Get Work Item",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "list_orgs",
+      "title": "List Salesforce Orgs",
+      "description": "List the Salesforce orgs connected to the user's teams, or find one by name, URL or org type. Each row: id, label, instance_url, derived org_type (scratch / sandbox / developer / production), is_important (protected org), team_id, namespace (only when set) and reauth_required:true (only when the connection must be re-authenticated). Pass query to find orgs by name, part of the URL or org type (e.g. \"UAT\", \"acme\", \"production\", \"sandbox\"): matches come ranked by score — confirm the right one with the user before using it as a deploy target, never assume the top hit, especially when a production or is_important org is among them. Use the id as from_org_id / to_org_id.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "team_id": {
+            "type": "string",
+            "description": "Optional team ID. If omitted, lists orgs across all of the user's teams."
+          },
+          "query": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200,
+            "description": "Find orgs by name, part of the instance URL, or org type (\"production\", \"sandbox\", \"scratch\", \"developer\"). Omit for every org."
+          },
+          "limit": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 50,
+            "description": "With query: max matches to return (default 5)."
+          }
+        },
+        "additionalProperties": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "orgs": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": {}
+            }
+          },
+          "count": {
+            "type": "number"
+          },
+          "query": {
+            "type": "string"
+          },
+          "hint": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "orgs"
+        ],
+        "additionalProperties": {}
+      },
+      "annotations": {
+        "title": "List Salesforce Orgs",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "list_deployments",
+      "title": "List Deployments",
+      "description": "List existing deployments, newest first, to find one to resume instead of creating a new one. For deployments linked to a Work Item, list_work_items/get_work_item also return deployment IDs. Lists the team's deployments newest-first with source (org / git repo / metadata backup / metadata set, each labelled), target (label + org_type + is_important so you can tell a production target apart), and the LATEST run as { run_id, state, waiting_for, is_validation, outcome } (the same summary get_deployment and get_deployment_run give). `has_description` tells you whether the deployment already has a release note (the text itself is not listed — it can be kilobytes of HTML); set or replace it with update_deployment. Each row carries owner.id + owner.is_you so you can tell your own work from a teammate's (owner.label is only filled for your own deploys — other users' display names are not readable under row-level security). Use it to answer \"did yesterday's release land?\", \"what went to this org recently?\", or to resume work after losing context; filter with org_id (+ org_role=\"target\" for deployments INTO an org) and created_since/created_until. Org-comparison objects are excluded by default.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "team_id": {
+            "type": "string",
+            "description": "Optional team ID. If omitted, lists across all of the user's teams."
+          },
+          "org_id": {
+            "type": "string",
+            "description": "Optional org ID filter — only deployments involving this org."
+          },
+          "org_role": {
+            "type": "string",
+            "enum": [
+              "either",
+              "source",
+              "target"
+            ],
+            "description": "How org_id must be involved: \"target\" = deployments INTO that org (default \"either\")."
+          },
+          "include_comparisons": {
+            "type": "boolean",
+            "description": "Include org-comparison objects (is_comparison rows), which are not deployments. Default false."
+          },
+          "created_since": {
+            "type": "string",
+            "description": "ISO date/datetime — only deployments created on/after it (e.g. \"what went out this week\")."
+          },
+          "created_until": {
+            "type": "string",
+            "description": "ISO date/datetime — only deployments created on/before it. Pair with created_since for a release window."
+          },
+          "limit": {
+            "type": "number",
+            "description": "Max deployments to return, newest first (default 20, capped at 50)."
+          }
+        },
+        "additionalProperties": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "deployments": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": {}
+            }
+          },
+          "count": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "deployments",
+          "count"
+        ],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "title": "List Deployments",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "get_deployment_run",
+      "title": "Get Deployment Run",
+      "description": "Read one run of a deployment: the latest, or run_id (from get_deployment.recent_runs or a launch response). Answers immediately with state: \"queued\", \"running\" or \"finishing\" (Salesforce is done; post-deploy steps such as post-deploy Apex, flow activation or git push still run) — call again every 15-30 s, never faster; \"waiting\" (waiting_for \"approval\": an approver must act in mtdt; \"schedule\": it starts at scheduled_at) — stop polling and tell the user; \"succeeded\", \"failed\" and \"cancelled\" are final. outcome is the one line to report; for a failure read component_failures, test_failures and code_coverage_warnings. For a validation, quick_deploy_eligible says whether execute_quick_deployment can deploy this selected snapshot, and quick_deploy_ineligible_reason says why not (no tests ran, older than 10 days, a newer deploy reached the org, it was already promoted, or its SF job ID is unavailable); Salesforce can still refuse if something else was deployed to the target meanwhile. Also returns test_level, counts, sf_deploy_id, folder_sharing_check and post_deploy results. A deployment without runs answers state \"no_run\". Read-only.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "deployment_id": {
+            "type": "number",
+            "description": "Deployment ID."
+          },
+          "run_id": {
+            "type": "number",
+            "description": "A run of this deployment (run_id from get_deployment.recent_runs or a launch response). Omit for the latest run."
+          }
+        },
+        "required": [
+          "deployment_id"
+        ],
+        "additionalProperties": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "deployment_id": {
+            "type": "number"
+          },
+          "run_id": {
+            "type": "number"
+          },
+          "task_id": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "created_at": {
+            "type": "string"
+          },
+          "is_validation": {
+            "type": "boolean"
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "queued",
+              "running",
+              "waiting",
+              "finishing",
+              "succeeded",
+              "failed",
+              "cancelled",
+              "no_run"
+            ]
+          },
+          "waiting_for": {
+            "type": "string",
+            "enum": [
+              "approval",
+              "schedule"
+            ]
+          },
+          "scheduled_at": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "outcome": {
+            "type": "string"
+          },
+          "test_level": {
+            "type": "object",
+            "properties": {
+              "option": {
+                "type": "string"
+              },
+              "tests_to_run": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            },
+            "required": [
+              "option"
+            ],
+            "additionalProperties": false
+          },
+          "quick_deploy_eligible": {
+            "type": "boolean",
+            "description": "Validations only: whether execute_quick_deployment can deploy this explicitly selected validation."
+          },
+          "quick_deploy_ineligible_reason": {
+            "type": "string"
+          },
+          "sf_deploy_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "counts": {
+            "type": "object",
+            "additionalProperties": {},
+            "description": "Component counts: components_validated for validations, components_deployed for deploys, plus components_total. Also includes tests_completed, tests_total and test_errors."
+          },
+          "component_failures": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": {}
+            }
+          },
+          "test_failures": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": {}
+            }
+          },
+          "code_coverage_warnings": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "message": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              },
+              "required": [
+                "name",
+                "message"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "folder_sharing_check": {},
+          "post_deploy": {
+            "type": "object",
+            "additionalProperties": {}
+          }
+        },
+        "required": [
+          "deployment_id",
+          "state",
+          "outcome"
+        ],
+        "additionalProperties": {}
+      },
+      "annotations": {
+        "title": "Get Deployment Run",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "create_deployment",
+      "title": "Create Deployment",
+      "description": "Create a deployment draft from a source (org, git repo, metadata backup or archive) to a target org; nothing is deployed yet. Optionally pass project_id plus work_item_ids to attach existing open cards in the same call. Returns the get_deployment card of the new deployment. A late link failure returns error=work_item_link_failed with the card and confirmed/unconfirmed IDs: the deployment EXISTS, so inspect it and finish linking in the UI; do not repeat creation. Source can be an org, repo, metadata backup, or archive. Exactly one of from_org_id, from_repo_id, from_backup_id, or from_archive_id must be specified. Target must be an org. An archive source is unpacked in the background and ALL its components get selected: call get_deployment until ready is true, then check_deployment / validate_deployment by deployment_id. Optionally pass caption (short title) and description (release note — its plain text becomes the git commit message on a push-to-git deploy and is appended to approval requests); the description can be changed later with update_deployment. A backup source must be a FINISHED backup that has an archive — otherwise it returns { error:\"backup_not_usable\", reason } and creates NO deployment.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "team_id": {
+            "type": "string",
+            "description": "Team ID."
+          },
+          "project_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Required together with work_item_ids. All cards must belong to this project and team."
+          },
+          "work_item_ids": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "minItems": 1,
+            "description": "Work Items to attach during creation; omit to create an independent deployment."
+          },
+          "from_org_id": {
+            "type": "string",
+            "description": "Source org ID."
+          },
+          "from_repo_id": {
+            "type": "string",
+            "description": "Source repo ID."
+          },
+          "from_backup_id": {
+            "type": "string",
+            "description": "Source metadata backup ID."
+          },
+          "from_archive_id": {
+            "type": "string",
+            "description": "Source archive ID (from register_archive or list_sources). Every component of the archive is selected automatically."
+          },
+          "to_org_id": {
+            "type": "string",
+            "description": "Destination org ID."
+          },
+          "caption": {
+            "type": "string",
+            "description": "Short title for the deployment (shown in lists)."
+          },
+          "description": {
+            "type": "string",
+            "description": "Longer description / release note for the deployment. Plain text or HTML. Its plain text becomes the git commit message on a push-to-git deploy and is appended to approval requests. Change it later with update_deployment."
+          }
+        },
+        "required": [
+          "team_id",
+          "to_org_id"
+        ],
+        "additionalProperties": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "deployment_id": {
+            "type": "number"
+          },
+          "caption": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "created_at": {
+            "type": "string"
+          },
+          "owner_is_you": {
+            "type": "boolean"
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Plain text of the release note, at most 2000 characters."
+          },
+          "description_truncated": {
+            "type": "boolean"
+          },
+          "description_source": {
+            "type": "string",
+            "description": "\"ticket\": the deployment was created from a tracker ticket and takes its description from it; update_deployment refuses to change it."
+          },
+          "source": {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "description": "org | repo | backup | archive | unknown"
+              },
+              "id": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "label": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "readiness": {
+                "type": "string",
+                "enum": [
+                  "ready",
+                  "in_progress",
+                  "failed"
+                ]
+              },
+              "task": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "number"
+                  },
+                  "status": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "error": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  }
+                },
+                "required": [
+                  "id",
+                  "status",
+                  "error"
+                ],
+                "additionalProperties": {},
+                "description": "The population task behind this side; error says why a failed side failed."
+              }
+            },
+            "required": [
+              "kind",
+              "id",
+              "label",
+              "readiness"
+            ],
+            "additionalProperties": {}
+          },
+          "target": {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "description": "org | repo | unknown"
+              },
+              "id": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "label": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "is_important": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "org_type": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "readiness": {
+                "type": "string",
+                "enum": [
+                  "ready",
+                  "in_progress",
+                  "failed"
+                ]
+              },
+              "task": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "number"
+                  },
+                  "status": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "error": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  }
+                },
+                "required": [
+                  "id",
+                  "status",
+                  "error"
+                ],
+                "additionalProperties": {}
+              }
+            },
+            "required": [
+              "kind",
+              "id",
+              "label",
+              "readiness"
+            ],
+            "additionalProperties": {}
+          },
+          "ready": {
+            "type": "boolean",
+            "description": "Both sides are ready: browse, validate and deploy only then."
+          },
+          "components": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "description": "Saved composition: { metadata_type: [names] }."
+          },
+          "component_count": {
+            "type": "number"
+          },
+          "deletions": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          "deletions_after_deploy": {
+            "type": "boolean"
+          },
+          "partial_selections": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "description": "Components with partial selections; edit them only in the mtdt UI."
+          },
+          "test_level": {
+            "type": "object",
+            "properties": {
+              "option": {
+                "type": "string"
+              },
+              "saved": {
+                "type": "boolean"
+              },
+              "tests_to_run": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            },
+            "required": [
+              "option",
+              "saved"
+            ],
+            "additionalProperties": false
+          },
+          "work_items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "project_id": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "key": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "caption": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              },
+              "required": [
+                "id",
+                "project_id",
+                "key",
+                "caption"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "latest_run": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "run_id": {
+                    "type": "number"
+                  },
+                  "task_id": {
+                    "type": [
+                      "number",
+                      "null"
+                    ]
+                  },
+                  "created_at": {
+                    "type": "string"
+                  },
+                  "is_validation": {
+                    "type": "boolean"
+                  },
+                  "state": {
+                    "type": "string",
+                    "enum": [
+                      "queued",
+                      "running",
+                      "waiting",
+                      "finishing",
+                      "succeeded",
+                      "failed",
+                      "cancelled"
+                    ]
+                  },
+                  "waiting_for": {
+                    "type": "string",
+                    "enum": [
+                      "approval",
+                      "schedule"
+                    ]
+                  },
+                  "outcome": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "run_id",
+                  "task_id",
+                  "created_at",
+                  "is_validation",
+                  "state",
+                  "outcome"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "recent_runs": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "run_id": {
+                  "type": "number"
+                },
+                "task_id": {
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                },
+                "created_at": {
+                  "type": "string"
+                },
+                "is_validation": {
+                  "type": "boolean"
+                },
+                "state": {
+                  "type": "string",
+                  "enum": [
+                    "queued",
+                    "running",
+                    "waiting",
+                    "finishing",
+                    "succeeded",
+                    "failed",
+                    "cancelled"
+                  ]
+                },
+                "waiting_for": {
+                  "type": "string",
+                  "enum": [
+                    "approval",
+                    "schedule"
+                  ]
+                },
+                "outcome": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "run_id",
+                "task_id",
+                "created_at",
+                "is_validation",
+                "state",
+                "outcome"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "hint": {
+            "type": "string"
+          },
+          "error": {
+            "type": "string",
+            "description": "A business refusal, or work_item_link_failed after creation. backup_not_usable and Work Item preflight refusals create no deployment."
+          },
+          "linked_work_item_ids": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Work Item links confirmed by the server."
+          },
+          "unconfirmed_work_item_ids": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Links requiring inspection after a late failure; a network error can hide a committed link."
+          },
+          "message": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string",
+            "description": "\"not_done\" or \"no_archive\"."
+          },
+          "backup": {
+            "type": "object",
+            "additionalProperties": {},
+            "description": "{ id, label, status, partial, has_archive } of the rejected backup."
+          }
+        },
+        "additionalProperties": {}
+      },
+      "annotations": {
+        "title": "Create Deployment",
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "update_deployment",
+      "title": "Update Deployment",
+      "description": "Edit a deployment: add or remove components, set the Apex test level, change the caption or description, link or unlink Work Items. Nothing is deployed. Pass only what changes; at least one change is required (nothing_to_change otherwise). add_components / remove_components take { metadata_type: [names] } of full components: types are normalized (resolved lists autofixes), components must be retrieved with browse_metadata first (items_not_retrieved), and components with a saved deletion or partial selection must be edited in the mtdt UI (component_marked_for_deletion / component_has_overrides). Component changes need the source ready (deployment_not_ready); caption, description, test level and Work Item links work while it is still loading. test_option / tests_to_run save the test level the next validate_deployment / execute_deployment use when they get none, the same setting as the Test Level control in the web app. description is the release note: plain text or HTML, \"\" clears it; it becomes the git commit message on a push-to-git deploy. A deployment created from a tracker ticket (get_deployment description_source \"ticket\") takes its description from the ticket: changing it is refused with description_from_ticket, like the read-only field in the web app. link_work_items attaches open Work Items of the deployment's team (archived ones are refused); unlink_work_items detaches them; group rules of the product apply. Everything is checked first and saved in one write, so a refusal changes nothing. Work Item links are applied after that write: a failed link is listed in changes.work_items.failed while every other change stays saved — do not repeat those. Returns the get_deployment card plus changes (only what actually changed) and changed:false when nothing differed.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "deployment_id": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "description": "Deployment ID."
+          },
+          "caption": {
+            "type": "string",
+            "description": "New short title."
+          },
+          "description": {
+            "type": "string",
+            "description": "New release note, plain text or HTML; \"\" clears it. Its plain text becomes the git commit message on a push-to-git deploy and is appended to approval requests."
+          },
+          "add_components": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "description": "Full components to add, { metadata_type: [names] }. Types are normalized; components must be retrieved first (browse_metadata)."
+          },
+          "remove_components": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "description": "Components to remove from the selection, same shape. Nothing is deleted in Salesforce."
+          },
+          "test_option": {
+            "type": "string",
+            "enum": [
+              "all",
+              "local",
+              "relevant",
+              "specific",
+              "default",
+              "NoTestRun"
+            ],
+            "description": "Apex test level saved on the deployment, used by validate_deployment / execute_deployment when they get no test_option. \"specific\" needs tests_to_run; \"relevant\" clears the saved test list; \"NoTestRun\" fails on production targets."
+          },
+          "tests_to_run": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "description": "Apex test classes for test_option \"specific\" (also when \"specific\" is already saved)."
+          },
+          "link_work_items": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Open Work Items to attach to this deployment."
+          },
+          "unlink_work_items": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Work Items to detach from this deployment."
+          }
+        },
+        "required": [
+          "deployment_id"
+        ],
+        "additionalProperties": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "deployment_id": {
+            "type": "number"
+          },
+          "caption": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "created_at": {
+            "type": "string"
+          },
+          "owner_is_you": {
+            "type": "boolean"
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Plain text of the release note, at most 2000 characters."
+          },
+          "description_truncated": {
+            "type": "boolean"
+          },
+          "description_source": {
+            "type": "string",
+            "description": "\"ticket\": the deployment was created from a tracker ticket and takes its description from it; update_deployment refuses to change it."
+          },
+          "source": {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "description": "org | repo | backup | archive | unknown"
+              },
+              "id": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "label": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "readiness": {
+                "type": "string",
+                "enum": [
+                  "ready",
+                  "in_progress",
+                  "failed"
+                ]
+              },
+              "task": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "number"
+                  },
+                  "status": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "error": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  }
+                },
+                "required": [
+                  "id",
+                  "status",
+                  "error"
+                ],
+                "additionalProperties": {},
+                "description": "The population task behind this side; error says why a failed side failed."
+              }
+            },
+            "required": [
+              "kind",
+              "id",
+              "label",
+              "readiness"
+            ],
+            "additionalProperties": {}
+          },
+          "target": {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "description": "org | repo | unknown"
+              },
+              "id": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "label": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "is_important": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "org_type": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "readiness": {
+                "type": "string",
+                "enum": [
+                  "ready",
+                  "in_progress",
+                  "failed"
+                ]
+              },
+              "task": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "number"
+                  },
+                  "status": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "error": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  }
+                },
+                "required": [
+                  "id",
+                  "status",
+                  "error"
+                ],
+                "additionalProperties": {}
+              }
+            },
+            "required": [
+              "kind",
+              "id",
+              "label",
+              "readiness"
+            ],
+            "additionalProperties": {}
+          },
+          "ready": {
+            "type": "boolean",
+            "description": "Both sides are ready: browse, validate and deploy only then."
+          },
+          "components": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "description": "Saved composition: { metadata_type: [names] }."
+          },
+          "component_count": {
+            "type": "number"
+          },
+          "deletions": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          "deletions_after_deploy": {
+            "type": "boolean"
+          },
+          "partial_selections": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "description": "Components with partial selections; edit them only in the mtdt UI."
+          },
+          "test_level": {
+            "type": "object",
+            "properties": {
+              "option": {
+                "type": "string"
+              },
+              "saved": {
+                "type": "boolean"
+              },
+              "tests_to_run": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            },
+            "required": [
+              "option",
+              "saved"
+            ],
+            "additionalProperties": false
+          },
+          "work_items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "project_id": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "key": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "caption": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              },
+              "required": [
+                "id",
+                "project_id",
+                "key",
+                "caption"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "latest_run": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "run_id": {
+                    "type": "number"
+                  },
+                  "task_id": {
+                    "type": [
+                      "number",
+                      "null"
+                    ]
+                  },
+                  "created_at": {
+                    "type": "string"
+                  },
+                  "is_validation": {
+                    "type": "boolean"
+                  },
+                  "state": {
+                    "type": "string",
+                    "enum": [
+                      "queued",
+                      "running",
+                      "waiting",
+                      "finishing",
+                      "succeeded",
+                      "failed",
+                      "cancelled"
+                    ]
+                  },
+                  "waiting_for": {
+                    "type": "string",
+                    "enum": [
+                      "approval",
+                      "schedule"
+                    ]
+                  },
+                  "outcome": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "run_id",
+                  "task_id",
+                  "created_at",
+                  "is_validation",
+                  "state",
+                  "outcome"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "recent_runs": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "run_id": {
+                  "type": "number"
+                },
+                "task_id": {
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                },
+                "created_at": {
+                  "type": "string"
+                },
+                "is_validation": {
+                  "type": "boolean"
+                },
+                "state": {
+                  "type": "string",
+                  "enum": [
+                    "queued",
+                    "running",
+                    "waiting",
+                    "finishing",
+                    "succeeded",
+                    "failed",
+                    "cancelled"
+                  ]
+                },
+                "waiting_for": {
+                  "type": "string",
+                  "enum": [
+                    "approval",
+                    "schedule"
+                  ]
+                },
+                "outcome": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "run_id",
+                "task_id",
+                "created_at",
+                "is_validation",
+                "state",
+                "outcome"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "hint": {
+            "type": "string"
+          },
+          "changed": {
+            "type": "boolean",
+            "description": "false when every passed value was already saved."
+          },
+          "changes": {
+            "type": "object",
+            "properties": {
+              "caption": {
+                "type": "string"
+              },
+              "description": {
+                "type": "string",
+                "description": "\"set\" or \"cleared\"."
+              },
+              "components": {
+                "type": "object",
+                "properties": {
+                  "added": {
+                    "type": "object",
+                    "additionalProperties": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "removed": {
+                    "type": "object",
+                    "additionalProperties": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "resolved": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "additionalProperties": {}
+                    }
+                  }
+                },
+                "additionalProperties": false
+              },
+              "test_level": {
+                "type": "object",
+                "properties": {
+                  "option": {
+                    "type": "string"
+                  },
+                  "tests_to_run": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "additionalProperties": false
+              },
+              "work_items": {
+                "type": "object",
+                "properties": {
+                  "linked": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "unlinked": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "failed": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "error": {
+                          "type": "string"
+                        },
+                        "message": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "error",
+                        "message"
+                      ],
+                      "additionalProperties": false
+                    }
+                  }
+                },
+                "required": [
+                  "linked",
+                  "unlinked",
+                  "failed"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "additionalProperties": false
+          },
+          "error": {
+            "type": "string",
+            "description": "\"nothing_to_change\", \"conflicting_changes\", \"invalid_test_level\", \"permission_denied\", \"work_item_not_found\", \"work_item_archived\", \"deployment_not_ready\" (components only), \"unresolved_types\", \"items_not_retrieved\", \"component_marked_for_deletion\", \"component_has_overrides\", \"not_found\". Nothing was written."
+          },
+          "message": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": {}
+      },
+      "annotations": {
+        "title": "Update Deployment",
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "get_deployment",
+      "title": "Get Deployment",
+      "description": "Read one deployment: its two sides and whether they are ready, saved components, test level, linked Work Items and recent runs. Fields: caption, plain-text description, owner_is_you, source and target (kind, label, is_important/org_type for an org target) each with readiness \"ready\" | \"in_progress\" | \"failed\" and the population task behind it, ready (both sides ready), the saved composition as { type: [names] } with component_count, saved deletions and whether they run after the deploy, partial_selections (edit those only in the mtdt UI), the test level (saved testOption, or \"local\" when none is saved, which is what validate_deployment uses; change it with update_deployment), linked Work Items, latest_run and the 5 most recent runs as { run_id, state, waiting_for, is_validation, outcome } (the same summary list_deployments and get_deployment_run give). create_deployment returns this same card. While a side is in_progress, wait ~15s and call again before browsing or validating: a repo, backup or archive side can take several minutes. A failed side will not recover by polling: read its task.error and the hint (backup source: pick a finished backup that has an archive, or create a new deployment; org side: re-authenticate it and press Refresh in the web app). Read-only.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "deployment_id": {
+            "type": "number",
+            "description": "Deployment ID (from create_deployment, list_deployments or a Work Item)."
+          }
+        },
+        "required": [
+          "deployment_id"
+        ],
+        "additionalProperties": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "deployment_id": {
+            "type": "number"
+          },
+          "caption": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "created_at": {
+            "type": "string"
+          },
+          "owner_is_you": {
+            "type": "boolean"
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Plain text of the release note, at most 2000 characters."
+          },
+          "description_truncated": {
+            "type": "boolean"
+          },
+          "description_source": {
+            "type": "string",
+            "description": "\"ticket\": the deployment was created from a tracker ticket and takes its description from it; update_deployment refuses to change it."
+          },
+          "source": {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "description": "org | repo | backup | archive | unknown"
+              },
+              "id": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "label": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "readiness": {
+                "type": "string",
+                "enum": [
+                  "ready",
+                  "in_progress",
+                  "failed"
+                ]
+              },
+              "task": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "number"
+                  },
+                  "status": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "error": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  }
+                },
+                "required": [
+                  "id",
+                  "status",
+                  "error"
+                ],
+                "additionalProperties": {},
+                "description": "The population task behind this side; error says why a failed side failed."
+              }
+            },
+            "required": [
+              "kind",
+              "id",
+              "label",
+              "readiness"
+            ],
+            "additionalProperties": {}
+          },
+          "target": {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "description": "org | repo | unknown"
+              },
+              "id": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "label": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "is_important": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "org_type": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "readiness": {
+                "type": "string",
+                "enum": [
+                  "ready",
+                  "in_progress",
+                  "failed"
+                ]
+              },
+              "task": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "number"
+                  },
+                  "status": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "error": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  }
+                },
+                "required": [
+                  "id",
+                  "status",
+                  "error"
+                ],
+                "additionalProperties": {}
+              }
+            },
+            "required": [
+              "kind",
+              "id",
+              "label",
+              "readiness"
+            ],
+            "additionalProperties": {}
+          },
+          "ready": {
+            "type": "boolean",
+            "description": "Both sides are ready: browse, validate and deploy only then."
+          },
+          "components": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "description": "Saved composition: { metadata_type: [names] }."
+          },
+          "component_count": {
+            "type": "number"
+          },
+          "deletions": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          "deletions_after_deploy": {
+            "type": "boolean"
+          },
+          "partial_selections": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "description": "Components with partial selections; edit them only in the mtdt UI."
+          },
+          "test_level": {
+            "type": "object",
+            "properties": {
+              "option": {
+                "type": "string"
+              },
+              "saved": {
+                "type": "boolean"
+              },
+              "tests_to_run": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            },
+            "required": [
+              "option",
+              "saved"
+            ],
+            "additionalProperties": false
+          },
+          "work_items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "project_id": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "key": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "caption": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              },
+              "required": [
+                "id",
+                "project_id",
+                "key",
+                "caption"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "latest_run": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "run_id": {
+                    "type": "number"
+                  },
+                  "task_id": {
+                    "type": [
+                      "number",
+                      "null"
+                    ]
+                  },
+                  "created_at": {
+                    "type": "string"
+                  },
+                  "is_validation": {
+                    "type": "boolean"
+                  },
+                  "state": {
+                    "type": "string",
+                    "enum": [
+                      "queued",
+                      "running",
+                      "waiting",
+                      "finishing",
+                      "succeeded",
+                      "failed",
+                      "cancelled"
+                    ]
+                  },
+                  "waiting_for": {
+                    "type": "string",
+                    "enum": [
+                      "approval",
+                      "schedule"
+                    ]
+                  },
+                  "outcome": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "run_id",
+                  "task_id",
+                  "created_at",
+                  "is_validation",
+                  "state",
+                  "outcome"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "recent_runs": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "run_id": {
+                  "type": "number"
+                },
+                "task_id": {
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                },
+                "created_at": {
+                  "type": "string"
+                },
+                "is_validation": {
+                  "type": "boolean"
+                },
+                "state": {
+                  "type": "string",
+                  "enum": [
+                    "queued",
+                    "running",
+                    "waiting",
+                    "finishing",
+                    "succeeded",
+                    "failed",
+                    "cancelled"
+                  ]
+                },
+                "waiting_for": {
+                  "type": "string",
+                  "enum": [
+                    "approval",
+                    "schedule"
+                  ]
+                },
+                "outcome": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "run_id",
+                "task_id",
+                "created_at",
+                "is_validation",
+                "state",
+                "outcome"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "hint": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "deployment_id",
+          "caption",
+          "created_at",
+          "owner_is_you",
+          "description",
+          "source",
+          "target",
+          "ready",
+          "components",
+          "component_count",
+          "test_level",
+          "work_items",
+          "latest_run",
+          "recent_runs"
+        ],
+        "additionalProperties": {}
+      },
+      "annotations": {
+        "title": "Get Deployment",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "check_deployment",
+      "title": "Check Deployment",
+      "description": "Check the saved deployment before validating: pre-deploy warnings, missing dependencies, target changes it would overwrite, and the Apex tests to run. Read-only; nothing blocks. It always checks the SAVED composition (selected components, saved deletions and their timing): save it with update_deployment first; an empty one answers empty_selection, and a source that is still loading answers deployment_not_ready (follow get_deployment). Parts: preflight — the checks the web Deploy dialog runs (folder_sharing, destructive_impact, permissions_and_profiles, record_backups, cron_triggers, business_hours, non_source_deployable, static_analysis, changed_since_donor), each verdict with severity and often a suggested_action; dependencies — source components the selection needs that are not saved, with add_with = the update_deployment call that adds them (org sources only); target_conflicts — target components changed, deleted or created since mtdt read them (a deploy would overwrite them: stop and ask the user); tests — the Apex tests to run, with save_with = the update_deployment call that saves them as the test level (or pass them to one validate_deployment). summary counts them. Report warnings, missing dependencies and conflicts to the user BEFORE validating. depth \"fast\" runs only database-backed parts; \"full\" (default) also queries the target org. Parts share a time budget: unfinished ones come back in pending — call again with checks set to them. Lists longer than 20 are cut (total says how many). For a deployment created from an archive pass all_items:true to check every component of the archive.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "deployment_id": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "description": "Deployment ID. The SAVED composition is checked: save components with update_deployment first."
+          },
+          "checks": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "folder_sharing",
+                "destructive_impact",
+                "permissions_and_profiles",
+                "record_backups",
+                "cron_triggers",
+                "business_hours",
+                "non_source_deployable",
+                "static_analysis",
+                "changed_since_donor",
+                "dependencies",
+                "target_conflicts",
+                "tests"
+              ]
+            },
+            "description": "Run only these parts. Omit to run all. Pre-deploy checks: folder_sharing, destructive_impact, permissions_and_profiles, record_backups, cron_triggers, business_hours, non_source_deployable, static_analysis, changed_since_donor; plus \"dependencies\" (source components the selection needs), \"target_conflicts\" (target components changed since they were read) and \"tests\" (Apex tests to run)."
+          },
+          "depth": {
+            "type": "string",
+            "enum": [
+              "fast",
+              "full"
+            ],
+            "description": "\"fast\" runs only the database-backed parts (seconds); \"full\" (default) also runs the parts that query the target org."
+          },
+          "all_items": {
+            "type": "boolean",
+            "description": "Deployment created from an archive only: check every component of the archive."
+          }
+        },
+        "required": [
+          "deployment_id"
+        ],
+        "additionalProperties": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "deployment_id": {
+            "type": "number"
+          },
+          "depth": {
+            "type": "string"
+          },
+          "all_items": {
+            "type": "boolean"
+          },
+          "summary": {
+            "type": "object",
+            "properties": {
+              "warnings": {
+                "type": "number"
+              },
+              "info": {
+                "type": "number"
+              },
+              "missing_dependencies": {
+                "type": "number"
+              },
+              "target_conflicts": {
+                "type": "number"
+              },
+              "tests": {
+                "type": "object",
+                "properties": {
+                  "recommendation": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "tests_to_run": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "additionalProperties": {}
+              }
+            },
+            "additionalProperties": {}
+          },
+          "preflight": {
+            "type": "object",
+            "properties": {
+              "verdicts": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": {}
+                }
+              },
+              "counts": {
+                "type": "object",
+                "additionalProperties": {}
+              },
+              "checks": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": {}
+                }
+              }
+            },
+            "additionalProperties": {},
+            "description": "Pre-deploy warnings the web Deploy dialog shows; each verdict has severity, what is affected and often a suggested_action."
+          },
+          "dependencies": {
+            "type": "object",
+            "additionalProperties": {},
+            "description": "missing: source components the selection depends on that are not saved; add_with is the update_deployment call that adds them."
+          },
+          "target_conflicts": {
+            "type": "object",
+            "additionalProperties": {},
+            "description": "Target components changed, deleted or created since mtdt read them, which this deploy would overwrite."
+          },
+          "tests": {
+            "type": "object",
+            "additionalProperties": {},
+            "description": "Apex test recommendation; save_with is the update_deployment call that saves it as the test level."
+          },
+          "pending": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Parts that did not finish inside the time budget: call again with checks set to these."
+          },
+          "not_run_at_depth": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "hint": {
+            "type": "string"
+          },
+          "error": {
+            "type": "string",
+            "description": "\"empty_selection\", \"deployment_not_ready\", \"deployment_population_failed\", \"not_found\", \"unknown_checks\", \"checks_incompatible_with_depth\", or with all_items \"all_items_not_supported\" / \"archive_not_ready\" / \"archive_unpack_failed\" / \"archive_empty\"."
+          },
+          "message": {
+            "type": "string"
+          },
+          "unknown_checks": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "available_checks": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "incompatible_checks": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "additionalProperties": {}
+      },
+      "annotations": {
+        "title": "Check Deployment",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      }
+    },
+    {
+      "name": "run_metadata_backup",
+      "title": "Run Metadata Backup",
+      "description": "Back up an org's metadata (the org id from list_orgs): a new backup is created, existing backups are not changed. Returns backup_id and its state at once; the backup itself takes several minutes. Follow it with list_sources(kind:\"backups\", org_id, include_unusable:true) every minute or two until it shows usable_as_source:true (then it can be a deployment source via from_backup_id) or a failed status.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "org_id": {
+            "type": "string",
+            "description": "Org ID (the id from list_orgs)."
+          }
+        },
+        "required": [
+          "org_id"
+        ],
+        "additionalProperties": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "backup_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The new backup; list_sources(kind:\"backups\", include_unusable:true) shows its state."
+          },
+          "org_id": {
+            "type": "string"
+          },
+          "state": {
+            "type": "string"
+          },
+          "backup": {
+            "type": "object",
+            "additionalProperties": {}
+          },
+          "hint": {
+            "type": "string"
+          },
+          "error": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": {}
+      },
+      "annotations": {
+        "title": "Run Metadata Backup",
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      }
+    },
+    {
+      "name": "list_sources",
+      "title": "List Deployment Sources",
+      "description": "List the git repos, metadata backups and uploaded archives a deployment can start from, newest first, as short rows. Every row says which create_deployment parameter takes its id (use_as: from_repo_id / from_backup_id / from_archive_id). kind narrows to one of them. Backups: only usable ones by default (finished with a stored archive); include_unusable:true adds in-progress, failed and archive-less backups with unusable_reason and progress — that is how to follow a backup started with run_metadata_backup. org_id narrows backups to one org. Archives carry caption, description preview, size, origin and, for MCP uploads, component_count and types. Capped per kind (limit: default 20 with kind, 10 per kind without): the hint says when more exist.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "repos",
+              "backups",
+              "archives"
+            ],
+            "description": "Omit for all three."
+          },
+          "team_id": {
+            "type": "string",
+            "description": "Optional team ID. If omitted, covers all of the user's teams."
+          },
+          "org_id": {
+            "type": "string",
+            "description": "Backups of this org only."
+          },
+          "name_contains": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200,
+            "description": "Case-insensitive filter on the repo, backup or archive caption (and repo name)."
+          },
+          "include_unusable": {
+            "type": "boolean",
+            "description": "Backups: also list those that cannot be a deployment source yet (in progress, failed, or done without a stored archive), each with unusable_reason."
+          },
+          "limit": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 50,
+            "description": "Max rows per kind, newest first (default 20 with kind, 10 per kind without; max 50)."
+          }
+        },
+        "additionalProperties": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "repos": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": {}
+            }
+          },
+          "backups": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": {}
+            }
+          },
+          "archives": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": {}
+            }
+          },
+          "hidden_unusable_backups": {
+            "type": "number"
+          },
+          "hint": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": {}
+      },
+      "annotations": {
+        "title": "List Deployment Sources",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "compare_orgs",
+      "title": "Compare Orgs",
+      "description": "Compare the metadata of two orgs, or of a backup and an org, without creating a deployment. Sides: an org or a backup (from_org_id / from_backup_id) against a target org (to_org_id), the same comparison as the web Compare page, or deployment_id to compare the two sides of an existing deployment or comparison. Reuses the latest comparison of that pair or deployment (reused, age_minutes) unless start_new:true, which reruns it and replaces its previous result. Answers at once with comparison_id and state: running — a full comparison usually takes 7-11 minutes; wait, then call compare_orgs again with the same arguments, never with start_new while it runs; done — summary per metadata type with only_in_source / only_in_target / different / same counts (types with differences first); pass types:[...] to get the component names of those types (cut at 50 per bucket); failed — failure_reason says why, fix it and call with start_new:true. A repo cannot be a comparison source.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "deployment_id": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "description": "Compare the two sides of this deployment or comparison (comparison_id from an earlier answer)."
+          },
+          "from_org_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Source org to compare."
+          },
+          "from_backup_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Source backup to compare (instead of from_org_id)."
+          },
+          "to_org_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Target org to compare against."
+          },
+          "types": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "maxItems": 20,
+            "description": "When done: list the component names of these metadata types (e.g. [\"classes\", \"flows\"])."
+          },
+          "start_new": {
+            "type": "boolean",
+            "description": "Run a fresh comparison instead of answering with the latest one."
+          }
+        },
+        "additionalProperties": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "comparison_id": {
+            "type": "number",
+            "description": "The comparison (a metadata_deploys id); pass it as deployment_id to read it again."
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "running",
+              "done",
+              "failed"
+            ]
+          },
+          "started_at": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "finished_at": {
+            "type": "string"
+          },
+          "started_now": {
+            "type": "boolean"
+          },
+          "reused": {
+            "type": "boolean"
+          },
+          "age_minutes": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "progress": {
+            "type": "object",
+            "additionalProperties": {}
+          },
+          "summary": {
+            "type": "object",
+            "additionalProperties": {},
+            "description": "types_compared, totals and by_type counts: only_in_source, only_in_target, different, same."
+          },
+          "components": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": {}
+            },
+            "description": "Per requested type: component names per bucket, cut at 50 with total."
+          },
+          "types_not_found": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "failure_reason": {
+            "type": "string",
+            "description": "state failed: why the comparison failed."
+          },
+          "hint": {
+            "type": "string"
+          },
+          "error": {
+            "type": "string",
+            "description": "\"not_found\", \"permission_denied\" or \"invalid_pair\": nothing was started."
+          },
+          "message": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": {}
+      },
+      "annotations": {
+        "title": "Compare Orgs",
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      }
+    },
+    {
+      "name": "request_archive_upload",
+      "title": "Request Archive Upload Link",
+      "description": "Get a short-lived link to upload a local zip of Salesforce metadata — step 1 of deploying local files (SFDX source format — force-app/… with or without sfdx-project.json — or Metadata API format with package.xml). Returns { path, upload_url, curl }: run the curl command in your shell with the zip path filled in — the file goes straight to mtdt storage and never passes through this conversation. Then call register_archive with the same team_id and path. The link is short-lived (expires_in_seconds — can be as little as 2 minutes), so have the zip ready BEFORE calling this and run the curl command right away; if it expired, call request_archive_upload again. Max 50 MB. Needs a shell that can run curl. If you have no shell, do not try to send the zip contents through tool calls: ask the user to upload the zip on the Archives page of the mtdt web app (then find it with list_sources), or to push the project to a connected git repo and deploy from the repo.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "team_id": {
+            "type": "string",
+            "description": "Team that will own the archive."
+          },
+          "file_name": {
+            "type": "string",
+            "description": "File name of the zip, e.g. \"release-42.zip\"."
+          }
+        },
+        "required": [
+          "team_id",
+          "file_name"
+        ],
+        "additionalProperties": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string",
+            "description": "Pass to register_archive after the upload."
+          },
+          "upload_url": {
+            "type": "string",
+            "description": "Signed upload URL, valid until expires_at."
+          },
+          "method": {
+            "type": "string"
+          },
+          "expires_in_seconds": {
+            "type": "number",
+            "description": "Lifetime of the upload link — run the curl command before it runs out."
+          },
+          "expires_at": {
+            "type": "string"
+          },
+          "max_bytes": {
+            "type": "number"
+          },
+          "curl": {
+            "type": "string",
+            "description": "Ready upload command — replace <LOCAL_ZIP_PATH>."
+          },
+          "next": {
+            "type": "string"
+          },
+          "error": {
+            "type": "string",
+            "description": "\"forbidden\" or \"invalid_request\" on a reject."
+          },
+          "message": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": {}
+      },
+      "annotations": {
+        "title": "Request Archive Upload Link",
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "register_archive",
+      "title": "Register Uploaded Archive",
+      "description": "Register the uploaded zip as an archive a deployment can start from — step 2 after request_archive_upload. SFDX source is converted to Metadata API format; the archive appears on the Archives page. Returns { archive_id, component_count, types } — counts only, no file contents. Rejects: \"not_uploaded\" (the curl upload has not happened or failed — rerun it, or request a new link if it expired), \"invalid_archive\" (neither SFDX source nor a Metadata API package), \"archive_empty\", \"too_large\". Then create_deployment with from_archive_id = archive_id.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "team_id": {
+            "type": "string",
+            "description": "Same team ID as in request_archive_upload."
+          },
+          "path": {
+            "type": "string",
+            "description": "The path request_archive_upload returned."
+          },
+          "caption": {
+            "type": "string",
+            "description": "Archive title shown on the Archives page. Defaults to the file name."
+          },
+          "description": {
+            "type": "string",
+            "description": "Optional longer description of the archive."
+          }
+        },
+        "required": [
+          "team_id",
+          "path"
+        ],
+        "additionalProperties": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "archive_id": {
+            "type": "string",
+            "description": "Success: pass as from_archive_id to create_deployment."
+          },
+          "caption": {
+            "type": "string"
+          },
+          "source_format": {
+            "type": "string",
+            "description": "\"source\" (SFDX, converted) or \"metadata_api\"."
+          },
+          "component_count": {
+            "type": "number"
+          },
+          "types": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "number"
+            },
+            "description": "Component count per metadata type."
+          },
+          "api_version": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "next": {
+            "type": "string"
+          },
+          "error": {
+            "type": "string",
+            "description": "\"not_uploaded\", \"too_large\", \"invalid_archive\", \"archive_empty\", \"forbidden\" or \"invalid_request\" on a reject; NO archive is created."
+          },
+          "message": {
+            "type": "string"
+          },
+          "hint": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": {}
+      },
+      "annotations": {
+        "title": "Register Uploaded Archive",
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "browse_metadata",
+      "title": "Browse Metadata",
+      "description": "List the components a deployment can deploy, one metadata type at a time, reading them from the source when needed; this is the only way to see them. Browse the components of ONE metadata type on the deployment's SOURCE side (org, git repo, or metadata backup — resolved automatically from the deployment; pass org_id only to browse a specific org side, e.g. the target). Optional server-side filters: name_contains / modified_since / modified_by. Returns one row per COMPONENT { name, type, last_modified, last_modified_by }, most-recently-modified first, paginated (page / page_size; total is the full component count). For org sources, uncached metadata is retrieved on first call with a short poll (~15s): as soon as every component name is listed it returns { status:\"names_ready\", components, task_ids } while Salesforce still reads the contents — the names are complete, so pick and save components right away. Before that it returns { status:\"retrieving\", partial:true, components (the partial set so far), task_ids } — call browse_metadata again with the same args (idempotent, dedupe-safe) until status is \"names_ready\" or \"ready\" (0 components is a valid ready). Treat the list as complete only at \"names_ready\" or \"ready\". If the retrieval fails on the Salesforce side for part of the type you get { status:\"retrieval_failed\", failed_tasks:[{id,status,error}], components }: the component NAMES are complete, some bodies may not have been read yet. mtdt retries the retrieval automatically (up to 3 times) — call browse_metadata again to get the list; if the failure keeps repeating, report the error to the user. A repo or backup source is prepared after the deployment is created: wait for get_deployment ready:true first. Until then browse_metadata answers status:\"retrieving\" (or \"retrieval_failed\" with the reason when the source could not be prepared). Unknown types return a structured reject with did_you_mean suggestions.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "deployment_id": {
+            "type": "number",
+            "description": "Deployment ID."
+          },
+          "metadata_type": {
+            "type": "string",
+            "description": "Metadata type to browse, e.g. \"classes\" (\"ApexClass\" is fuzzy-resolved). One type per call (mirrors the wizard)."
+          },
+          "org_id": {
+            "type": "string",
+            "description": "Org to browse. Defaults to the deployment's SOURCE org."
+          },
+          "name_contains": {
+            "type": "string",
+            "description": "Case-insensitive substring filter on the component name."
+          },
+          "modified_since": {
+            "type": "string",
+            "description": "ISO date; keep only components whose properties.lastModifiedDate is on/after this."
+          },
+          "modified_by": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Keep only components last modified by one of these names (properties.lastModifiedByName)."
+          },
+          "page": {
+            "type": "number",
+            "description": "Page number (1-based)."
+          },
+          "page_size": {
+            "type": "number",
+            "description": "Page size (default 100)."
+          }
+        },
+        "required": [
+          "deployment_id",
+          "metadata_type"
+        ],
+        "additionalProperties": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "description": "\"ready\" (the retrieval finished — components is the complete set; also returned with 0 components when the type simply has no metadata in this org, see hint), \"names_ready\" (every component name is listed, contents are still being read — pick and save components now), \"retrieving\" (still running — components is a PARTIAL set so far, call again) or \"retrieval_failed\" (a JIT task failed/cancelled for part of the type; see failed_tasks — mtdt retries automatically, call again)."
+          },
+          "components": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": {}
+            },
+            "description": "One row per COMPONENT { name, type, last_modified, last_modified_by }, most-recently-modified first. On retrieving/retrieval_failed the list is partial (more may still arrive)."
+          },
+          "total": {
+            "type": "number",
+            "description": "Component count matching the filters (across all pages). While status=\"retrieving\" it grows as more components arrive."
+          },
+          "page": {
+            "type": "number"
+          },
+          "page_size": {
+            "type": "number"
+          },
+          "partial": {
+            "type": "boolean",
+            "description": "True when components is an incomplete snapshot (status=\"retrieving\") — call again until status=\"ready\" before treating the list as the full set."
+          },
+          "task_ids": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            },
+            "description": "retrieving / names_ready: the JIT task ids still running."
+          },
+          "failed_tasks": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": {}
+            },
+            "description": "retrieval_failed: [{ id, status, error }] per failed JIT task — error is the Salesforce-side reason. mtdt re-queues the retrieval automatically (up to 3 times); report the error only if it keeps repeating."
+          },
+          "hint": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": {}
+      },
+      "annotations": {
+        "title": "Browse Metadata",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      }
+    },
+    {
+      "name": "validate_deployment",
+      "title": "Validate Deployment (Check-Only)",
+      "description": "Validate the deployment on its target org without deploying it (Salesforce check-only with tests), using its FULL saved config. Pass deployment_id and optional test/backup/comment settings only. Call it with dry_run:true first: that returns the plan (components, deletions, test level, backups, post-deploy Apex, git push, scheduled jobs, activations) without creating anything; show the consequential actions to the user. Save components first with update_deployment; get_deployment shows the saved composition. Existing overrides, partial selections and deletions are preserved. Wait until get_deployment shows the source ready first (a repo, backup or archive source can take minutes): until then it rejects with deployment_not_ready, or deployment_population_failed when the source failed. A target whose metadata is not loaded does not block a run. Archive components are selected automatically after population. A run of this deployment that is still queued, running, finishing or waiting refuses with run_in_progress. Returns { run_id, task_id, state, outcome } immediately, or an actionable reject without creating a task. Then call get_deployment_run every 15-30 s until state is succeeded, failed or cancelled. To quick-deploy later, validate with a test level that runs tests (\"local\" or \"specific\").",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "deployment_id": {
+            "type": "number",
+            "description": "Deployment ID."
+          },
+          "test_option": {
+            "type": "string",
+            "enum": [
+              "all",
+              "local",
+              "relevant",
+              "specific",
+              "default",
+              "NoTestRun"
+            ],
+            "description": "Apex test level for this run only. Omit to use the level saved with update_deployment, or local if none is saved. Inspect the plan with dry_run:true first. Tests must run for a later execute_quick_deployment of this validation. \"relevant\" lets Salesforce select tests automatically; \"specific\" needs tests_to_run; \"NoTestRun\" fails on production targets."
+          },
+          "tests_to_run": {
+            "type": "string",
+            "description": "Comma-separated Apex test class names. Only used when test_option=\"specific\"."
+          },
+          "backup": {
+            "type": "boolean",
+            "description": "Enable the pre-deploy \"Metadata Backup\" so a later real deploy of this run can be rolled back."
+          },
+          "comment": {
+            "type": "string",
+            "description": "Optional comment (shown on approval requests / audit)."
+          },
+          "dry_run": {
+            "type": "boolean",
+            "description": "Return the run plan without creating anything: components, deletions, test level, backups, post-deploy Apex, git push, scheduled jobs, activations, and whether a run in progress would block it."
+          }
+        },
+        "required": [
+          "deployment_id"
+        ],
+        "additionalProperties": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "run_id": {
+            "type": "number",
+            "description": "The new run; pass to get_deployment_run."
+          },
+          "task_id": {
+            "type": "number"
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "queued",
+              "running",
+              "waiting",
+              "finishing",
+              "succeeded",
+              "failed",
+              "cancelled"
+            ],
+            "description": "\"waiting\" with waiting_for \"approval\" means an approver must act in mtdt before anything is deployed."
+          },
+          "waiting_for": {
+            "type": "string",
+            "enum": [
+              "approval",
+              "schedule"
+            ]
+          },
+          "outcome": {
+            "type": "string"
+          },
+          "hint": {
+            "type": "string"
+          },
+          "dry_run": {
+            "type": "boolean",
+            "description": "true: nothing was created; the fields describe the run that would start."
+          },
+          "components_count": {
+            "type": "number"
+          },
+          "would_refuse": {
+            "type": "object",
+            "additionalProperties": {},
+            "description": "dry_run: the refusal a real call would return now (run_in_progress, permission_denied, scheduling_not_supported)."
+          },
+          "run": {
+            "type": "object",
+            "properties": {
+              "run_id": {
+                "type": "number"
+              },
+              "task_id": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "created_at": {
+                "type": "string"
+              },
+              "is_validation": {
+                "type": "boolean"
+              },
+              "state": {
+                "type": "string",
+                "enum": [
+                  "queued",
+                  "running",
+                  "waiting",
+                  "finishing",
+                  "succeeded",
+                  "failed",
+                  "cancelled"
+                ]
+              },
+              "waiting_for": {
+                "type": "string",
+                "enum": [
+                  "approval",
+                  "schedule"
+                ]
+              },
+              "outcome": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "run_id",
+              "task_id",
+              "created_at",
+              "is_validation",
+              "state",
+              "outcome"
+            ],
+            "additionalProperties": false,
+            "description": "run_in_progress: the active run; follow it with get_deployment_run."
+          },
+          "error": {
+            "type": "string",
+            "description": "\"unresolved_types\" or \"items_not_retrieved\" on a structured reject; with all_items \"archive_not_ready\" / \"archive_unpack_failed\" / \"all_items_not_supported\" / \"archive_empty\"; \"missing_selection\" / \"conflicting_selection\" when items and all_items are both absent or both set."
+          },
+          "message": {
+            "type": "string"
+          },
+          "component_count": {
+            "type": "number",
+            "description": "all_items: number of components sent to validation. Can exceed register_archive component_count: an object whose fields are shipped is sent as its own component too."
+          },
+          "missing": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": {}
+            },
+            "description": "items_not_retrieved: the [{type,name}] not yet retrieved."
+          },
+          "unresolved": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": {}
+            }
+          },
+          "resolved": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": {}
+            }
+          }
+        },
+        "additionalProperties": {}
+      },
+      "annotations": {
+        "title": "Validate Deployment (Check-Only)",
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      }
+    },
+    {
+      "name": "execute_deployment",
+      "title": "Execute Deployment (Real Deploy)",
+      "description": "Deploy for real: run a full deploy of the CURRENT saved draft to its target org, with saved or passed test/backup settings, overwrites and deletions. It never chooses a previous validation or quick-deploys. Only on an explicit user instruction after confirming the target. Call with dry_run:true first and show the plan, including post-deploy actions. An important org requires confirm_important_target:true after the user confirmed this specific deploy. Uses team deploy permissions or requests approval when the role allows that; state waiting/approval needs an approver in mtdt. Refuses run_in_progress, permission_denied, confirmation_required, saved-config errors or scheduling_not_supported (full deploys cannot be scheduled). To deploy an explicitly chosen validation package, call execute_quick_deployment with validation_run_id instead. Returns mode full_deploy and the new run; follow get_deployment_run every 15-30 s.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "deployment_id": {
+            "type": "number",
+            "description": "Deployment ID."
+          },
+          "test_option": {
+            "type": "string",
+            "enum": [
+              "all",
+              "local",
+              "relevant",
+              "specific",
+              "default",
+              "NoTestRun"
+            ],
+            "description": "Apex test level for this full deploy. Omit to use the level saved with update_deployment. \"NoTestRun\" fails on production targets."
+          },
+          "tests_to_run": {
+            "type": "string",
+            "description": "Comma-separated Apex test class names. Only used when test_option=\"specific\"."
+          },
+          "backup": {
+            "type": "boolean",
+            "description": "Take the pre-deploy \"Metadata Backup\" so this deploy can be rolled back."
+          },
+          "objects_to_backup": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Object API names whose RECORDS to back up before deploying."
+          },
+          "request_approval": {
+            "type": "boolean",
+            "description": "Request approval instead of deploying directly. Omit: mtdt requests approval by itself when you may not deploy to this target directly, like the web app."
+          },
+          "scheduled_at": {
+            "type": "string",
+            "description": "A full deploy cannot be scheduled: this returns scheduling_not_supported. Use execute_quick_deployment to schedule a specific validation."
+          },
+          "comment": {
+            "type": "string",
+            "description": "Comment shown on the approval request and in the audit."
+          },
+          "confirm_important_target": {
+            "type": "boolean",
+            "description": "Set only after the user confirmed this specific deploy to an important org."
+          },
+          "dry_run": {
+            "type": "boolean",
+            "description": "Return the plan without creating anything: full deploy, whether approval will be requested, components, deletions, backups, post-deploy Apex, git push, jobs, activations, and any refusal that would apply."
+          }
+        },
+        "required": [
+          "deployment_id"
+        ],
+        "additionalProperties": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "run_id": {
+            "type": "number",
+            "description": "The new run; pass to get_deployment_run."
+          },
+          "task_id": {
+            "type": "number"
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "queued",
+              "running",
+              "waiting",
+              "finishing",
+              "succeeded",
+              "failed",
+              "cancelled"
+            ],
+            "description": "\"waiting\" with waiting_for \"approval\" means an approver must act in mtdt before anything is deployed."
+          },
+          "waiting_for": {
+            "type": "string",
+            "enum": [
+              "approval",
+              "schedule"
+            ]
+          },
+          "outcome": {
+            "type": "string"
+          },
+          "hint": {
+            "type": "string"
+          },
+          "dry_run": {
+            "type": "boolean",
+            "description": "true: nothing was created; the fields describe the run that would start."
+          },
+          "components_count": {
+            "type": "number"
+          },
+          "would_refuse": {
+            "type": "object",
+            "additionalProperties": {},
+            "description": "dry_run: the refusal a real call would return now (run_in_progress, permission_denied, scheduling_not_supported)."
+          },
+          "run": {
+            "type": "object",
+            "properties": {
+              "run_id": {
+                "type": "number"
+              },
+              "task_id": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "created_at": {
+                "type": "string"
+              },
+              "is_validation": {
+                "type": "boolean"
+              },
+              "state": {
+                "type": "string",
+                "enum": [
+                  "queued",
+                  "running",
+                  "waiting",
+                  "finishing",
+                  "succeeded",
+                  "failed",
+                  "cancelled"
+                ]
+              },
+              "waiting_for": {
+                "type": "string",
+                "enum": [
+                  "approval",
+                  "schedule"
+                ]
+              },
+              "outcome": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "run_id",
+              "task_id",
+              "created_at",
+              "is_validation",
+              "state",
+              "outcome"
+            ],
+            "additionalProperties": false,
+            "description": "run_in_progress: the active run; follow it with get_deployment_run."
+          },
+          "mode": {
+            "type": "string",
+            "const": "full_deploy",
+            "description": "Always a full deploy of the current saved draft."
+          },
+          "note": {
+            "type": "string"
+          },
+          "approval_will_be_requested": {
+            "type": "boolean",
+            "description": "dry_run: the run will wait for an approver."
+          },
+          "confirmation_required": {
+            "type": "boolean",
+            "description": "dry_run: the target is marked important, so the real call needs confirm_important_target:true after the user confirmed."
+          },
+          "target": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "label": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "additionalProperties": {},
+            "description": "confirmation_required: the important target org."
+          },
+          "error": {
+            "type": "string",
+            "description": "\"run_in_progress\" (see run), \"permission_denied\", \"scheduling_not_supported\", \"confirmation_required\" (ask the user, see message), or a saved-config reject such as \"deployment_not_ready\" / \"empty_selection\"."
+          },
+          "message": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": {}
+      },
+      "annotations": {
+        "title": "Execute Deployment (Real Deploy)",
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      }
+    },
+    {
+      "name": "execute_quick_deployment",
+      "title": "Execute Quick Deployment (Selected Validation)",
+      "description": "Deploy for real: quick-deploy the EXACT package of the explicitly selected validation_run_id, without re-running Apex tests. Requires deployment_id and validation_run_id (an mtdt run_id, not task_id); the server checks ownership and resolves its Salesforce job ID. No latest-validation lookup and no full-deploy fallback. A changed draft or a newer validation does not replace the package you chose. Call with dry_run:true first and show that validation snapshot and quick workflow; quick deploy does not run saved post-deploy Apex, Git push, record backups or scheduled-job pauses. Metadata rollback backup is attempted from persisted validation artifacts; flow activation uses saved deployment settings at execution, Flow tests and agent publication use validation data. Only on explicit user instruction, after confirming the target and selected validation. Important targets require confirm_important_target:true after the user said yes. Team permissions, approval and active-run gates apply as for execute_deployment. An ineligible validation returns validation_not_eligible without creating a task; choose a different action explicitly. scheduled_at can defer this quick deploy within the Salesforce validation lifetime. Follow the returned run with get_deployment_run.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "deployment_id": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "description": "Deployment that owns the validation."
+          },
+          "validation_run_id": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "description": "Explicit validation run_id from validate_deployment or get_deployment_run; not task_id or the Salesforce ID. The server resolves the SF job ID from this run."
+          },
+          "request_approval": {
+            "type": "boolean",
+            "description": "Request approval instead of deploying directly. Omit to follow the team role and target policy."
+          },
+          "scheduled_at": {
+            "type": "string",
+            "description": "ISO datetime to defer this quick deploy, within the validation lifetime."
+          },
+          "comment": {
+            "type": "string",
+            "description": "Comment for the approval request and audit."
+          },
+          "confirm_important_target": {
+            "type": "boolean",
+            "description": "Set only after the user confirmed this specific deploy to an important org."
+          },
+          "dry_run": {
+            "type": "boolean",
+            "description": "Show the selected validation package and actual quick workflow without creating a task."
+          }
+        },
+        "required": [
+          "deployment_id",
+          "validation_run_id"
+        ],
+        "additionalProperties": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "run_id": {
+            "type": "number",
+            "description": "The new run; pass to get_deployment_run."
+          },
+          "task_id": {
+            "type": "number"
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "queued",
+              "running",
+              "waiting",
+              "finishing",
+              "succeeded",
+              "failed",
+              "cancelled"
+            ],
+            "description": "\"waiting\" with waiting_for \"approval\" means an approver must act in mtdt before anything is deployed."
+          },
+          "waiting_for": {
+            "type": "string",
+            "enum": [
+              "approval",
+              "schedule"
+            ]
+          },
+          "outcome": {
+            "type": "string"
+          },
+          "hint": {
+            "type": "string"
+          },
+          "dry_run": {
+            "type": "boolean",
+            "description": "true: nothing was created; the fields describe the run that would start."
+          },
+          "components_count": {
+            "type": "number"
+          },
+          "would_refuse": {
+            "type": "object",
+            "additionalProperties": {},
+            "description": "dry_run: the refusal a real call would return now (run_in_progress, permission_denied, scheduling_not_supported)."
+          },
+          "run": {
+            "type": "object",
+            "properties": {
+              "run_id": {
+                "type": "number"
+              },
+              "task_id": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "created_at": {
+                "type": "string"
+              },
+              "is_validation": {
+                "type": "boolean"
+              },
+              "state": {
+                "type": "string",
+                "enum": [
+                  "queued",
+                  "running",
+                  "waiting",
+                  "finishing",
+                  "succeeded",
+                  "failed",
+                  "cancelled"
+                ]
+              },
+              "waiting_for": {
+                "type": "string",
+                "enum": [
+                  "approval",
+                  "schedule"
+                ]
+              },
+              "outcome": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "run_id",
+              "task_id",
+              "created_at",
+              "is_validation",
+              "state",
+              "outcome"
+            ],
+            "additionalProperties": false,
+            "description": "run_in_progress: the active run; follow it with get_deployment_run."
+          },
+          "mode": {
+            "type": "string",
+            "const": "quick_deploy"
+          },
+          "deployment_id": {
+            "type": "number"
+          },
+          "validation_run_id": {
+            "type": "number"
+          },
+          "sf_deploy_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "approval_will_be_requested": {
+            "type": "boolean"
+          },
+          "confirmation_required": {
+            "type": "boolean"
+          },
+          "error": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": {}
+      },
+      "annotations": {
+        "title": "Execute Quick Deployment (Selected Validation)",
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      }
+    }
+  ]
+}
