@@ -1,6 +1,6 @@
 {
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
-  "name": "io.mtdt/mtdt",
+  "name": "io.mtdt/salesforce-devops",
   "title": "mtdt \u2014 Salesforce DevOps",
   "description": "mtdt.io MCP: Salesforce DevOps platform connector (metadata deployments, backups and more)",
   "repository": {
