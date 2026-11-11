@@ -1,8 +1,8 @@
 {
   "evidence": {
     "kind": "local-source",
-    "observedAt": "2026-10-31T22:23:08.772229+00:00",
-    "source": "mtdt-backend/mcp/test-snapshots/tools-list.json at dfc700c6 (23 tools: explicit full and quick execution, get_workflow_deployment_recipe)",
+    "observedAt": "2026-11-11T23:11:12.807783+00:00",
+    "source": "mtdt-backend/mcp/test-snapshots/tools-list.json at 7265eb0a (origin/main after PR #311, 23 tools)",
     "live": false
   },
   "tools": [
@@ -498,7 +498,7 @@
     {
       "name": "get_deployment_run",
       "title": "Get Deployment Run",
-      "description": "Read one run of a deployment: the latest, or run_id (from get_deployment.recent_runs or a launch response). Answers immediately with state: \"queued\", \"running\" or \"finishing\" (Salesforce is done; post-deploy steps such as post-deploy Apex, flow activation or git push still run) — call again every 15-30 s, never faster; \"waiting\" (waiting_for \"approval\": an approver must act in mtdt; \"schedule\": it starts at scheduled_at) — stop polling and tell the user; \"succeeded\", \"failed\" and \"cancelled\" are final. outcome is the one line to report; for a failure read component_failures, test_failures and code_coverage_warnings. For a validation, quick_deploy_eligible says whether execute_quick_deployment can deploy this selected snapshot, and quick_deploy_ineligible_reason says why not (no tests ran, older than 10 days, a newer deploy reached the org, it was already promoted, or its SF job ID is unavailable); Salesforce can still refuse if something else was deployed to the target meanwhile. Also returns test_level, counts, sf_deploy_id, folder_sharing_check and post_deploy results. A deployment without runs answers state \"no_run\". Read-only.",
+      "description": "Read one run of a deployment: the latest, or run_id (from get_deployment.recent_runs or a launch response). Answers immediately with state: \"queued\", \"running\" or \"finishing\" (Salesforce is done; post-deploy steps such as post-deploy Apex, flow activation or git push still run) — call again every 15-30 s, never faster; \"waiting\" (waiting_for \"approval\": an approver must act in mtdt; \"schedule\": it starts at scheduled_at) — stop polling and tell the user; \"succeeded\", \"failed\" and \"cancelled\" are final. outcome is the one line to report; for a failure read component_failures, test_failures and code_coverage_warnings. For a validation, quick_deploy_eligible says whether execute_quick_deployment can deploy this selected snapshot, and quick_deploy_ineligible_reason says why not (no tests ran, older than 10 days, a newer deploy reached the org, it was already promoted, or its SF job ID is unavailable); Salesforce can still refuse if something else was deployed to the target meanwhile. Also returns test_level, counts, sf_deploy_id, folder_sharing_check, record_backup (the record backup before deploy, per object, with progress while it runs) and post_deploy results. A deployment without runs answers state \"no_run\". Read-only.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -642,6 +642,11 @@
             }
           },
           "folder_sharing_check": {},
+          "record_backup": {
+            "type": "object",
+            "additionalProperties": {},
+            "description": "Only when the run backed up target-org records before deploying (execute_deployment objects_to_backup): { status: \"running\" | \"done\" | \"failed\" | \"unfinished\" (the run ended before the backup did), objects: [{ object, status: \"queued\" | \"running\" | \"done\" | \"failed\" | \"cancelled\", planned_records, records_retrieved (while running), records (when done), error }] }. A failed record backup stops the run before Salesforce is called."
+          },
           "post_deploy": {
             "type": "object",
             "additionalProperties": {}
@@ -2166,7 +2171,7 @@
     {
       "name": "check_deployment",
       "title": "Check Deployment",
-      "description": "Check the saved deployment before validating: pre-deploy warnings, missing dependencies, target changes it would overwrite, and the Apex tests to run. Read-only; nothing blocks. It always checks the SAVED composition (selected components, saved deletions and their timing): save it with update_deployment first; an empty one answers empty_selection, and a source that is still loading answers deployment_not_ready (follow get_deployment). Parts: preflight — the checks the web Deploy dialog runs (folder_sharing, destructive_impact, permissions_and_profiles, record_backups, cron_triggers, business_hours, non_source_deployable, static_analysis, changed_since_donor), each verdict with severity and often a suggested_action; dependencies — source components the selection needs that are not saved, with add_with = the update_deployment call that adds them (org sources only); target_conflicts — target components changed, deleted or created since mtdt read them (a deploy would overwrite them: stop and ask the user); tests — the Apex tests to run, with save_with = the update_deployment call that saves them as the test level (or pass them to one validate_deployment). summary counts them. Report warnings, missing dependencies and conflicts to the user BEFORE validating. depth \"fast\" runs only database-backed parts; \"full\" (default) also queries the target org. Parts share a time budget: unfinished ones come back in pending — call again with checks set to them. Lists longer than 20 are cut (total says how many). For a deployment created from an archive pass all_items:true to check every component of the archive.",
+      "description": "Check the saved deployment before validating: pre-deploy warnings, missing dependencies, target changes it would overwrite, and the Apex tests to run. Read-only; nothing blocks. It always checks the SAVED composition (selected components, saved deletions and their timing): save it with update_deployment first; an empty one answers empty_selection, and a source that is still loading answers deployment_not_ready (follow get_deployment). Parts: preflight — the checks the web Deploy dialog runs (folder_sharing, destructive_impact, permissions_and_profiles, record_backups, cron_triggers, business_hours, non_source_deployable, static_analysis, secrets, changed_since_donor), each verdict with severity and often a suggested_action; dependencies — source components the selection needs that are not saved, with add_with = the update_deployment call that adds them (org sources only); target_conflicts — target components changed, deleted or created since mtdt read them (a deploy would overwrite them: stop and ask the user); tests — the Apex tests to run, with save_with = the update_deployment call that saves them as the test level (or pass them to one validate_deployment). summary counts them. Report warnings, missing dependencies and conflicts to the user BEFORE validating. depth \"fast\" runs only database-backed parts; \"full\" (default) also queries the target org. Parts share a time budget: unfinished ones come back in pending — call again with checks set to them. Lists longer than 20 are cut (total says how many). For a deployment created from an archive pass all_items:true to check every component of the archive.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -2188,13 +2193,14 @@
                 "business_hours",
                 "non_source_deployable",
                 "static_analysis",
+                "secrets",
                 "changed_since_donor",
                 "dependencies",
                 "target_conflicts",
                 "tests"
               ]
             },
-            "description": "Run only these parts. Omit to run all. Pre-deploy checks: folder_sharing, destructive_impact, permissions_and_profiles, record_backups, cron_triggers, business_hours, non_source_deployable, static_analysis, changed_since_donor; plus \"dependencies\" (source components the selection needs), \"target_conflicts\" (target components changed since they were read) and \"tests\" (Apex tests to run)."
+            "description": "Run only these parts. Omit to run all. Pre-deploy checks: folder_sharing, destructive_impact, permissions_and_profiles, record_backups, cron_triggers, business_hours, non_source_deployable, static_analysis, secrets, changed_since_donor; plus \"dependencies\" (source components the selection needs), \"target_conflicts\" (target components changed since they were read) and \"tests\" (Apex tests to run)."
           },
           "depth": {
             "type": "string",
@@ -2975,7 +2981,7 @@
           "would_refuse": {
             "type": "object",
             "additionalProperties": {},
-            "description": "dry_run: the refusal a real call would return now (run_in_progress, permission_denied, scheduling_not_supported)."
+            "description": "dry_run: the refusal a real call would return now (run_in_progress, permission_denied, scheduling_not_supported, unknown_objects_to_backup)."
           },
           "run": {
             "type": "object",
@@ -3076,7 +3082,7 @@
     {
       "name": "execute_deployment",
       "title": "Execute Deployment (Real Deploy)",
-      "description": "Deploy for real: run a full deploy of the CURRENT saved draft to its target org, with saved or passed test/backup settings, overwrites and deletions. It never chooses a previous validation or quick-deploys. Only on an explicit user instruction after confirming the target. Call with dry_run:true first and show the plan, including post-deploy actions. An important org requires confirm_important_target:true after the user confirmed this specific deploy. Uses team deploy permissions or requests approval when the role allows that; state waiting/approval needs an approver in mtdt. Refuses run_in_progress, permission_denied, confirmation_required, saved-config errors or scheduling_not_supported (full deploys cannot be scheduled). To deploy an explicitly chosen validation package, call execute_quick_deployment with validation_run_id instead. Returns mode full_deploy and the new run; follow get_deployment_run every 15-30 s.",
+      "description": "Deploy for real: run a full deploy of the CURRENT saved draft to its target org, with saved or passed test/backup settings, overwrites and deletions. It never chooses a previous validation or quick-deploys. Only on an explicit user instruction after confirming the target. Call with dry_run:true first and show the plan, including post-deploy actions. An important org requires confirm_important_target:true after the user confirmed this specific deploy. Uses team deploy permissions or requests approval when the role allows that; state waiting/approval needs an approver in mtdt. Refuses run_in_progress, permission_denied, confirmation_required, unknown_objects_to_backup (an objects_to_backup name the target org does not have), saved-config errors or scheduling_not_supported (full deploys cannot be scheduled). To deploy an explicitly chosen validation package, call execute_quick_deployment with validation_run_id instead. Returns mode full_deploy and the new run; follow get_deployment_run every 15-30 s.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -3109,7 +3115,7 @@
             "items": {
               "type": "string"
             },
-            "description": "Object API names whose RECORDS to back up before deploying."
+            "description": "Object API names whose RECORDS to back up before deploying. Each must exist on the target org (case-insensitive), otherwise unknown_objects_to_backup and nothing is created."
           },
           "request_approval": {
             "type": "boolean",
@@ -3183,7 +3189,7 @@
           "would_refuse": {
             "type": "object",
             "additionalProperties": {},
-            "description": "dry_run: the refusal a real call would return now (run_in_progress, permission_denied, scheduling_not_supported)."
+            "description": "dry_run: the refusal a real call would return now (run_in_progress, permission_denied, scheduling_not_supported, unknown_objects_to_backup)."
           },
           "run": {
             "type": "object",
@@ -3274,7 +3280,14 @@
           },
           "error": {
             "type": "string",
-            "description": "\"run_in_progress\" (see run), \"permission_denied\", \"scheduling_not_supported\", \"confirmation_required\" (ask the user, see message), or a saved-config reject such as \"deployment_not_ready\" / \"empty_selection\"."
+            "description": "\"run_in_progress\" (see run), \"permission_denied\", \"scheduling_not_supported\", \"confirmation_required\" (ask the user, see message), \"unknown_objects_to_backup\" (see unknown_objects), \"objects_to_backup_check_failed\" (the target object list could not be read), or a saved-config reject such as \"deployment_not_ready\" / \"empty_selection\"."
+          },
+          "unknown_objects": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "unknown_objects_to_backup: the passed objects_to_backup names the target org does not have."
           },
           "message": {
             "type": "string"
@@ -3380,7 +3393,7 @@
           "would_refuse": {
             "type": "object",
             "additionalProperties": {},
-            "description": "dry_run: the refusal a real call would return now (run_in_progress, permission_denied, scheduling_not_supported)."
+            "description": "dry_run: the refusal a real call would return now (run_in_progress, permission_denied, scheduling_not_supported, unknown_objects_to_backup)."
           },
           "run": {
             "type": "object",

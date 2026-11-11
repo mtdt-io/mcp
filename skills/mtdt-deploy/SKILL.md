@@ -425,7 +425,10 @@ deploy from the repo.
   *source* (`from_backup_id`) for restores.
 - **Record (data) backup before a risky deploy** — when `check_deployment` recommends it
   (`record_backups/recommended` verdict), pass the objects as `objects_to_backup` on
-  `execute_deployment`; mtdt snapshots the records before deploying.
+  `execute_deployment`; mtdt snapshots the records before deploying. Every object must exist on
+  the target org: otherwise the call answers `unknown_objects_to_backup` with `unknown_objects`
+  and creates nothing, so fix the names and call again. `get_deployment_run` reports the backup
+  progress in `record_backup`.
 
 ## Guardrails
 
