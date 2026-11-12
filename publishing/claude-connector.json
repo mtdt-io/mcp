@@ -4,7 +4,7 @@
     "url_mode": "universal"
   },
   "listing": {
-    "name": "mtdt.io",
+    "name": "mtdt.io for Salesforce",
     "one_liner": "Salesforce DevOps: metadata deployments, preflight checks, validation and backups.",
     "description": "Work with the Salesforce orgs connected to your mtdt.io team. Find orgs, inspect deployments, browse metadata, and prepare a deployment from an org, Git repository, usable metadata backup or uploaded metadata archive (ZIP). Review dependencies, target conflicts, permission warnings and backup recommendations before validating with Apex tests. Follow validation and deployment results and deploy; a specific successful validation can be quick-deployed by its run ID. Compare two orgs, start a metadata backup, upload and register a metadata archive, and move Work Items through a project's environments. Validation runs without changing the target org; deployment overwrites metadata in the target org.",
     "suggested_categories": [
@@ -40,7 +40,7 @@
     "proposed_review_contact": "support@mtdt.io"
   },
   "authentication": {
-    "type": "oauth_anthropic_creds",
+    "type": "dcr",
     "flow": "authorization_code_pkce_s256",
     "issuer": "https://identity.mtdt.io/realms/mtdt",
     "protected_resource_metadata_url": "https://mcp.mtdt.io/.well-known/oauth-protected-resource",
@@ -54,9 +54,7 @@
       "offline_access"
     ],
     "notes": "Users authenticate individually. Team roles and target approval policy apply in addition to OAuth scopes. Complete MFA when the account or team requires it. Reviewer access is supplied privately in the portal.",
-    "client_id": "claude-ai",
-    "client_auth": "client_secret_basic (secret transferred to Anthropic by their secure method, never stored here)",
-    "redirect_uri": "https://claude.ai/api/mcp/auth_callback"
+    "registration_endpoint": "https://identity.mtdt.io/realms/mtdt/clients-registrations/openid-connect"
   },
   "data_handling": {
     "api_ownership_draft": "The connector exposes MTDT's own Salesforce DevOps APIs. MTDT accesses Salesforce orgs and optional connected Git repositories on behalf of the authenticated team, using the integrations the team authorized.",
