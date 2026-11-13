@@ -217,7 +217,10 @@ For the initial deployment, use `create_deployment` with the card IDs instead.
 
 - `browse_metadata` with the `deployment_id` and a metadata type — it retrieves the type from the
   source org on first call and returns one compact row per component. Filter server-side with
-  `name_contains`, `modified_since` (ISO date), or `modified_by` (display names).
+  `name_contains`, `modified_since` (ISO date), or `modified_by` (display names: the last author
+  or anyone in `change_authors`, the people who changed the component in the last 30 days).
+  `last_modified_by` is `"Salesforce"` for a profile or permission set change the audit trail
+  shows no person for, and null when the author is unknown.
 - If it returns `{ status: "retrieving", partial: true, task_ids }`, the retrieval is still
   running and `components` holds only what has landed so far — **call it again with the same
   args** (safe to repeat; duplicates are impossible).

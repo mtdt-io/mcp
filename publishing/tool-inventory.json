@@ -1,8 +1,8 @@
 {
   "evidence": {
     "kind": "local-source",
-    "observedAt": "2026-11-11T23:11:12.807783+00:00",
-    "source": "mtdt-backend/mcp/test-snapshots/tools-list.json at 7265eb0a (origin/main after PR #311, 23 tools)",
+    "observedAt": "2026-11-13T10:52:18.605897+00:00",
+    "source": "mtdt-backend/mcp/test-snapshots/tools-list.json at 3519c004 (develop-local, release 2026-11-13 candidate, 23 tools)",
     "live": false
   },
   "tools": [
@@ -2786,7 +2786,7 @@
     {
       "name": "browse_metadata",
       "title": "Browse Metadata",
-      "description": "List the components a deployment can deploy, one metadata type at a time, reading them from the source when needed; this is the only way to see them. Browse the components of ONE metadata type on the deployment's SOURCE side (org, git repo, or metadata backup — resolved automatically from the deployment; pass org_id only to browse a specific org side, e.g. the target). Optional server-side filters: name_contains / modified_since / modified_by. Returns one row per COMPONENT { name, type, last_modified, last_modified_by }, most-recently-modified first, paginated (page / page_size; total is the full component count). For org sources, uncached metadata is retrieved on first call with a short poll (~15s): as soon as every component name is listed it returns { status:\"names_ready\", components, task_ids } while Salesforce still reads the contents — the names are complete, so pick and save components right away. Before that it returns { status:\"retrieving\", partial:true, components (the partial set so far), task_ids } — call browse_metadata again with the same args (idempotent, dedupe-safe) until status is \"names_ready\" or \"ready\" (0 components is a valid ready). Treat the list as complete only at \"names_ready\" or \"ready\". If the retrieval fails on the Salesforce side for part of the type you get { status:\"retrieval_failed\", failed_tasks:[{id,status,error}], components }: the component NAMES are complete, some bodies may not have been read yet. mtdt retries the retrieval automatically (up to 3 times) — call browse_metadata again to get the list; if the failure keeps repeating, report the error to the user. A repo or backup source is prepared after the deployment is created: wait for get_deployment ready:true first. Until then browse_metadata answers status:\"retrieving\" (or \"retrieval_failed\" with the reason when the source could not be prepared). Unknown types return a structured reject with did_you_mean suggestions.",
+      "description": "List the components a deployment can deploy, one metadata type at a time, reading them from the source when needed; this is the only way to see them. Browse the components of ONE metadata type on the deployment's SOURCE side (org, git repo, or metadata backup — resolved automatically from the deployment; pass org_id only to browse a specific org side, e.g. the target). Optional server-side filters: name_contains / modified_since / modified_by. Returns one row per COMPONENT { name, type, last_modified, last_modified_by, change_authors? }, most-recently-modified first, paginated (page / page_size; total is the full component count). For org sources, uncached metadata is retrieved on first call with a short poll (~15s): as soon as every component name is listed it returns { status:\"names_ready\", components, task_ids } while Salesforce still reads the contents — the names are complete, so pick and save components right away. Before that it returns { status:\"retrieving\", partial:true, components (the partial set so far), task_ids } — call browse_metadata again with the same args (idempotent, dedupe-safe) until status is \"names_ready\" or \"ready\" (0 components is a valid ready). Treat the list as complete only at \"names_ready\" or \"ready\". If the retrieval fails on the Salesforce side for part of the type you get { status:\"retrieval_failed\", failed_tasks:[{id,status,error}], components }: the component NAMES are complete, some bodies may not have been read yet. mtdt retries the retrieval automatically (up to 3 times) — call browse_metadata again to get the list; if the failure keeps repeating, report the error to the user. A repo or backup source is prepared after the deployment is created: wait for get_deployment ready:true first. Until then browse_metadata answers status:\"retrieving\" (or \"retrieval_failed\" with the reason when the source could not be prepared). Unknown types return a structured reject with did_you_mean suggestions.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -2808,14 +2808,14 @@
           },
           "modified_since": {
             "type": "string",
-            "description": "ISO date; keep only components whose properties.lastModifiedDate is on/after this."
+            "description": "ISO date; keep only components whose last change (last_modified) is on/after this."
           },
           "modified_by": {
             "type": "array",
             "items": {
               "type": "string"
             },
-            "description": "Keep only components last modified by one of these names (properties.lastModifiedByName)."
+            "description": "Keep only components changed by one of these names: the last author (last_modified_by) or anyone in change_authors."
           },
           "page": {
             "type": "number",
@@ -2845,7 +2845,7 @@
               "type": "object",
               "additionalProperties": {}
             },
-            "description": "One row per COMPONENT { name, type, last_modified, last_modified_by }, most-recently-modified first. On retrieving/retrieval_failed the list is partial (more may still arrive)."
+            "description": "One row per COMPONENT { name, type, last_modified, last_modified_by, change_authors? }, most-recently-modified first. last_modified_by is \"Salesforce\" for a profile or permission set change the audit trail shows no person for, null when the author is unknown. change_authors lists everyone known to have changed it in the last 30 days, newest first; absent when none is known. On retrieving/retrieval_failed the list is partial (more may still arrive)."
           },
           "total": {
             "type": "number",
