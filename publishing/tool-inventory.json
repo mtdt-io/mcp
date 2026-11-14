@@ -1,8 +1,8 @@
 {
   "evidence": {
     "kind": "local-source",
-    "observedAt": "2026-11-13T10:52:18.605897+00:00",
-    "source": "mtdt-backend/mcp/test-snapshots/tools-list.json at 3519c004 (develop-local, release 2026-11-13 candidate, 23 tools)",
+    "observedAt": "2026-11-14T12:33:59.618255+00:00",
+    "source": "mtdt-backend/mcp/test-snapshots/tools-list.json at 855edcab (develop-local, release 2026-11-14 candidate, 23 tools)",
     "live": false
   },
   "tools": [
@@ -2171,7 +2171,7 @@
     {
       "name": "check_deployment",
       "title": "Check Deployment",
-      "description": "Check the saved deployment before validating: pre-deploy warnings, missing dependencies, target changes it would overwrite, and the Apex tests to run. Read-only; nothing blocks. It always checks the SAVED composition (selected components, saved deletions and their timing): save it with update_deployment first; an empty one answers empty_selection, and a source that is still loading answers deployment_not_ready (follow get_deployment). Parts: preflight — the checks the web Deploy dialog runs (folder_sharing, destructive_impact, permissions_and_profiles, record_backups, cron_triggers, business_hours, non_source_deployable, static_analysis, secrets, changed_since_donor), each verdict with severity and often a suggested_action; dependencies — source components the selection needs that are not saved, with add_with = the update_deployment call that adds them (org sources only); target_conflicts — target components changed, deleted or created since mtdt read them (a deploy would overwrite them: stop and ask the user); tests — the Apex tests to run, with save_with = the update_deployment call that saves them as the test level (or pass them to one validate_deployment). summary counts them. Report warnings, missing dependencies and conflicts to the user BEFORE validating. depth \"fast\" runs only database-backed parts; \"full\" (default) also queries the target org. Parts share a time budget: unfinished ones come back in pending — call again with checks set to them. Lists longer than 20 are cut (total says how many). For a deployment created from an archive pass all_items:true to check every component of the archive.",
+      "description": "Check the saved deployment before validating: pre-deploy warnings, missing dependencies, target changes it would overwrite, and the Apex tests to run. Read-only; nothing blocks. It always checks the SAVED composition (selected components, saved deletions and their timing): save it with update_deployment first; an empty one answers empty_selection, and a source that is still loading answers deployment_not_ready (follow get_deployment). Parts: preflight — the checks the web Deploy dialog runs (folder_sharing, destructive_impact, permissions_and_profiles, record_backups, cron_triggers, business_hours, non_source_deployable, static_analysis, secrets, changed_since_donor), each verdict with severity and often a suggested_action; dependencies — source components the selection needs that are not saved, with add_with = the update_deployment call that adds them (org sources only); required:true marks one the target org lacks while a selected component references it (Highly recommended in the web Deploy dialog: the deploy most likely fails without it), and not_addable lists such components mtdt cannot add from the source, with the reason; target_conflicts — target components changed, deleted or created since mtdt read them (a deploy would overwrite them: stop and ask the user); tests — the Apex tests to run, with save_with = the update_deployment call that saves them as the test level (or pass them to one validate_deployment). summary counts them. Report warnings, required and other missing dependencies, and conflicts to the user BEFORE validating. depth \"fast\" runs only database-backed parts and leaves out the required marks; \"full\" (default) also queries the target org. Parts share a time budget: unfinished ones come back in pending — call again with checks set to them. Lists longer than 20 are cut (total says how many). For a deployment created from an archive pass all_items:true to check every component of the archive.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -2244,6 +2244,9 @@
               "missing_dependencies": {
                 "type": "number"
               },
+              "required_dependencies": {
+                "type": "number"
+              },
               "target_conflicts": {
                 "type": "number"
               },
@@ -2296,7 +2299,7 @@
           "dependencies": {
             "type": "object",
             "additionalProperties": {},
-            "description": "missing: source components the selection depends on that are not saved; add_with is the update_deployment call that adds them."
+            "description": "missing: source components the selection depends on that are not saved, required ones first; add_with is the update_deployment call that adds them. required: true (with required_by) marks a component the target org does not have while a selected component references it — the deploy most likely fails without it. not_addable: such components mtdt cannot add from the source, with reason package (install or upgrade the package on the target, or remove the reference), not_in_source (the source lacks it too: remove the reference) or other (the target lacks it: add it from the source if it is there, or remove the reference). required counts both; it is only reported at depth \"full\"."
           },
           "target_conflicts": {
             "type": "object",
