@@ -17,8 +17,8 @@ failed" — the metadata is on the target. Read the failure **category** before 
 
 - **Component failures** (compile/metadata errors): the target is missing something the component
   references. Run `check_deployment` with `checks: ["dependencies"]` — the missing dependency is usually
-  in its findings; retrieve it with `browse_metadata`, save it with `update_deployment` (`add_components`),
-  then call `validate_deployment` by `deployment_id`.
+  in its findings, marked `required: true` or listed in `not_addable`; retrieve it with `browse_metadata`,
+  save it with `update_deployment` (`add_components`), then call `validate_deployment` by `deployment_id`.
 - **Test failures**: a named Apex test asserted/threw. Read the failure message first — some orgs
   contain intentionally-failing demo/canary tests; if an unrelated pre-existing test fails under
   `test_option: "local"`, switch to `"specific"` with the tests that actually cover your

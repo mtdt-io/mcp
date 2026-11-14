@@ -281,7 +281,13 @@ an empty one answers `empty_selection`, and a source still loading answers `depl
   Act on `suggested_action` where present.
 - `dependencies` — source components your selection depends on that are not saved (e.g. a field's
   global value set). `add_with` is the ready `update_deployment` call that adds them; add them or
-  explain to the user why not. Org sources only.
+  explain to the user why not. Org sources only. `required: true` (with `required_by`) marks a
+  component the target org does not have while a selected component references it — the web dialog
+  calls it Highly recommended, and the deploy most likely fails without it, so report these first.
+  `not_addable` lists such components mtdt cannot add from the source, with `reason`: `package`
+  (install or upgrade the package on the target, or remove the reference), `not_in_source` (the
+  source lacks it too: remove the reference) or `other`. `required` counts both; `depth: "fast"`
+  leaves the marks out because they query the target org.
 - `target_conflicts` — components changed, deleted or created on the target since mtdt read them.
   A deploy would overwrite them: treat a conflict as a stop-and-ask. `not_verifiable` says what
   could not be compared and why.
@@ -289,7 +295,7 @@ an empty one answers `empty_selection`, and a source still loading answers `depl
   that saves them as the test level, or pass them to a single validation as `test_option: "specific"`.
 
 Everything is **advisory** — nothing blocks a deploy — but report warnings, missing dependencies
-and conflicts to the user BEFORE validating. `summary` counts each part. `depth: "fast"` runs only
+(required ones first) and conflicts to the user BEFORE validating. `summary` counts each part. `depth: "fast"` runs only
 the database-backed parts; `checks: [...]` runs a subset. Parts that do not finish inside the time
 budget come back in `pending`: call again with `checks` set to them. Lists longer than 20 are cut
 (`total` says how many). For a deployment created from an archive the saved selection already holds
