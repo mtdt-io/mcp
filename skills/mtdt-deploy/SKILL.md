@@ -438,6 +438,23 @@ deploy from the repo.
   the target org: otherwise the call answers `unknown_objects_to_backup` with `unknown_objects`
   and creates nothing, so fix the names and call again. `get_deployment_run` reports the backup
   progress in `record_backup`.
+- **"What was deployed to this org?"** — `get_org_deploy_log(org_id)` lists the deploys and
+  validations of the last 30 days (up to a year with `from` / `to`), made from mtdt or outside it,
+  newest first, 20 per page (`next_offset` for more). Each row says when, who, the outcome and the
+  components (the first 20, `components_total` for all); a run from mtdt also has `deployment_id`
+  and `run_id` for `get_deployment` / `get_deployment_run`. `view: "components"` counts per metadata
+  type how often each component was deployed (`component_type`, `component_name` to look one up,
+  `group: "month"` for a breakdown by month), but only for deploys run from mtdt: look up a
+  component deployed outside mtdt in the runs view.
+- **"Who changed Setup in this org, and was it a deploy?"** — `get_org_setup_changes(org_id)` reads
+  the Setup Audit Trail that mtdt org monitoring collected: the last 7 days by default (at most
+  92), newest first, each change with `deploy` (null when no deploy ran at that time).
+  `made_by: "manual"` keeps the changes made by hand outside any deploy; `sections`, `actor_id` and
+  `include_automation: false` narrow further. Pass `next_cursor` with the same arguments for more:
+  a filtered page can be empty while `next_cursor` is set. The first page has `overview` with the
+  busiest Setup sections and people. Read `collection` and `hint` before saying nothing changed:
+  the trail is collected only after it is turned on in the org's Monitoring page in mtdt, and only
+  from `coverage.enabled_at` on.
 
 ## Guardrails
 

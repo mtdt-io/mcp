@@ -39,6 +39,9 @@ lifetime. Draft edits or a newer validation do not invalidate the chosen immutab
 A refusal never switches to full deployment. Revalidate with tests, or explicitly choose a full
 deployment after reviewing that plan. Salesforce may still refuse a quick deploy if other changes
 reached the target meanwhile.
+To see what reached it, call `get_org_deploy_log` for the target with `from` set to the
+validation's date, and `get_org_setup_changes` with `made_by: "manual"` for Setup changes made by
+hand.
 
 - `run_in_progress`: a run of this deployment is still queued, running, finishing or waiting.
   Follow `run` with `get_deployment_run`; a run waiting for approval needs a person in mtdt.

@@ -1,8 +1,8 @@
 {
   "evidence": {
     "kind": "local-source",
-    "observedAt": "2026-11-14T12:33:59.618255+00:00",
-    "source": "mtdt-backend/mcp/test-snapshots/tools-list.json at 855edcab (develop-local, release 2026-11-14 candidate, 23 tools)",
+    "observedAt": "2026-11-17T15:54:15.778725+00:00",
+    "source": "mtdt-backend/mcp/test-snapshots/tools-list.json at dca05900 (develop-local, release-next candidate, 25 tools)",
     "live": false
   },
   "tools": [
@@ -489,6 +489,286 @@
       },
       "annotations": {
         "title": "List Deployments",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "get_org_deploy_log",
+      "title": "Get Org Deploy Log",
+      "description": "Read the Deploy Log of one org: what was deployed INTO it and when, including deploys made outside mtdt. view \"runs\" (default) lists deploys and validations newest first, 20 per page (next_offset for more): deployed_at, kind (deploy / validation), outcome, by (who ran it), external (true = made outside mtdt, e.g. Change Set or sf CLI, seen in the org Deploy Status), for mtdt runs deployment_id + run_id (open them with get_deployment / get_deployment_run) and linked work_items, source branch/commit, problems, counts and the first 20 components (components_total gives the full count; null when the run carries no component list, common for validations made outside mtdt). Failed runs are hidden unless include_failed:true. view \"components\" answers \"how often / when was X deployed here\" for deploys run from mtdt: per metadata type (the 25 most deployed, 5 components each) the components deployed, times_deployed, last change and last deployment; component_type shows up to 100 components of one type, component_name narrows to one, group \"month\" adds per-month numbers. totals.external counts the deploys made outside mtdt; their components are in view \"runs\". Default window: the last 30 days, at most 366. Use list_deployments for deployments as mtdt objects; this tool is the org-side history. Read-only.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "org_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Org id from list_orgs."
+          },
+          "view": {
+            "type": "string",
+            "enum": [
+              "runs",
+              "components"
+            ],
+            "description": "\"runs\" (default): deploys and validations that reached this org, newest first. \"components\": which components were deployed here and how often."
+          },
+          "from": {
+            "type": "string",
+            "description": "First day, YYYY-MM-DD (UTC). Default: 29 days before to."
+          },
+          "to": {
+            "type": "string",
+            "description": "Last day, YYYY-MM-DD (UTC), inclusive. Default: today, or from + 29 days. The window is at most 366 days."
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "all",
+              "deploys",
+              "validations"
+            ],
+            "description": "runs: which runs to list (default \"all\")."
+          },
+          "include_external": {
+            "type": "boolean",
+            "description": "runs: include deploys made outside mtdt (Change Sets, sf CLI, other tools) seen in the org's Deploy Status. Default true."
+          },
+          "include_failed": {
+            "type": "boolean",
+            "description": "runs: include failed and cancelled runs. Default false."
+          },
+          "limit": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 50,
+            "description": "runs: page size (default 20)."
+          },
+          "offset": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1000000,
+            "description": "runs: pass next_offset from the previous page."
+          },
+          "group": {
+            "type": "string",
+            "enum": [
+              "none",
+              "month"
+            ],
+            "description": "components: \"month\" adds a per-month breakdown."
+          },
+          "component_type": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200,
+            "description": "components: only this metadata type, e.g. \"ApexClass\" (case-insensitive)."
+          },
+          "component_name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500,
+            "description": "components: only this component of component_type, e.g. \"AccountService\" (case-insensitive)."
+          }
+        },
+        "required": [
+          "org_id"
+        ],
+        "additionalProperties": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "org_id": {
+            "type": "string"
+          },
+          "view": {
+            "type": "string",
+            "enum": [
+              "runs",
+              "components"
+            ]
+          },
+          "window": {
+            "type": "object",
+            "additionalProperties": {}
+          },
+          "runs": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": {}
+            },
+            "description": "runs: newest first."
+          },
+          "next_offset": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "totals": {
+            "type": "object",
+            "additionalProperties": {}
+          },
+          "types": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": {}
+            }
+          },
+          "error": {
+            "type": "string",
+            "description": "\"org_not_found\", \"invalid_arguments\" or \"authentication_required\"."
+          },
+          "message": {
+            "type": "string"
+          },
+          "hint": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": {}
+      },
+      "annotations": {
+        "title": "Get Org Deploy Log",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "get_org_setup_changes",
+      "title": "Get Org Setup Changes",
+      "description": "Read the Setup changes of one org (Salesforce Setup Audit Trail collected by mtdt org monitoring): who changed what in Setup and when, and whether a deploy made it. Each change: occurred_at, actor {id, name}, section, action, description, and deploy (null when no deploy ran then; origin \"mtdt\" with deployment_id for get_deployment, or \"external\"). made_by narrows to manual changes, mtdt deploys, outside deploys, or everything not via mtdt; sections, actor_id and include_automation narrow further. Newest first, 50 per page; pass next_cursor with the same other arguments for more. With made_by other than \"any\" a page can be short or even empty while next_cursor is set: keep paging. The first page also has overview for the whole window regardless of filters: top Setup sections and people with counts, automation, deploys. collection says whether the audit trail is collected (\"never\" or \"off\" means an empty list is not proof that nothing changed; see hint); it is collected only from coverage.enabled_at on, and deploys are matched only from attribution_from on. Default window: the last 7 days, at most 92. Needs the \"View setup changes\" permission in the team. Read-only.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "org_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Org id from list_orgs."
+          },
+          "from": {
+            "type": "string",
+            "description": "Start: YYYY-MM-DD (UTC midnight) or an ISO date-time with timezone. Default: 7 days before to."
+          },
+          "to": {
+            "type": "string",
+            "description": "End: YYYY-MM-DD (end of that UTC day) or an ISO date-time with timezone. Default: now. The window is at most 92 days."
+          },
+          "made_by": {
+            "type": "string",
+            "enum": [
+              "any",
+              "manual",
+              "mtdt_deploy",
+              "external_deploy",
+              "not_via_mtdt"
+            ],
+            "description": "\"manual\": changes outside any deploy; \"mtdt_deploy\": made by a deploy run from mtdt; \"external_deploy\": by a deploy made outside mtdt; \"not_via_mtdt\": everything except mtdt deploys. Default \"any\"."
+          },
+          "sections": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200
+            },
+            "maxItems": 100,
+            "description": "Only these Setup sections, exactly as overview.people.sections[].section shows them (e.g. \"Apex Class\", \"Manage Users\")."
+          },
+          "actor_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200,
+            "description": "Only changes by this user: actor.id from a change or the overview."
+          },
+          "include_automation": {
+            "type": "boolean",
+            "description": "false hides changes made by automated and integration users. Default true."
+          },
+          "limit": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 100,
+            "description": "Page size (default 50)."
+          },
+          "cursor": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 300,
+            "description": "next_cursor from the previous page; keep every other argument unchanged."
+          }
+        },
+        "required": [
+          "org_id"
+        ],
+        "additionalProperties": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "org_id": {
+            "type": "string"
+          },
+          "window": {
+            "type": "object",
+            "additionalProperties": {}
+          },
+          "collection": {
+            "type": "string",
+            "enum": [
+              "on",
+              "off",
+              "never"
+            ]
+          },
+          "deploy_attribution": {
+            "type": "string",
+            "enum": [
+              "on",
+              "partial",
+              "unavailable"
+            ]
+          },
+          "changes": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": {}
+            },
+            "description": "Newest first."
+          },
+          "next_cursor": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "overview": {
+            "type": "object",
+            "additionalProperties": {}
+          },
+          "error": {
+            "type": "string",
+            "description": "\"org_not_found\", \"access_denied\", \"invalid_arguments\" or \"deploy_attribution_unavailable\"."
+          },
+          "message": {
+            "type": "string"
+          },
+          "hint": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": {}
+      },
+      "annotations": {
+        "title": "Get Org Setup Changes",
         "readOnlyHint": true,
         "destructiveHint": false,
         "idempotentHint": true,

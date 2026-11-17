@@ -19,7 +19,8 @@ target conflicts, profile & permission warnings, record-backup recommendations, 
 recommendations), validate with tests, and deploy: use `execute_deployment` for the current saved draft or `execute_quick_deployment`
 for an explicitly selected validation package. A zip the agent already has (SFDX project or Metadata API package) can be uploaded straight to
 mtdt and deployed whole. Compare two orgs, back up org metadata, and move Work Items through a project's
-environments. Every launch answers at once with the run's state; your agent follows it with
+environments. Read an org's deploy log, inside and outside mtdt, and its Setup changes: who changed
+what, and whether a deploy did it. Every launch answers at once with the run's state; your agent follows it with
 `get_deployment_run`.
 
 Deploy-capable tools require the **Run** (`mtdt:deploy`) consent scope and always respect your
