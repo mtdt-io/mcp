@@ -1,8 +1,8 @@
 {
   "evidence": {
     "kind": "local-source",
-    "observedAt": "2026-11-17T15:54:15.778725+00:00",
-    "source": "mtdt-backend/mcp/test-snapshots/tools-list.json at dca05900 (develop-local, release-next candidate, 25 tools)",
+    "observedAt": "2026-11-18T13:03:13.964789+00:00",
+    "source": "mtdt-backend/mcp/test-snapshots/tools-list.json at 8f2859e9 (develop-local, release 2026-11-18 candidate, 25 tools)",
     "live": false
   },
   "tools": [
@@ -778,7 +778,7 @@
     {
       "name": "get_deployment_run",
       "title": "Get Deployment Run",
-      "description": "Read one run of a deployment: the latest, or run_id (from get_deployment.recent_runs or a launch response). Answers immediately with state: \"queued\", \"running\" or \"finishing\" (Salesforce is done; post-deploy steps such as post-deploy Apex, flow activation or git push still run) — call again every 15-30 s, never faster; \"waiting\" (waiting_for \"approval\": an approver must act in mtdt; \"schedule\": it starts at scheduled_at) — stop polling and tell the user; \"succeeded\", \"failed\" and \"cancelled\" are final. outcome is the one line to report; for a failure read component_failures, test_failures and code_coverage_warnings. For a validation, quick_deploy_eligible says whether execute_quick_deployment can deploy this selected snapshot, and quick_deploy_ineligible_reason says why not (no tests ran, older than 10 days, a newer deploy reached the org, it was already promoted, or its SF job ID is unavailable); Salesforce can still refuse if something else was deployed to the target meanwhile. Also returns test_level, counts, sf_deploy_id, folder_sharing_check, record_backup (the record backup before deploy, per object, with progress while it runs) and post_deploy results. A deployment without runs answers state \"no_run\". Read-only.",
+      "description": "Read one run of a deployment: the latest, or run_id (from get_deployment.recent_runs or a launch response). Answers immediately with state: \"queued\", \"running\" or \"finishing\" (Salesforce is done; post-deploy steps such as post-deploy Apex, flow activation or git push still run) — call again every 15-30 s, never faster; \"waiting\" (waiting_for \"approval\": an approver must act in mtdt; \"schedule\": it starts at scheduled_at) — stop polling and tell the user; \"succeeded\", \"failed\" and \"cancelled\" are final. outcome is the one line to report; for a failure read component_failures, test_failures and code_coverage_warnings. For a validation, quick_deploy_eligible says whether execute_quick_deployment can deploy this selected snapshot, and quick_deploy_ineligible_reason says why not (no tests ran, older than 10 days, a newer deploy reached the org, it was already promoted, or its SF job ID is unavailable); Salesforce can still refuse if something else was deployed to the target meanwhile. Also returns test_level, counts, sf_deploy_id, folder_sharing_check, user_reference_check (users named in the deployed metadata that are missing or inactive in the target org, and what Salesforce does with each: outcome deploy_fails, replaced_by_deploy_user, kept or unverified), record_backup (the record backup before deploy, per object, with progress while it runs) and post_deploy results. A deployment without runs answers state \"no_run\". Read-only.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -922,6 +922,7 @@
             }
           },
           "folder_sharing_check": {},
+          "user_reference_check": {},
           "record_backup": {
             "type": "object",
             "additionalProperties": {},
@@ -2451,7 +2452,7 @@
     {
       "name": "check_deployment",
       "title": "Check Deployment",
-      "description": "Check the saved deployment before validating: pre-deploy warnings, missing dependencies, target changes it would overwrite, and the Apex tests to run. Read-only; nothing blocks. It always checks the SAVED composition (selected components, saved deletions and their timing): save it with update_deployment first; an empty one answers empty_selection, and a source that is still loading answers deployment_not_ready (follow get_deployment). Parts: preflight — the checks the web Deploy dialog runs (folder_sharing, destructive_impact, permissions_and_profiles, record_backups, cron_triggers, business_hours, non_source_deployable, static_analysis, secrets, changed_since_donor), each verdict with severity and often a suggested_action; dependencies — source components the selection needs that are not saved, with add_with = the update_deployment call that adds them (org sources only); required:true marks one the target org lacks while a selected component references it (Highly recommended in the web Deploy dialog: the deploy most likely fails without it), and not_addable lists such components mtdt cannot add from the source, with the reason; target_conflicts — target components changed, deleted or created since mtdt read them (a deploy would overwrite them: stop and ask the user); tests — the Apex tests to run, with save_with = the update_deployment call that saves them as the test level (or pass them to one validate_deployment). summary counts them. Report warnings, required and other missing dependencies, and conflicts to the user BEFORE validating. depth \"fast\" runs only database-backed parts and leaves out the required marks; \"full\" (default) also queries the target org. Parts share a time budget: unfinished ones come back in pending — call again with checks set to them. Lists longer than 20 are cut (total says how many). For a deployment created from an archive pass all_items:true to check every component of the archive.",
+      "description": "Check the saved deployment before validating: pre-deploy warnings, missing dependencies, target changes it would overwrite, and the Apex tests to run. Read-only; nothing blocks. It always checks the SAVED composition (selected components, saved deletions and their timing): save it with update_deployment first; an empty one answers empty_selection, and a source that is still loading answers deployment_not_ready (follow get_deployment). Parts: preflight — the checks the web Deploy dialog runs (folder_sharing, destructive_impact, permissions_and_profiles, record_backups, cron_triggers, business_hours, non_source_deployable, static_analysis, secrets, changed_since_donor, user_references), each verdict with severity and often a suggested_action; dependencies — source components the selection needs that are not saved, with add_with = the update_deployment call that adds them (org sources only); required:true marks one the target org lacks while a selected component references it (Highly recommended in the web Deploy dialog: the deploy most likely fails without it), and not_addable lists such components mtdt cannot add from the source, with the reason; target_conflicts — target components changed, deleted or created since mtdt read them (a deploy would overwrite them: stop and ask the user); tests — the Apex tests to run, with save_with = the update_deployment call that saves them as the test level (or pass them to one validate_deployment). summary counts them. Report warnings, required and other missing dependencies, and conflicts to the user BEFORE validating. depth \"fast\" runs only database-backed parts and leaves out the required marks; \"full\" (default) also queries the target org. Parts share a time budget: unfinished ones come back in pending — call again with checks set to them. Lists longer than 20 are cut (total says how many). For a deployment created from an archive pass all_items:true to check every component of the archive.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -2475,12 +2476,13 @@
                 "static_analysis",
                 "secrets",
                 "changed_since_donor",
+                "user_references",
                 "dependencies",
                 "target_conflicts",
                 "tests"
               ]
             },
-            "description": "Run only these parts. Omit to run all. Pre-deploy checks: folder_sharing, destructive_impact, permissions_and_profiles, record_backups, cron_triggers, business_hours, non_source_deployable, static_analysis, secrets, changed_since_donor; plus \"dependencies\" (source components the selection needs), \"target_conflicts\" (target components changed since they were read) and \"tests\" (Apex tests to run)."
+            "description": "Run only these parts. Omit to run all. Pre-deploy checks: folder_sharing, destructive_impact, permissions_and_profiles, record_backups, cron_triggers, business_hours, non_source_deployable, static_analysis, secrets, changed_since_donor, user_references; plus \"dependencies\" (source components the selection needs), \"target_conflicts\" (target components changed since they were read) and \"tests\" (Apex tests to run)."
           },
           "depth": {
             "type": "string",
