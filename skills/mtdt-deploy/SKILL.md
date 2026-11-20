@@ -34,9 +34,11 @@ For status questions, use this read-only route without creating or running a dep
    `work_items_ready` (at least two environments; existing cards can still be read in an
    unconfigured project). Omit `team_id` to read all visible projects. There is no automatic or
    saved current project.
-2. `list_work_items({"project_id":"<project-uuid>"})` returns every non-archived card in that
-   project as one short row (key, caption, status, current/reached/next environment names,
-   `validated_into`, `done`, linked `deployment_ids`, group), without a hidden limit. Use
+2. `list_work_items({"project_id":"<project-uuid>"})` returns the non-archived cards of that
+   project as short rows (key, caption, status, current/reached/next environment names,
+   `validated_into`, `done`, linked `deployment_ids`, group), 20 per page (`limit` up to 100).
+   `total` counts every matching card; pass `next_offset` with the same filters until it is null
+   to read them all. Use
    `status:"archived"` or `status:"all"` explicitly for archives. To find a card without knowing
    its project, pass `q` (key or caption text) or `deployment_id` (cards linked to that deployment)
    instead of `project_id`; rows then carry `project_id`.
@@ -221,6 +223,9 @@ For the initial deployment, use `create_deployment` with the card IDs instead.
   or anyone in `change_authors`, the people who changed the component in the last 30 days).
   `last_modified_by` is `"Salesforce"` for a profile or permission set change the audit trail
   shows no person for, and null when the author is unknown.
+- Rows come 25 per page (`page_size` up to 200), most recently modified first; `total` counts every
+  matching component. Pass `next_page` with the same filters until it is null to read the rest.
+  The retrieval status below describes the source, not whether one page holds every name.
 - If it returns `{ status: "retrieving", partial: true, task_ids }`, the retrieval is still
   running and `components` holds only what has landed so far — **call it again with the same
   args** (safe to repeat; duplicates are impossible).

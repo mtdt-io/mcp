@@ -1,8 +1,8 @@
 {
   "evidence": {
     "kind": "local-source",
-    "observedAt": "2026-11-18T13:03:13.964789+00:00",
-    "source": "mtdt-backend/mcp/test-snapshots/tools-list.json at 8f2859e9 (develop-local, release 2026-11-18 candidate, 25 tools)",
+    "observedAt": "2026-11-20T10:41:47.601706+00:00",
+    "source": "mtdt-backend/mcp/test-snapshots/tools-list.json at 5b4f2dec (develop-local, release 2026-11-20 candidate, 25 tools)",
     "live": false
   },
   "tools": [
@@ -285,7 +285,7 @@
     {
       "name": "list_work_items",
       "title": "List Work Items",
-      "description": "List Work Items, one short row each: id, key (tracker key), caption, status, current / reached / next environment names, validated_into (environment a validation succeeded into), done, has_running_run, linked deployment_ids and group context. Pass project_id for one project (all non-archived cards, no hidden limit); q searches key and caption case-insensitively, and deployment_id returns the cards linked to that deployment — with either, project_id is optional and the search covers every project you can see (rows then carry project_id). status=archived or all includes archived cards. Full delivery, presences, board cells and group stacks are in get_work_item. Readiness is advisory, not promotion approval. Does not change data.",
+      "description": "List Work Items, one short row each: id, key (tracker key), caption, status, current / reached / next environment names, validated_into (environment a validation succeeded into), done, has_running_run, linked deployment_ids and group context. Pass project_id for one project (non-archived cards by default); q searches key and caption case-insensitively, and deployment_id returns the cards linked to that deployment — with either, project_id is optional and the search covers every project you can see (rows then carry project_id). status=archived or all includes archived cards; it does not change pagination. Returns 20 rows by default (limit max 100), count for this page, total across all pages, and next_offset (null at the end). Follow next_offset with the same filters to read every matching card. Full delivery, presences, board cells and group stacks are in get_work_item. Readiness is advisory, not promotion approval. Does not change data.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -312,6 +312,17 @@
             "type": "integer",
             "exclusiveMinimum": 0,
             "description": "Only the Work Items linked to this deployment."
+          },
+          "limit": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 100,
+            "description": "Page size (default 20, maximum 100)."
+          },
+          "offset": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Pass next_offset from the previous page, keeping the same filters."
           }
         },
         "additionalProperties": false
@@ -427,7 +438,7 @@
     {
       "name": "list_deployments",
       "title": "List Deployments",
-      "description": "List existing deployments, newest first, to find one to resume instead of creating a new one. For deployments linked to a Work Item, list_work_items/get_work_item also return deployment IDs. Lists the team's deployments newest-first with source (org / git repo / metadata backup / metadata set, each labelled), target (label + org_type + is_important so you can tell a production target apart), and the LATEST run as { run_id, state, waiting_for, is_validation, outcome } (the same summary get_deployment and get_deployment_run give). `has_description` tells you whether the deployment already has a release note (the text itself is not listed — it can be kilobytes of HTML); set or replace it with update_deployment. Each row carries owner.id + owner.is_you so you can tell your own work from a teammate's (owner.label is only filled for your own deploys — other users' display names are not readable under row-level security). Use it to answer \"did yesterday's release land?\", \"what went to this org recently?\", or to resume work after losing context; filter with org_id (+ org_role=\"target\" for deployments INTO an org) and created_since/created_until. Org-comparison objects are excluded by default.",
+      "description": "List existing deployments, newest first, to find one to resume instead of creating a new one. For deployments linked to a Work Item, list_work_items/get_work_item also return deployment IDs. Lists the team's deployments newest-first with source (org / git repo / metadata backup / metadata set, each labelled), target (label + org_type + is_important so you can tell a production target apart), and the LATEST run as { run_id, state, waiting_for, is_validation, outcome } (the same summary get_deployment and get_deployment_run give). `has_description` tells you whether the deployment already has a release note (the text itself is not listed — it can be kilobytes of HTML); set or replace it with update_deployment. Each row carries owner.id + owner.is_you so you can tell your own work from a teammate's (owner.label is only filled for your own deploys — other users' display names are not readable under row-level security). Use it to find or resume a draft; created_since/created_until filter draft creation dates, not run dates. For org history use get_org_deploy_log, with include_failed:true when investigating failures, and follow next_offset. That org log covers org-side events, not every mtdt attempt that failed before Salesforce. Filter drafts with org_id (+ org_role=\"target\" for deployments INTO an org). Org-comparison objects are excluded by default.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -454,11 +465,11 @@
           },
           "created_since": {
             "type": "string",
-            "description": "ISO date/datetime — only deployments created on/after it (e.g. \"what went out this week\")."
+            "description": "ISO date/datetime — only deployment drafts created on/after it, not runs executed after it."
           },
           "created_until": {
             "type": "string",
-            "description": "ISO date/datetime — only deployments created on/before it. Pair with created_since for a release window."
+            "description": "ISO date/datetime — only deployment drafts created on/before it, not runs executed before it."
           },
           "limit": {
             "type": "number",
@@ -3071,7 +3082,7 @@
     {
       "name": "browse_metadata",
       "title": "Browse Metadata",
-      "description": "List the components a deployment can deploy, one metadata type at a time, reading them from the source when needed; this is the only way to see them. Browse the components of ONE metadata type on the deployment's SOURCE side (org, git repo, or metadata backup — resolved automatically from the deployment; pass org_id only to browse a specific org side, e.g. the target). Optional server-side filters: name_contains / modified_since / modified_by. Returns one row per COMPONENT { name, type, last_modified, last_modified_by, change_authors? }, most-recently-modified first, paginated (page / page_size; total is the full component count). For org sources, uncached metadata is retrieved on first call with a short poll (~15s): as soon as every component name is listed it returns { status:\"names_ready\", components, task_ids } while Salesforce still reads the contents — the names are complete, so pick and save components right away. Before that it returns { status:\"retrieving\", partial:true, components (the partial set so far), task_ids } — call browse_metadata again with the same args (idempotent, dedupe-safe) until status is \"names_ready\" or \"ready\" (0 components is a valid ready). Treat the list as complete only at \"names_ready\" or \"ready\". If the retrieval fails on the Salesforce side for part of the type you get { status:\"retrieval_failed\", failed_tasks:[{id,status,error}], components }: the component NAMES are complete, some bodies may not have been read yet. mtdt retries the retrieval automatically (up to 3 times) — call browse_metadata again to get the list; if the failure keeps repeating, report the error to the user. A repo or backup source is prepared after the deployment is created: wait for get_deployment ready:true first. Until then browse_metadata answers status:\"retrieving\" (or \"retrieval_failed\" with the reason when the source could not be prepared). Unknown types return a structured reject with did_you_mean suggestions.",
+      "description": "List the components a deployment can deploy, one metadata type at a time, reading them from the source when needed; this is the only way to see them. Browse the components of ONE metadata type on the deployment's SOURCE side (org, git repo, or metadata backup — resolved automatically from the deployment; pass org_id only to browse a specific org side, e.g. the target). Optional server-side filters: name_contains / modified_since / modified_by. Returns one row per COMPONENT { name, type, last_modified, last_modified_by, change_authors? }, most-recently-modified first, paginated (page / page_size; default 25, maximum 200). total is the full matching component count; follow next_page with the same filters to read more. Retrieval status describes source completeness, not whether this page contains every name. For org sources, uncached metadata is retrieved on first call with a short poll (~15s): as soon as every component name is listed it returns { status:\"names_ready\", components, task_ids } while Salesforce still reads the contents — the name listing is complete across pages, so pick from this page or follow next_page and save components right away. Before that it returns { status:\"retrieving\", partial:true, components (the partial set so far), task_ids } — call browse_metadata again with the same args (idempotent, dedupe-safe) until status is \"names_ready\" or \"ready\" (0 components is a valid ready). Treat the list as complete only at \"names_ready\" or \"ready\". If the retrieval fails on the Salesforce side for part of the type you get { status:\"retrieval_failed\", failed_tasks:[{id,status,error}], components }: the component NAMES are complete, some bodies may not have been read yet. mtdt retries the retrieval automatically (up to 3 times) — call browse_metadata again to get the list; if the failure keeps repeating, report the error to the user. A repo or backup source is prepared after the deployment is created: wait for get_deployment ready:true first. Until then browse_metadata answers status:\"retrieving\" (or \"retrieval_failed\" with the reason when the source could not be prepared). Unknown types return a structured reject with did_you_mean suggestions.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -3103,12 +3114,15 @@
             "description": "Keep only components changed by one of these names: the last author (last_modified_by) or anyone in change_authors."
           },
           "page": {
-            "type": "number",
-            "description": "Page number (1-based)."
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "description": "Page number (1-based); pass next_page to continue with the same filters."
           },
           "page_size": {
-            "type": "number",
-            "description": "Page size (default 100)."
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 200,
+            "description": "Page size (default 25, maximum 200)."
           }
         },
         "required": [
@@ -3122,7 +3136,7 @@
         "properties": {
           "status": {
             "type": "string",
-            "description": "\"ready\" (the retrieval finished — components is the complete set; also returned with 0 components when the type simply has no metadata in this org, see hint), \"names_ready\" (every component name is listed, contents are still being read — pick and save components now), \"retrieving\" (still running — components is a PARTIAL set so far, call again) or \"retrieval_failed\" (a JIT task failed/cancelled for part of the type; see failed_tasks — mtdt retries automatically, call again)."
+            "description": "\"ready\" (the retrieval finished — the component listing is complete across pages; also returned with 0 components when the type simply has no metadata in this org, see hint), \"names_ready\" (every component name is listed across pages, contents are still being read — pick and save components now), \"retrieving\" (still running — components is a PARTIAL set so far, call again) or \"retrieval_failed\" (a JIT task failed/cancelled for part of the type; see failed_tasks — mtdt retries automatically, call again)."
           },
           "components": {
             "type": "array",
@@ -3141,6 +3155,13 @@
           },
           "page_size": {
             "type": "number"
+          },
+          "next_page": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "description": "Next page with the same filters, or null when this snapshot has no more rows. Retrieval may still be running; check status."
           },
           "partial": {
             "type": "boolean",
