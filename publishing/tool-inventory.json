@@ -1,8 +1,8 @@
 {
   "evidence": {
     "kind": "local-source",
-    "observedAt": "2026-11-20T10:41:47.601706+00:00",
-    "source": "mtdt-backend/mcp/test-snapshots/tools-list.json at 5b4f2dec (develop-local, release 2026-11-20 candidate, 25 tools)",
+    "observedAt": "2026-11-21T15:57:04.078558+00:00",
+    "source": "mtdt-backend/mcp/test-snapshots/tools-list.json at 9729f62a (develop-local, release 2026-11-21 candidate, 25 tools)",
     "live": false
   },
   "tools": [
@@ -438,7 +438,7 @@
     {
       "name": "list_deployments",
       "title": "List Deployments",
-      "description": "List existing deployments, newest first, to find one to resume instead of creating a new one. For deployments linked to a Work Item, list_work_items/get_work_item also return deployment IDs. Lists the team's deployments newest-first with source (org / git repo / metadata backup / metadata set, each labelled), target (label + org_type + is_important so you can tell a production target apart), and the LATEST run as { run_id, state, waiting_for, is_validation, outcome } (the same summary get_deployment and get_deployment_run give). `has_description` tells you whether the deployment already has a release note (the text itself is not listed — it can be kilobytes of HTML); set or replace it with update_deployment. Each row carries owner.id + owner.is_you so you can tell your own work from a teammate's (owner.label is only filled for your own deploys — other users' display names are not readable under row-level security). Use it to find or resume a draft; created_since/created_until filter draft creation dates, not run dates. For org history use get_org_deploy_log, with include_failed:true when investigating failures, and follow next_offset. That org log covers org-side events, not every mtdt attempt that failed before Salesforce. Filter drafts with org_id (+ org_role=\"target\" for deployments INTO an org). Org-comparison objects are excluded by default.",
+      "description": "List existing deployments, newest first, to find one to resume instead of creating a new one. For deployments linked to a Work Item, list_work_items/get_work_item also return deployment IDs. Lists the team's deployments newest-first with source (org / git repo / metadata backup / metadata set, each labelled), target (label + org_type + is_important so you can tell a production target apart), and the LATEST run as { run_id, state, waiting_for, is_validation, outcome } (the same summary get_deployment and get_deployment_run give). `has_description` tells you whether the deployment already has a release note (the text itself is not listed — it can be kilobytes of HTML); set or replace it with update_deployment. Each row carries scope: null, or { id, caption } of the metadata scope that limits which components the deployment loads (get_deployment lists its rules). Each row carries owner.id + owner.is_you so you can tell your own work from a teammate's (owner.label is only filled for your own deploys — other users' display names are not readable under row-level security). Use it to find or resume a draft; created_since/created_until filter draft creation dates, not run dates. For org history use get_org_deploy_log, with include_failed:true when investigating failures, and follow next_offset. That org log covers org-side events, not every mtdt attempt that failed before Salesforce. Filter drafts with org_id (+ org_role=\"target\" for deployments INTO an org). Org-comparison objects are excluded by default.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -1192,6 +1192,77 @@
             "type": "boolean",
             "description": "Both sides are ready: browse, validate and deploy only then."
           },
+          "scope": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "caption": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "built_in": {
+                    "type": "boolean"
+                  },
+                  "rules": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "type": {
+                          "type": "string"
+                        },
+                        "components": {
+                          "type": "string",
+                          "const": "all"
+                        },
+                        "names": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "name_patterns": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        }
+                      },
+                      "required": [
+                        "type"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "description": "One rule per metadata type: every component, the listed names, or names matching a pattern with *. An empty list means all metadata."
+                  },
+                  "rules_unreadable": {
+                    "type": "boolean",
+                    "const": true
+                  },
+                  "available": {
+                    "type": "boolean",
+                    "const": false
+                  }
+                },
+                "required": [
+                  "id",
+                  "caption",
+                  "built_in"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The metadata scope of the deployment; null: no scope, all metadata."
+          },
           "components": {
             "type": "object",
             "additionalProperties": {
@@ -1700,6 +1771,77 @@
             "type": "boolean",
             "description": "Both sides are ready: browse, validate and deploy only then."
           },
+          "scope": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "caption": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "built_in": {
+                    "type": "boolean"
+                  },
+                  "rules": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "type": {
+                          "type": "string"
+                        },
+                        "components": {
+                          "type": "string",
+                          "const": "all"
+                        },
+                        "names": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "name_patterns": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        }
+                      },
+                      "required": [
+                        "type"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "description": "One rule per metadata type: every component, the listed names, or names matching a pattern with *. An empty list means all metadata."
+                  },
+                  "rules_unreadable": {
+                    "type": "boolean",
+                    "const": true
+                  },
+                  "available": {
+                    "type": "boolean",
+                    "const": false
+                  }
+                },
+                "required": [
+                  "id",
+                  "caption",
+                  "built_in"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The metadata scope of the deployment; null: no scope, all metadata."
+          },
           "components": {
             "type": "object",
             "additionalProperties": {
@@ -2038,7 +2180,7 @@
     {
       "name": "get_deployment",
       "title": "Get Deployment",
-      "description": "Read one deployment: its two sides and whether they are ready, saved components, test level, linked Work Items and recent runs. Fields: caption, plain-text description, owner_is_you, source and target (kind, label, is_important/org_type for an org target) each with readiness \"ready\" | \"in_progress\" | \"failed\" and the population task behind it, ready (both sides ready), the saved composition as { type: [names] } with component_count, saved deletions and whether they run after the deploy, partial_selections (edit those only in the mtdt UI), the test level (saved testOption, or \"local\" when none is saved, which is what validate_deployment uses; change it with update_deployment), linked Work Items, latest_run and the 5 most recent runs as { run_id, state, waiting_for, is_validation, outcome } (the same summary list_deployments and get_deployment_run give). create_deployment returns this same card. While a side is in_progress, wait ~15s and call again before browsing or validating: a repo, backup or archive side can take several minutes. A failed side will not recover by polling: read its task.error and the hint (backup source: pick a finished backup that has an archive, or create a new deployment; org side: re-authenticate it and press Refresh in the web app). Read-only.",
+      "description": "Read one deployment: its two sides and whether they are ready, saved components, test level, linked Work Items and recent runs. Fields: caption, plain-text description, owner_is_you, source and target (kind, label, is_important/org_type for an org target) each with readiness \"ready\" | \"in_progress\" | \"failed\" and the population task behind it, ready (both sides ready), scope (null when the deployment has none and works with all metadata; otherwise its caption, built_in and rules, one per metadata type with components \"all\", listed names or name_patterns with *: only components these rules match are loaded from the source, so browse_metadata lists and update_deployment accepts only them, and fields and other parts of an object without a rule of their own follow the rule of their object; available:false means the scope cannot be read and the deployment works with all metadata; rules_unreadable means the scope rules are broken, fix them on the Scopes page; the scope is changed only in the mtdt UI), the saved composition as { type: [names] } with component_count, saved deletions and whether they run after the deploy, partial_selections (edit those only in the mtdt UI), the test level (saved testOption, or \"local\" when none is saved, which is what validate_deployment uses; change it with update_deployment), linked Work Items, latest_run and the 5 most recent runs as { run_id, state, waiting_for, is_validation, outcome } (the same summary list_deployments and get_deployment_run give). create_deployment returns this same card. While a side is in_progress, wait ~15s and call again before browsing or validating: a repo, backup or archive side can take several minutes. A failed side will not recover by polling: read its task.error and the hint (backup source: pick a finished backup that has an archive, or create a new deployment; org side: re-authenticate it and press Refresh in the web app). Read-only.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -2224,6 +2366,77 @@
           "ready": {
             "type": "boolean",
             "description": "Both sides are ready: browse, validate and deploy only then."
+          },
+          "scope": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "caption": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "built_in": {
+                    "type": "boolean"
+                  },
+                  "rules": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "type": {
+                          "type": "string"
+                        },
+                        "components": {
+                          "type": "string",
+                          "const": "all"
+                        },
+                        "names": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "name_patterns": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        }
+                      },
+                      "required": [
+                        "type"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "description": "One rule per metadata type: every component, the listed names, or names matching a pattern with *. An empty list means all metadata."
+                  },
+                  "rules_unreadable": {
+                    "type": "boolean",
+                    "const": true
+                  },
+                  "available": {
+                    "type": "boolean",
+                    "const": false
+                  }
+                },
+                "required": [
+                  "id",
+                  "caption",
+                  "built_in"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The metadata scope of the deployment; null: no scope, all metadata."
           },
           "components": {
             "type": "object",
@@ -2463,7 +2676,7 @@
     {
       "name": "check_deployment",
       "title": "Check Deployment",
-      "description": "Check the saved deployment before validating: pre-deploy warnings, missing dependencies, target changes it would overwrite, and the Apex tests to run. Read-only; nothing blocks. It always checks the SAVED composition (selected components, saved deletions and their timing): save it with update_deployment first; an empty one answers empty_selection, and a source that is still loading answers deployment_not_ready (follow get_deployment). Parts: preflight — the checks the web Deploy dialog runs (folder_sharing, destructive_impact, permissions_and_profiles, record_backups, cron_triggers, business_hours, non_source_deployable, static_analysis, secrets, changed_since_donor, user_references), each verdict with severity and often a suggested_action; dependencies — source components the selection needs that are not saved, with add_with = the update_deployment call that adds them (org sources only); required:true marks one the target org lacks while a selected component references it (Highly recommended in the web Deploy dialog: the deploy most likely fails without it), and not_addable lists such components mtdt cannot add from the source, with the reason; target_conflicts — target components changed, deleted or created since mtdt read them (a deploy would overwrite them: stop and ask the user); tests — the Apex tests to run, with save_with = the update_deployment call that saves them as the test level (or pass them to one validate_deployment). summary counts them. Report warnings, required and other missing dependencies, and conflicts to the user BEFORE validating. depth \"fast\" runs only database-backed parts and leaves out the required marks; \"full\" (default) also queries the target org. Parts share a time budget: unfinished ones come back in pending — call again with checks set to them. Lists longer than 20 are cut (total says how many). For a deployment created from an archive pass all_items:true to check every component of the archive.",
+      "description": "Check the saved deployment before validating: pre-deploy warnings, missing dependencies, target changes it would overwrite, and the Apex tests to run. Read-only; nothing blocks. It always checks the SAVED composition (selected components, saved deletions and their timing): save it with update_deployment first; an empty one answers empty_selection, and a source that is still loading answers deployment_not_ready (follow get_deployment). Parts: preflight — the checks the web Deploy dialog runs (folder_sharing, destructive_impact, permissions_and_profiles, record_backups, cron_triggers, business_hours, non_source_deployable, static_analysis, secrets, changed_since_donor, user_references), each verdict with severity and often a suggested_action; dependencies — source components the selection needs that are not saved, with add_with = the update_deployment call that adds them (org sources only); required:true marks one the target org lacks while a selected component references it (Highly recommended in the web Deploy dialog: the deploy most likely fails without it), and not_addable lists such components mtdt cannot add from the source, with the reason; target_conflicts — target components changed, deleted or created since mtdt read them (a deploy would overwrite them: stop and ask the user); tests — the Apex tests to run, with save_with = the update_deployment call that saves them as the test level (or pass them to one validate_deployment). summary counts them. Report warnings, required and other missing dependencies, and conflicts to the user BEFORE validating. depth \"fast\" runs only database-backed parts and leaves out the required marks; \"full\" (default) also queries the target org. Parts share a time budget: unfinished ones come back in pending and keep running — call again with checks set to them to collect the result. Lists longer than 20 are cut (total says how many). For a deployment created from an archive pass all_items:true to check every component of the archive.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -2609,7 +2822,7 @@
             "items": {
               "type": "string"
             },
-            "description": "Parts that did not finish inside the time budget: call again with checks set to these."
+            "description": "Parts that did not finish inside the time budget; they keep running: call again with checks set to these to collect them."
           },
           "not_run_at_depth": {
             "type": "array",

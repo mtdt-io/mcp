@@ -270,6 +270,10 @@ such as `classes`). The same call can set the test level, caption, description a
   the UI do not block selection edits, including removing/re-adding their own component. Removing
   a component keeps its override saved; re-adding it reuses that override. Edit override contents,
   partial selections or deletion intent in the MTDT UI for now.
+- `scope` on the card (and `{ id, caption }` on `list_deployments` rows) is the metadata scope that
+  limits which components the deployment loads: `null` means all metadata, otherwise its caption,
+  `built_in` and one rule per type. `available: false` means the scope is no longer readable for
+  this team. No tool sets or changes a scope; do that in the MTDT UI.
 - An archive source automatically selects its contents. After population finishes, inspect the
   saved selection and proceed to `check_deployment`; there is no need to pass `all_items` at launch.
 
