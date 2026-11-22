@@ -1,0 +1,77 @@
+{
+  "name": "salesforce-devops",
+  "displayName": "mtdt.io: Salesforce DevOps for AI agents",
+  "description": "Adds the mtdt.io MCP server to VS Code and Cursor, so your AI agent can deploy Salesforce metadata between orgs with pre-deploy checks, validation and quick deploy.",
+  "version": "0.1.0",
+  "publisher": "mtdt",
+  "license": "MIT",
+  "icon": "images/icon.png",
+  "homepage": "https://docs.mtdt.io/docs/mcp",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mtdt-io/mcp.git",
+    "directory": "vscode"
+  },
+  "bugs": {
+    "url": "https://github.com/mtdt-io/mcp/issues",
+    "email": "support@mtdt.io"
+  },
+  "author": {
+    "name": "mtdt.io",
+    "email": "support@mtdt.io",
+    "url": "https://mtdt.io"
+  },
+  "engines": {
+    "vscode": "^1.101.0"
+  },
+  "categories": [
+    "AI",
+    "Chat",
+    "Other"
+  ],
+  "keywords": [
+    "salesforce",
+    "devops",
+    "mcp",
+    "deploy",
+    "metadata",
+    "sfdx",
+    "copilot",
+    "agent"
+  ],
+  "galleryBanner": {
+    "color": "#ffffff",
+    "theme": "light"
+  },
+  "main": "./extension.js",
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "contributes": {
+    "mcpServerDefinitionProviders": [
+      {
+        "id": "mtdt.mcp",
+        "label": "mtdt.io"
+      }
+    ],
+    "commands": [
+      {
+        "command": "mtdt.openGuide",
+        "title": "Open MCP setup guide",
+        "category": "mtdt.io"
+      },
+      {
+        "command": "mtdt.copyServerUrl",
+        "title": "Copy MCP server URL",
+        "category": "mtdt.io"
+      }
+    ]
+  },
+  "scripts": {
+    "package": "vsce package",
+    "test": "node ./test/run.js"
+  },
+  "devDependencies": {
+    "@vscode/test-electron": "^2.5.2"
+  }
+}
