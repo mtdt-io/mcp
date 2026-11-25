@@ -1,8 +1,8 @@
 {
   "evidence": {
     "kind": "local-source",
-    "observedAt": "2026-11-21T15:57:04.078558+00:00",
-    "source": "mtdt-backend/mcp/test-snapshots/tools-list.json at 9729f62a (develop-local, release 2026-11-21 candidate, 25 tools)",
+    "observedAt": "2026-11-25T12:47:24Z",
+    "source": "mtdt-backend/mcp/test-snapshots/tools-list.json at d3c830b1 (develop-local, release 2026-11-25 candidate, 25 tools)",
     "live": false
   },
   "tools": [
@@ -186,7 +186,7 @@
     {
       "name": "promote_work_item",
       "title": "Promote Work Item",
-      "description": "Promote a Work Item to its next environment by creating a deployment draft (nothing is deployed; validate and execute that deployment afterwards). dry_run:true shows what would be promoted. Pass explicit project_id, work_item_id and from_environment_id; the server derives the next environment and donors. dry_run returns the product verdict, blockers/pending deployments, existing carriers, the full fold (components, smart overrides and deletions), delta options, scope_fingerprint and, for a group, stack with its version — review it with the user. A green board cell is not promotion approval; reopen reuses an existing draft. The real call needs scope_fingerprint (and stack_version for a group) from the dry run, otherwise dry_run_required; a stale scope or stack and every product refusal come back unchanged. Defaults to full; delta restricts the full fold and requires delta_allowed. supersede replaces explicit open drafts in full mode only; never replace a delivered carrier. Returns the new draft's get_deployment card plus deployment_id (also the product id), to_environment_id, mode and optional superseded/supersede_failed: when an id exists keep it, never blindly repeat. Product links may include other cards sharing donor content. Continue with check_deployment, then validate_deployment and execute_deployment by deployment_id (dry_run first).",
+      "description": "Promote a Work Item to its next environment by creating a deployment draft (nothing is deployed; validate and execute that deployment afterwards). dry_run:true shows what would be promoted. Pass explicit project_id, work_item_id and from_environment_id; the server derives the next environment and donors. dry_run returns the product verdict, blockers/pending deployments, existing carriers, the full fold (components, smart overrides and deletions), delta options, scope_fingerprint, bring_in_overlaps (cards still to be brought into the from environment that share a component with this promotion; advisory, never blocking) and, for a group, stack with its version — review it with the user. A green board cell is not promotion approval; reopen reuses an existing draft. The real call needs scope_fingerprint (and stack_version for a group) from the dry run, otherwise dry_run_required; a stale scope or stack and every product refusal come back unchanged. Defaults to full; delta restricts the full fold and requires delta_allowed. supersede replaces explicit open drafts in full mode only; never replace a delivered carrier. Returns the new draft's get_deployment card plus deployment_id (also the product id), to_environment_id, mode and optional superseded/supersede_failed: when an id exists keep it, never blindly repeat. Product links may include other cards sharing donor content. Continue with check_deployment, then validate_deployment and execute_deployment by deployment_id (dry_run first).",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -259,7 +259,7 @@
     {
       "name": "list_projects",
       "title": "List Projects",
-      "description": "List every project visible to the current user, optionally within team_id. Each project carries id, team_id, caption, description, its environment chain ordered by position (id, name, kind, position, org id, primary branch) and work_items_ready (at least two environments; reads of existing Work Items work either way). Discover project_id and environment ids here and pass them explicitly; no current project is selected or remembered.",
+      "description": "List every project visible to the current user, optionally within team_id. Each project carries id, team_id, caption, description, its environments ordered by position (id, name, kind, position, promotes_to_environment_id — the environment it promotes to, null at the end of the chain —, org id, primary branch) and work_items_ready (at least two environments; reads of existing Work Items work either way). Discover project_id and environment ids here and pass them explicitly; no current project is selected or remembered.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -285,7 +285,7 @@
     {
       "name": "list_work_items",
       "title": "List Work Items",
-      "description": "List Work Items, one short row each: id, key (tracker key), caption, status, current / reached / next environment names, validated_into (environment a validation succeeded into), done, has_running_run, linked deployment_ids and group context. Pass project_id for one project (non-archived cards by default); q searches key and caption case-insensitively, and deployment_id returns the cards linked to that deployment — with either, project_id is optional and the search covers every project you can see (rows then carry project_id). status=archived or all includes archived cards; it does not change pagination. Returns 20 rows by default (limit max 100), count for this page, total across all pages, and next_offset (null at the end). Follow next_offset with the same filters to read every matching card. Full delivery, presences, board cells and group stacks are in get_work_item. Readiness is advisory, not promotion approval. Does not change data.",
+      "description": "List Work Items, one short row each: id, key (tracker key), caption, status, current / reached / next environment names, validated_into (environment a validation succeeded into), done, has_running_run, linked deployment_ids, bring_in (environments the card still has to be brought into) and group context. Pass project_id for one project (non-archived cards by default); q searches key and caption case-insensitively, and deployment_id returns the cards linked to that deployment — with either, project_id is optional and the search covers every project you can see (rows then carry project_id). status=archived or all includes archived cards; it does not change pagination. Returns 20 rows by default (limit max 100), count for this page, total across all pages, and next_offset (null at the end). Follow next_offset with the same filters to read every matching card. Full delivery, presences, board cells and group stacks are in get_work_item. Readiness is advisory, not promotion approval. Does not change data.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -342,7 +342,7 @@
     {
       "name": "get_work_item",
       "title": "Get Work Item",
-      "description": "Read one Work Item by work_item_id or tracker key (e.g. \"KAN-6\"): text, tracker reference, active group/master context, computed delivery (reached/current/next environments, validation, rollback markers, board cells, presences, drafts/runs, Done), its linked deployment summaries and its own group stacks. project_id is needed only when a key matches cards in several projects (ambiguous_work_item lists the candidates). Archived items are readable; deleted or inaccessible ones are not found. Validation is not delivery; rollback keeps the UI historical presence marker. current_environment may be the first working environment even when reached_environment is null. group_delivery separately describes the master history, when applicable. Environments are listed in full once at the top; delivery refers to them by id and name. Does not mutate data.",
+      "description": "Read one Work Item by work_item_id or tracker key (e.g. \"KAN-6\"): text, tracker reference, active group/master context, computed delivery (reached/current/next environments, validation, rollback markers, board cells, presences, drafts/runs, Done, bring_in: environments the card was delivered past but is not in and not dismissed for), its linked deployment summaries and its own group stacks. project_id is needed only when a key matches cards in several projects (ambiguous_work_item lists the candidates). Archived items are readable; deleted or inaccessible ones are not found. Validation is not delivery; rollback keeps the UI historical presence marker. current_environment may be the start working environment even when reached_environment is null, and is null for an undelivered card when the project has several start environments. group_delivery separately describes the master history, when applicable. Environments are listed in full once at the top; delivery refers to them by id and name. Does not mutate data.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -448,6 +448,7 @@
           },
           "org_id": {
             "type": "string",
+            "format": "uuid",
             "description": "Optional org ID filter — only deployments involving this org."
           },
           "org_role": {
@@ -789,7 +790,7 @@
     {
       "name": "get_deployment_run",
       "title": "Get Deployment Run",
-      "description": "Read one run of a deployment: the latest, or run_id (from get_deployment.recent_runs or a launch response). Answers immediately with state: \"queued\", \"running\" or \"finishing\" (Salesforce is done; post-deploy steps such as post-deploy Apex, flow activation or git push still run) — call again every 15-30 s, never faster; \"waiting\" (waiting_for \"approval\": an approver must act in mtdt; \"schedule\": it starts at scheduled_at) — stop polling and tell the user; \"succeeded\", \"failed\" and \"cancelled\" are final. outcome is the one line to report; for a failure read component_failures, test_failures and code_coverage_warnings. For a validation, quick_deploy_eligible says whether execute_quick_deployment can deploy this selected snapshot, and quick_deploy_ineligible_reason says why not (no tests ran, older than 10 days, a newer deploy reached the org, it was already promoted, or its SF job ID is unavailable); Salesforce can still refuse if something else was deployed to the target meanwhile. Also returns test_level, counts, sf_deploy_id, folder_sharing_check, user_reference_check (users named in the deployed metadata that are missing or inactive in the target org, and what Salesforce does with each: outcome deploy_fails, replaced_by_deploy_user, kept or unverified), record_backup (the record backup before deploy, per object, with progress while it runs) and post_deploy results. A deployment without runs answers state \"no_run\". Read-only.",
+      "description": "Read one run of a deployment: the latest, or run_id (from get_deployment.recent_runs or a launch response). Answers immediately with state: \"queued\", \"running\" or \"finishing\" (Salesforce is done; post-deploy steps such as post-deploy Apex, flow activation or git push still run) — call again every 15-30 s, never faster; \"waiting\" (waiting_for \"approval\": an approver must act in mtdt; \"schedule\": it starts at scheduled_at) — stop polling and tell the user; \"succeeded\", \"failed\" and \"cancelled\" are final. outcome is the one line to report; for a failure read component_failures, test_failures and code_coverage_warnings. A rollback that left some flows not rolled back is \"failed\" with outcome \"Rollback PARTIALLY SUCCEEDED\"; post_deploy.flow_revert.failed_flows names them. For a validation, quick_deploy_eligible says whether execute_quick_deployment can deploy this selected snapshot, and quick_deploy_ineligible_reason says why not (no tests ran, older than 10 days, a newer deploy reached the org, it was already promoted, or its SF job ID is unavailable); Salesforce can still refuse if something else was deployed to the target meanwhile. Also returns test_level, counts, sf_deploy_id, folder_sharing_check, user_reference_check (users named in the deployed metadata that are missing or inactive in the target org, and what Salesforce does with each: outcome deploy_fails, replaced_by_deploy_user, kept or unverified), record_backup (the record backup before deploy, per object, with progress while it runs) and post_deploy results. A deployment without runs answers state \"no_run\". Read-only.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -2948,6 +2949,7 @@
           },
           "org_id": {
             "type": "string",
+            "format": "uuid",
             "description": "Backups of this org only."
           },
           "name_contains": {

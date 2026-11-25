@@ -30,13 +30,14 @@ A validation checks the package; it is not delivery. Unlinking does not undo cha
 For status questions, use this read-only route without creating or running a deployment:
 
 1. `list_projects({"team_id":"<optional-team-uuid>"})` discovers project IDs together with each
-   project's ordered environment chain (names, kinds, positions, Salesforce org IDs) and
+   project's ordered environments (names, kinds, positions, Salesforce org IDs, and
+   `promotes_to_environment_id`: the environment each one promotes to, null at the end) and
    `work_items_ready` (at least two environments; existing cards can still be read in an
    unconfigured project). Omit `team_id` to read all visible projects. There is no automatic or
    saved current project.
 2. `list_work_items({"project_id":"<project-uuid>"})` returns the non-archived cards of that
    project as short rows (key, caption, status, current/reached/next environment names,
-   `validated_into`, `done`, linked `deployment_ids`, group), 20 per page (`limit` up to 100).
+   `validated_into`, `done`, linked `deployment_ids`, `bring_in`, group), 20 per page (`limit` up to 100).
    `total` counts every matching card; pass `next_offset` with the same filters until it is null
    to read them all. Use
    `status:"archived"` or `status:"all"` explicitly for archives. To find a card without knowing
@@ -47,7 +48,10 @@ For status questions, use this read-only route without creating or running a dep
    `project_id` only when it answers `ambiguous_work_item` (the key exists in several projects).
 
 Report `delivery.reached_environment` as confirmed historical delivery. `current_environment`
-may instead be the first working environment when nothing has reached an environment yet.
+may instead be the start working environment when nothing has reached an environment yet; it is
+null for an undelivered card when the project has several start environments.
+`bring_in` lists environments the card was delivered past but is not in (and was not dismissed
+for): it still has to be brought into them.
 `validated_into` is checked, not deployed. Rollback keeps the UI's historical presence and adds a
 `rolledBack` marker; it does not prove that the package survives or can be promoted. `next_environment`
 and `readiness_hint` are informative; they do not authorize promotion. Linked deployments and their
@@ -139,6 +143,8 @@ For the initial deployment, use `create_deployment` with the card IDs instead.
    `verdict`, pending/blocking deployments, existing `carriers`, the **full** `fold` (components,
    smart overrides and deletions), delta options, `scope_fingerprint` and optional `stack` context.
    A green card alone does not prove readiness. The dry run does not create a draft or start a run.
+   `bring_in_overlaps` names cards that still have to be brought into the from environment and
+   share a component with this promotion. Tell the user; it is advisory and never blocks.
 2. Review the verdict: `not_ready` needs its pending work resolved; `reopen` means open/reuse the
    existing carrier; `already_promoted` means this hop is complete. Read any `blocker` and donor
    reasons. If a full or delta creation is offered, explain the target, composition and deletions.

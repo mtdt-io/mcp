@@ -11,7 +11,9 @@ Start from `get_deployment_run` for the deployment — it returns the run's `sta
 `finishing`, call it again every 15–30 s. `waiting` (approval or schedule) does not change by
 polling — tell the user. `finishing` means Salesforce is done and post-deploy steps still run; if
 one of them fails the run turns `failed` with "Deployed to Salesforce, but a post-deploy step
-failed" — the metadata is on the target. Read the failure **category** before proposing fixes:
+failed" — the metadata is on the target. A rollback that left some flows not rolled back is
+`failed` with outcome "Rollback PARTIALLY SUCCEEDED"; `post_deploy.flow_revert.failed_flows` names
+those flows. Read the failure **category** before proposing fixes:
 
 ## Component failures vs test failures vs coverage
 
