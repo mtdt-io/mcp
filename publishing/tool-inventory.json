@@ -1,8 +1,8 @@
 {
   "evidence": {
     "kind": "local-source",
-    "observedAt": "2026-11-25T12:47:24Z",
-    "source": "mtdt-backend/mcp/test-snapshots/tools-list.json at d3c830b1 (develop-local, release 2026-11-25 candidate, 25 tools)",
+    "observedAt": "2026-11-27T00:12:05Z",
+    "source": "tools/list of mtdt-backend/mcp built at 4bc55010 (develop-local, release 2026-11-27 candidate, 25 tools); test-snapshots/tools-list.json at that head predates 4ace7f1d",
     "live": false
   },
   "tools": [
@@ -80,7 +80,8 @@
         "properties": {
           "project_id": {
             "type": "string",
-            "format": "uuid"
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})$"
           },
           "caption": {
             "type": "string",
@@ -114,6 +115,9 @@
       },
       "outputSchema": {
         "type": "object",
+        "propertyNames": {
+          "type": "string"
+        },
         "additionalProperties": {}
       },
       "annotations": {
@@ -133,11 +137,13 @@
         "properties": {
           "project_id": {
             "type": "string",
-            "format": "uuid"
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})$"
           },
           "work_item_id": {
             "type": "string",
-            "format": "uuid"
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})$"
           },
           "caption": {
             "type": "string",
@@ -157,12 +163,12 @@
             "type": "boolean"
           },
           "status": {
+            "description": "\"archived\" archives the Work Item, \"open\" restores it. Already in that status is a no-op.",
             "type": "string",
             "enum": [
               "open",
               "archived"
-            ],
-            "description": "\"archived\" archives the Work Item, \"open\" restores it. Already in that status is a no-op."
+            ]
           }
         },
         "required": [
@@ -173,6 +179,9 @@
       },
       "outputSchema": {
         "type": "object",
+        "propertyNames": {
+          "type": "string"
+        },
         "additionalProperties": {}
       },
       "annotations": {
@@ -192,24 +201,27 @@
         "properties": {
           "project_id": {
             "type": "string",
-            "format": "uuid"
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})$"
           },
           "work_item_id": {
             "type": "string",
-            "format": "uuid"
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})$"
           },
           "from_environment_id": {
             "type": "string",
-            "format": "uuid"
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})$"
           },
           "dry_run": {
-            "type": "boolean",
-            "description": "true: show what would be promoted (verdict, blockers, carriers, fold, delta options, scope_fingerprint, group stack) without creating anything."
+            "description": "true: show what would be promoted (verdict, blockers, carriers, fold, delta options, scope_fingerprint, group stack) without creating anything.",
+            "type": "boolean"
           },
           "scope_fingerprint": {
+            "description": "Opaque fingerprint returned by the dry run; pass unchanged. Required for the real call.",
             "type": "string",
-            "minLength": 1,
-            "description": "Opaque fingerprint returned by the dry run; pass unchanged. Required for the real call."
+            "minLength": 1
           },
           "caption": {
             "type": "string",
@@ -224,17 +236,19 @@
             ]
           },
           "supersede": {
+            "description": "Explicit open draft IDs to replace. Full mode only; use the supersedable list from the dry run after reviewing replacement.",
             "type": "array",
             "items": {
               "type": "integer",
-              "exclusiveMinimum": 0
-            },
-            "description": "Explicit open draft IDs to replace. Full mode only; use the supersedable list from the dry run after reviewing replacement."
+              "exclusiveMinimum": 0,
+              "maximum": 9007199254740991
+            }
           },
           "stack_version": {
+            "description": "For a group, pass stack.version from the dry run unchanged; group promotion requires full mode.",
             "type": "integer",
             "minimum": 0,
-            "description": "For a group, pass stack.version from the dry run unchanged; group promotion requires full mode."
+            "maximum": 9007199254740991
           }
         },
         "required": [
@@ -246,6 +260,9 @@
       },
       "outputSchema": {
         "type": "object",
+        "propertyNames": {
+          "type": "string"
+        },
         "additionalProperties": {}
       },
       "annotations": {
@@ -265,13 +282,17 @@
         "properties": {
           "team_id": {
             "type": "string",
-            "format": "uuid"
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})$"
           }
         },
         "additionalProperties": false
       },
       "outputSchema": {
         "type": "object",
+        "propertyNames": {
+          "type": "string"
+        },
         "additionalProperties": {}
       },
       "annotations": {
@@ -290,9 +311,10 @@
         "type": "object",
         "properties": {
           "project_id": {
+            "description": "Required unless q or deployment_id is given; without it the search covers every project you can see.",
             "type": "string",
             "format": "uuid",
-            "description": "Required unless q or deployment_id is given; without it the search covers every project you can see."
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})$"
           },
           "status": {
             "type": "string",
@@ -303,32 +325,37 @@
             ]
           },
           "q": {
+            "description": "Case-insensitive search in the tracker key and caption.",
             "type": "string",
             "minLength": 1,
-            "maxLength": 200,
-            "description": "Case-insensitive search in the tracker key and caption."
+            "maxLength": 200
           },
           "deployment_id": {
+            "description": "Only the Work Items linked to this deployment.",
             "type": "integer",
             "exclusiveMinimum": 0,
-            "description": "Only the Work Items linked to this deployment."
+            "maximum": 9007199254740991
           },
           "limit": {
+            "description": "Page size (default 20, maximum 100).",
             "type": "integer",
             "exclusiveMinimum": 0,
-            "maximum": 100,
-            "description": "Page size (default 20, maximum 100)."
+            "maximum": 100
           },
           "offset": {
+            "description": "Pass next_offset from the previous page, keeping the same filters.",
             "type": "integer",
             "minimum": 0,
-            "description": "Pass next_offset from the previous page, keeping the same filters."
+            "maximum": 9007199254740991
           }
         },
         "additionalProperties": false
       },
       "outputSchema": {
         "type": "object",
+        "propertyNames": {
+          "type": "string"
+        },
         "additionalProperties": {}
       },
       "annotations": {
@@ -347,25 +374,30 @@
         "type": "object",
         "properties": {
           "project_id": {
+            "description": "Needed only when a key matches Work Items in several projects.",
             "type": "string",
             "format": "uuid",
-            "description": "Needed only when a key matches Work Items in several projects."
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})$"
           },
           "work_item_id": {
             "type": "string",
-            "format": "uuid"
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})$"
           },
           "key": {
+            "description": "Tracker key such as \"KAN-6\" (case-insensitive), instead of work_item_id.",
             "type": "string",
             "minLength": 1,
-            "maxLength": 200,
-            "description": "Tracker key such as \"KAN-6\" (case-insensitive), instead of work_item_id."
+            "maxLength": 200
           }
         },
         "additionalProperties": false
       },
       "outputSchema": {
         "type": "object",
+        "propertyNames": {
+          "type": "string"
+        },
         "additionalProperties": {}
       },
       "annotations": {
@@ -379,25 +411,25 @@
     {
       "name": "list_orgs",
       "title": "List Salesforce Orgs",
-      "description": "List the Salesforce orgs connected to the user's teams, or find one by name, URL or org type. Each row: id, label, instance_url, derived org_type (scratch / sandbox / developer / production), is_important (protected org), team_id, namespace (only when set) and reauth_required:true (only when the connection must be re-authenticated). Pass query to find orgs by name, part of the URL or org type (e.g. \"UAT\", \"acme\", \"production\", \"sandbox\"): matches come ranked by score — confirm the right one with the user before using it as a deploy target, never assume the top hit, especially when a production or is_important org is among them. Use the id as from_org_id / to_org_id.",
+      "description": "List the Salesforce orgs connected to the user's teams, or find one by name, URL or org type. Each row: id, label, instance_url, derived org_type (scratch / sandbox / developer / production), is_important (protected org), team_id, namespace (only when set) reauth_required:true (only when the connection must be re-authenticated) and expired:true (only when the scratch org expiration date has passed: it cannot be deployed to, validated against or read). Pass query to find orgs by name, part of the URL or org type (e.g. \"UAT\", \"acme\", \"production\", \"sandbox\"): matches come ranked by score — confirm the right one with the user before using it as a deploy target, never assume the top hit, especially when a production or is_important org is among them. Use the id as from_org_id / to_org_id.",
       "inputSchema": {
         "type": "object",
         "properties": {
           "team_id": {
-            "type": "string",
-            "description": "Optional team ID. If omitted, lists orgs across all of the user's teams."
+            "description": "Optional team ID. If omitted, lists orgs across all of the user's teams.",
+            "type": "string"
           },
           "query": {
+            "description": "Find orgs by name, part of the instance URL, or org type (\"production\", \"sandbox\", \"scratch\", \"developer\"). Omit for every org.",
             "type": "string",
             "minLength": 1,
-            "maxLength": 200,
-            "description": "Find orgs by name, part of the instance URL, or org type (\"production\", \"sandbox\", \"scratch\", \"developer\"). Omit for every org."
+            "maxLength": 200
           },
           "limit": {
+            "description": "With query: max matches to return (default 5).",
             "type": "integer",
             "exclusiveMinimum": 0,
-            "maximum": 50,
-            "description": "With query: max matches to return (default 5)."
+            "maximum": 50
           }
         },
         "additionalProperties": false
@@ -409,6 +441,9 @@
             "type": "array",
             "items": {
               "type": "object",
+              "propertyNames": {
+                "type": "string"
+              },
               "additionalProperties": {}
             }
           },
@@ -443,38 +478,39 @@
         "type": "object",
         "properties": {
           "team_id": {
-            "type": "string",
-            "description": "Optional team ID. If omitted, lists across all of the user's teams."
+            "description": "Optional team ID. If omitted, lists across all of the user's teams.",
+            "type": "string"
           },
           "org_id": {
+            "description": "Optional org ID filter — only deployments involving this org.",
             "type": "string",
             "format": "uuid",
-            "description": "Optional org ID filter — only deployments involving this org."
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})$"
           },
           "org_role": {
+            "description": "How org_id must be involved: \"target\" = deployments INTO that org (default \"either\").",
             "type": "string",
             "enum": [
               "either",
               "source",
               "target"
-            ],
-            "description": "How org_id must be involved: \"target\" = deployments INTO that org (default \"either\")."
+            ]
           },
           "include_comparisons": {
-            "type": "boolean",
-            "description": "Include org-comparison objects (is_comparison rows), which are not deployments. Default false."
+            "description": "Include org-comparison objects (is_comparison rows), which are not deployments. Default false.",
+            "type": "boolean"
           },
           "created_since": {
-            "type": "string",
-            "description": "ISO date/datetime — only deployment drafts created on/after it, not runs executed after it."
+            "description": "YYYY-MM-DD (from the start of that UTC day) or an ISO date-time with a timezone — only deployment drafts created on/after it, not runs executed after it.",
+            "type": "string"
           },
           "created_until": {
-            "type": "string",
-            "description": "ISO date/datetime — only deployment drafts created on/before it, not runs executed before it."
+            "description": "YYYY-MM-DD (through the end of that UTC day) or an ISO date-time with a timezone — only deployment drafts created on/before it, not runs executed before it.",
+            "type": "string"
           },
           "limit": {
-            "type": "number",
-            "description": "Max deployments to return, newest first (default 20, capped at 50)."
+            "description": "Max deployments to return, newest first (default 20, capped at 50).",
+            "type": "number"
           }
         },
         "additionalProperties": false
@@ -486,6 +522,9 @@
             "type": "array",
             "items": {
               "type": "object",
+              "propertyNames": {
+                "type": "string"
+              },
               "additionalProperties": {}
             }
           },
@@ -517,72 +556,73 @@
           "org_id": {
             "type": "string",
             "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})$",
             "description": "Org id from list_orgs."
           },
           "view": {
+            "description": "\"runs\" (default): deploys and validations that reached this org, newest first. \"components\": which components were deployed here and how often.",
             "type": "string",
             "enum": [
               "runs",
               "components"
-            ],
-            "description": "\"runs\" (default): deploys and validations that reached this org, newest first. \"components\": which components were deployed here and how often."
+            ]
           },
           "from": {
-            "type": "string",
-            "description": "First day, YYYY-MM-DD (UTC). Default: 29 days before to."
+            "description": "First day, YYYY-MM-DD (UTC). Default: 29 days before to.",
+            "type": "string"
           },
           "to": {
-            "type": "string",
-            "description": "Last day, YYYY-MM-DD (UTC), inclusive. Default: today, or from + 29 days. The window is at most 366 days."
+            "description": "Last day, YYYY-MM-DD (UTC), inclusive. Default: today, or from + 29 days. The window is at most 366 days.",
+            "type": "string"
           },
           "kind": {
+            "description": "runs: which runs to list (default \"all\").",
             "type": "string",
             "enum": [
               "all",
               "deploys",
               "validations"
-            ],
-            "description": "runs: which runs to list (default \"all\")."
+            ]
           },
           "include_external": {
-            "type": "boolean",
-            "description": "runs: include deploys made outside mtdt (Change Sets, sf CLI, other tools) seen in the org's Deploy Status. Default true."
+            "description": "runs: include deploys made outside mtdt (Change Sets, sf CLI, other tools) seen in the org's Deploy Status. Default true.",
+            "type": "boolean"
           },
           "include_failed": {
-            "type": "boolean",
-            "description": "runs: include failed and cancelled runs. Default false."
+            "description": "runs: include failed and cancelled runs. Default false.",
+            "type": "boolean"
           },
           "limit": {
+            "description": "runs: page size (default 20).",
             "type": "integer",
             "exclusiveMinimum": 0,
-            "maximum": 50,
-            "description": "runs: page size (default 20)."
+            "maximum": 50
           },
           "offset": {
+            "description": "runs: pass next_offset from the previous page.",
             "type": "integer",
             "minimum": 0,
-            "maximum": 1000000,
-            "description": "runs: pass next_offset from the previous page."
+            "maximum": 1000000
           },
           "group": {
+            "description": "components: \"month\" adds a per-month breakdown.",
             "type": "string",
             "enum": [
               "none",
               "month"
-            ],
-            "description": "components: \"month\" adds a per-month breakdown."
+            ]
           },
           "component_type": {
+            "description": "components: only this metadata type, e.g. \"ApexClass\" (case-insensitive).",
             "type": "string",
             "minLength": 1,
-            "maxLength": 200,
-            "description": "components: only this metadata type, e.g. \"ApexClass\" (case-insensitive)."
+            "maxLength": 200
           },
           "component_name": {
+            "description": "components: only this component of component_type, e.g. \"AccountService\" (case-insensitive).",
             "type": "string",
             "minLength": 1,
-            "maxLength": 500,
-            "description": "components: only this component of component_type, e.g. \"AccountService\" (case-insensitive)."
+            "maxLength": 500
           }
         },
         "required": [
@@ -605,15 +645,21 @@
           },
           "window": {
             "type": "object",
+            "propertyNames": {
+              "type": "string"
+            },
             "additionalProperties": {}
           },
           "runs": {
+            "description": "runs: newest first.",
             "type": "array",
             "items": {
               "type": "object",
+              "propertyNames": {
+                "type": "string"
+              },
               "additionalProperties": {}
-            },
-            "description": "runs: newest first."
+            }
           },
           "next_offset": {
             "type": [
@@ -623,18 +669,24 @@
           },
           "totals": {
             "type": "object",
+            "propertyNames": {
+              "type": "string"
+            },
             "additionalProperties": {}
           },
           "types": {
             "type": "array",
             "items": {
               "type": "object",
+              "propertyNames": {
+                "type": "string"
+              },
               "additionalProperties": {}
             }
           },
           "error": {
-            "type": "string",
-            "description": "\"org_not_found\", \"invalid_arguments\" or \"authentication_required\"."
+            "description": "\"org_not_found\", \"invalid_arguments\" or \"authentication_required\".",
+            "type": "string"
           },
           "message": {
             "type": "string"
@@ -663,17 +715,19 @@
           "org_id": {
             "type": "string",
             "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})$",
             "description": "Org id from list_orgs."
           },
           "from": {
-            "type": "string",
-            "description": "Start: YYYY-MM-DD (UTC midnight) or an ISO date-time with timezone. Default: 7 days before to."
+            "description": "Start: YYYY-MM-DD (UTC midnight) or an ISO date-time with timezone. Default: 7 days before to.",
+            "type": "string"
           },
           "to": {
-            "type": "string",
-            "description": "End: YYYY-MM-DD (end of that UTC day) or an ISO date-time with timezone. Default: now. The window is at most 92 days."
+            "description": "End: YYYY-MM-DD (end of that UTC day) or an ISO date-time with timezone. Default: now. The window is at most 92 days.",
+            "type": "string"
           },
           "made_by": {
+            "description": "\"manual\": changes outside any deploy; \"mtdt_deploy\": made by a deploy run from mtdt; \"external_deploy\": by a deploy made outside mtdt; \"not_via_mtdt\": everything except mtdt deploys. Default \"any\".",
             "type": "string",
             "enum": [
               "any",
@@ -681,40 +735,39 @@
               "mtdt_deploy",
               "external_deploy",
               "not_via_mtdt"
-            ],
-            "description": "\"manual\": changes outside any deploy; \"mtdt_deploy\": made by a deploy run from mtdt; \"external_deploy\": by a deploy made outside mtdt; \"not_via_mtdt\": everything except mtdt deploys. Default \"any\"."
+            ]
           },
           "sections": {
+            "description": "Only these Setup sections, exactly as overview.people.sections[].section shows them (e.g. \"Apex Class\", \"Manage Users\").",
+            "maxItems": 100,
             "type": "array",
             "items": {
               "type": "string",
               "minLength": 1,
               "maxLength": 200
-            },
-            "maxItems": 100,
-            "description": "Only these Setup sections, exactly as overview.people.sections[].section shows them (e.g. \"Apex Class\", \"Manage Users\")."
+            }
           },
           "actor_id": {
+            "description": "Only changes by this user: actor.id from a change or the overview.",
             "type": "string",
             "minLength": 1,
-            "maxLength": 200,
-            "description": "Only changes by this user: actor.id from a change or the overview."
+            "maxLength": 200
           },
           "include_automation": {
-            "type": "boolean",
-            "description": "false hides changes made by automated and integration users. Default true."
+            "description": "false hides changes made by automated and integration users. Default true.",
+            "type": "boolean"
           },
           "limit": {
+            "description": "Page size (default 50).",
             "type": "integer",
             "exclusiveMinimum": 0,
-            "maximum": 100,
-            "description": "Page size (default 50)."
+            "maximum": 100
           },
           "cursor": {
+            "description": "next_cursor from the previous page; keep every other argument unchanged.",
             "type": "string",
             "minLength": 1,
-            "maxLength": 300,
-            "description": "next_cursor from the previous page; keep every other argument unchanged."
+            "maxLength": 300
           }
         },
         "required": [
@@ -730,6 +783,9 @@
           },
           "window": {
             "type": "object",
+            "propertyNames": {
+              "type": "string"
+            },
             "additionalProperties": {}
           },
           "collection": {
@@ -749,12 +805,15 @@
             ]
           },
           "changes": {
+            "description": "Newest first.",
             "type": "array",
             "items": {
               "type": "object",
+              "propertyNames": {
+                "type": "string"
+              },
               "additionalProperties": {}
-            },
-            "description": "Newest first."
+            }
           },
           "next_cursor": {
             "type": [
@@ -764,11 +823,14 @@
           },
           "overview": {
             "type": "object",
+            "propertyNames": {
+              "type": "string"
+            },
             "additionalProperties": {}
           },
           "error": {
-            "type": "string",
-            "description": "\"org_not_found\", \"access_denied\", \"invalid_arguments\" or \"deploy_attribution_unavailable\"."
+            "description": "\"org_not_found\", \"access_denied\", \"invalid_arguments\" or \"deploy_attribution_unavailable\".",
+            "type": "string"
           },
           "message": {
             "type": "string"
@@ -799,8 +861,8 @@
             "description": "Deployment ID."
           },
           "run_id": {
-            "type": "number",
-            "description": "A run of this deployment (run_id from get_deployment.recent_runs or a launch response). Omit for the latest run."
+            "description": "A run of this deployment (run_id from get_deployment.recent_runs or a launch response). Omit for the latest run.",
+            "type": "number"
           }
         },
         "required": [
@@ -877,8 +939,8 @@
             "additionalProperties": false
           },
           "quick_deploy_eligible": {
-            "type": "boolean",
-            "description": "Validations only: whether execute_quick_deployment can deploy this explicitly selected validation."
+            "description": "Validations only: whether execute_quick_deployment can deploy this explicitly selected validation.",
+            "type": "boolean"
           },
           "quick_deploy_ineligible_reason": {
             "type": "string"
@@ -890,14 +952,20 @@
             ]
           },
           "counts": {
+            "description": "Component counts: components_validated for validations, components_deployed for deploys, plus components_total. Also includes tests_completed, tests_total and test_errors.",
             "type": "object",
-            "additionalProperties": {},
-            "description": "Component counts: components_validated for validations, components_deployed for deploys, plus components_total. Also includes tests_completed, tests_total and test_errors."
+            "propertyNames": {
+              "type": "string"
+            },
+            "additionalProperties": {}
           },
           "component_failures": {
             "type": "array",
             "items": {
               "type": "object",
+              "propertyNames": {
+                "type": "string"
+              },
               "additionalProperties": {}
             }
           },
@@ -905,6 +973,9 @@
             "type": "array",
             "items": {
               "type": "object",
+              "propertyNames": {
+                "type": "string"
+              },
               "additionalProperties": {}
             }
           },
@@ -936,12 +1007,18 @@
           "folder_sharing_check": {},
           "user_reference_check": {},
           "record_backup": {
+            "description": "Only when the run backed up target-org records before deploying (execute_deployment objects_to_backup): { status: \"running\" | \"done\" | \"failed\" | \"unfinished\" (the run ended before the backup did), objects: [{ object, status: \"queued\" | \"running\" | \"done\" | \"failed\" | \"cancelled\", planned_records, records_retrieved (while running), records (when done), error }] }. A failed record backup stops the run before Salesforce is called.",
             "type": "object",
-            "additionalProperties": {},
-            "description": "Only when the run backed up target-org records before deploying (execute_deployment objects_to_backup): { status: \"running\" | \"done\" | \"failed\" | \"unfinished\" (the run ended before the backup did), objects: [{ object, status: \"queued\" | \"running\" | \"done\" | \"failed\" | \"cancelled\", planned_records, records_retrieved (while running), records (when done), error }] }. A failed record backup stops the run before Salesforce is called."
+            "propertyNames": {
+              "type": "string"
+            },
+            "additionalProperties": {}
           },
           "post_deploy": {
             "type": "object",
+            "propertyNames": {
+              "type": "string"
+            },
             "additionalProperties": {}
           }
         },
@@ -972,46 +1049,48 @@
             "description": "Team ID."
           },
           "project_id": {
+            "description": "Required together with work_item_ids. All cards must belong to this project and team.",
             "type": "string",
             "format": "uuid",
-            "description": "Required together with work_item_ids. All cards must belong to this project and team."
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})$"
           },
           "work_item_ids": {
+            "description": "Work Items to attach during creation; omit to create an independent deployment.",
+            "minItems": 1,
             "type": "array",
             "items": {
               "type": "string",
-              "format": "uuid"
-            },
-            "minItems": 1,
-            "description": "Work Items to attach during creation; omit to create an independent deployment."
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})$"
+            }
           },
           "from_org_id": {
-            "type": "string",
-            "description": "Source org ID."
+            "description": "Source org ID.",
+            "type": "string"
           },
           "from_repo_id": {
-            "type": "string",
-            "description": "Source repo ID."
+            "description": "Source repo ID.",
+            "type": "string"
           },
           "from_backup_id": {
-            "type": "string",
-            "description": "Source metadata backup ID."
+            "description": "Source metadata backup ID.",
+            "type": "string"
           },
           "from_archive_id": {
-            "type": "string",
-            "description": "Source archive ID (from register_archive or list_sources). Every component of the archive is selected automatically."
+            "description": "Source archive ID (from register_archive or list_sources). Every component of the archive is selected automatically.",
+            "type": "string"
           },
           "to_org_id": {
             "type": "string",
             "description": "Destination org ID."
           },
           "caption": {
-            "type": "string",
-            "description": "Short title for the deployment (shown in lists)."
+            "description": "Short title for the deployment (shown in lists).",
+            "type": "string"
           },
           "description": {
-            "type": "string",
-            "description": "Longer description / release note for the deployment. Plain text or HTML. Its plain text becomes the git commit message on a push-to-git deploy and is appended to approval requests. Change it later with update_deployment."
+            "description": "Longer description / release note for the deployment. Plain text or HTML. Its plain text becomes the git commit message on a push-to-git deploy and is appended to approval requests. Change it later with update_deployment.",
+            "type": "string"
           }
         },
         "required": [
@@ -1039,18 +1118,18 @@
             "type": "boolean"
           },
           "description": {
+            "description": "Plain text of the release note, at most 2000 characters.",
             "type": [
               "string",
               "null"
-            ],
-            "description": "Plain text of the release note, at most 2000 characters."
+            ]
           },
           "description_truncated": {
             "type": "boolean"
           },
           "description_source": {
-            "type": "string",
-            "description": "\"ticket\": the deployment was created from a tracker ticket and takes its description from it; update_deployment refuses to change it."
+            "description": "\"ticket\": the deployment was created from a tracker ticket and takes its description from it; update_deployment refuses to change it.",
+            "type": "string"
           },
           "source": {
             "type": "object",
@@ -1080,6 +1159,7 @@
                 ]
               },
               "task": {
+                "description": "The population task behind this side; error says why a failed side failed.",
                 "type": "object",
                 "properties": {
                   "id": {
@@ -1103,8 +1183,7 @@
                   "status",
                   "error"
                 ],
-                "additionalProperties": {},
-                "description": "The population task behind this side; error says why a failed side failed."
+                "additionalProperties": {}
               }
             },
             "required": [
@@ -1194,6 +1273,7 @@
             "description": "Both sides are ready: browse, validate and deploy only then."
           },
           "scope": {
+            "description": "The metadata scope of the deployment; null: no scope, all metadata.",
             "anyOf": [
               {
                 "type": "object",
@@ -1211,6 +1291,7 @@
                     "type": "boolean"
                   },
                   "rules": {
+                    "description": "One rule per metadata type: every component, the listed names, or names matching a pattern with *. An empty list means all metadata.",
                     "type": "array",
                     "items": {
                       "type": "object",
@@ -1239,8 +1320,7 @@
                         "type"
                       ],
                       "additionalProperties": false
-                    },
-                    "description": "One rule per metadata type: every component, the listed names, or names matching a pattern with *. An empty list means all metadata."
+                    }
                   },
                   "rules_unreadable": {
                     "type": "boolean",
@@ -1261,11 +1341,13 @@
               {
                 "type": "null"
               }
-            ],
-            "description": "The metadata scope of the deployment; null: no scope, all metadata."
+            ]
           },
           "components": {
             "type": "object",
+            "propertyNames": {
+              "type": "string"
+            },
             "additionalProperties": {
               "type": "array",
               "items": {
@@ -1279,6 +1361,9 @@
           },
           "deletions": {
             "type": "object",
+            "propertyNames": {
+              "type": "string"
+            },
             "additionalProperties": {
               "type": "array",
               "items": {
@@ -1290,14 +1375,17 @@
             "type": "boolean"
           },
           "partial_selections": {
+            "description": "Components with partial selections; edit them only in the mtdt UI.",
             "type": "object",
+            "propertyNames": {
+              "type": "string"
+            },
             "additionalProperties": {
               "type": "array",
               "items": {
                 "type": "string"
               }
-            },
-            "description": "Components with partial selections; edit them only in the mtdt UI."
+            }
           },
           "test_level": {
             "type": "object",
@@ -1473,36 +1561,41 @@
             "type": "string"
           },
           "error": {
-            "type": "string",
-            "description": "A business refusal, or work_item_link_failed after creation. backup_not_usable and Work Item preflight refusals create no deployment."
+            "description": "A business refusal, or work_item_link_failed after creation. backup_not_usable and Work Item preflight refusals create no deployment.",
+            "type": "string"
           },
           "linked_work_item_ids": {
+            "description": "Work Item links confirmed by the server.",
             "type": "array",
             "items": {
               "type": "string",
-              "format": "uuid"
-            },
-            "description": "Work Item links confirmed by the server."
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})$"
+            }
           },
           "unconfirmed_work_item_ids": {
+            "description": "Links requiring inspection after a late failure; a network error can hide a committed link.",
             "type": "array",
             "items": {
               "type": "string",
-              "format": "uuid"
-            },
-            "description": "Links requiring inspection after a late failure; a network error can hide a committed link."
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})$"
+            }
           },
           "message": {
             "type": "string"
           },
           "reason": {
-            "type": "string",
-            "description": "\"not_done\" or \"no_archive\"."
+            "description": "\"not_done\" or \"no_archive\".",
+            "type": "string"
           },
           "backup": {
+            "description": "{ id, label, status, partial, has_archive } of the rejected backup.",
             "type": "object",
-            "additionalProperties": {},
-            "description": "{ id, label, status, partial, has_archive } of the rejected backup."
+            "propertyNames": {
+              "type": "string"
+            },
+            "additionalProperties": {}
           }
         },
         "additionalProperties": {}
@@ -1525,39 +1618,47 @@
           "deployment_id": {
             "type": "integer",
             "exclusiveMinimum": 0,
+            "maximum": 9007199254740991,
             "description": "Deployment ID."
           },
           "caption": {
-            "type": "string",
-            "description": "New short title."
+            "description": "New short title.",
+            "type": "string"
           },
           "description": {
-            "type": "string",
-            "description": "New release note, plain text or HTML; \"\" clears it. Its plain text becomes the git commit message on a push-to-git deploy and is appended to approval requests."
+            "description": "New release note, plain text or HTML; \"\" clears it. Its plain text becomes the git commit message on a push-to-git deploy and is appended to approval requests.",
+            "type": "string"
           },
           "add_components": {
+            "description": "Full components to add, { metadata_type: [names] }. Types are normalized; components must be retrieved first (browse_metadata).",
             "type": "object",
+            "propertyNames": {
+              "type": "string"
+            },
             "additionalProperties": {
               "type": "array",
               "items": {
                 "type": "string",
                 "minLength": 1
               }
-            },
-            "description": "Full components to add, { metadata_type: [names] }. Types are normalized; components must be retrieved first (browse_metadata)."
+            }
           },
           "remove_components": {
+            "description": "Components to remove from the selection, same shape. Nothing is deleted in Salesforce.",
             "type": "object",
+            "propertyNames": {
+              "type": "string"
+            },
             "additionalProperties": {
               "type": "array",
               "items": {
                 "type": "string",
                 "minLength": 1
               }
-            },
-            "description": "Components to remove from the selection, same shape. Nothing is deleted in Salesforce."
+            }
           },
           "test_option": {
+            "description": "Apex test level saved on the deployment, used by validate_deployment / execute_deployment when they get no test_option. \"specific\" needs tests_to_run; \"relevant\" clears the saved test list; \"NoTestRun\" fails on production targets.",
             "type": "string",
             "enum": [
               "all",
@@ -1566,32 +1667,33 @@
               "specific",
               "default",
               "NoTestRun"
-            ],
-            "description": "Apex test level saved on the deployment, used by validate_deployment / execute_deployment when they get no test_option. \"specific\" needs tests_to_run; \"relevant\" clears the saved test list; \"NoTestRun\" fails on production targets."
+            ]
           },
           "tests_to_run": {
+            "description": "Apex test classes for test_option \"specific\" (also when \"specific\" is already saved).",
             "type": "array",
             "items": {
               "type": "string",
               "minLength": 1
-            },
-            "description": "Apex test classes for test_option \"specific\" (also when \"specific\" is already saved)."
+            }
           },
           "link_work_items": {
+            "description": "Open Work Items to attach to this deployment.",
             "type": "array",
             "items": {
               "type": "string",
-              "format": "uuid"
-            },
-            "description": "Open Work Items to attach to this deployment."
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})$"
+            }
           },
           "unlink_work_items": {
+            "description": "Work Items to detach from this deployment.",
             "type": "array",
             "items": {
               "type": "string",
-              "format": "uuid"
-            },
-            "description": "Work Items to detach from this deployment."
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})$"
+            }
           }
         },
         "required": [
@@ -1618,18 +1720,18 @@
             "type": "boolean"
           },
           "description": {
+            "description": "Plain text of the release note, at most 2000 characters.",
             "type": [
               "string",
               "null"
-            ],
-            "description": "Plain text of the release note, at most 2000 characters."
+            ]
           },
           "description_truncated": {
             "type": "boolean"
           },
           "description_source": {
-            "type": "string",
-            "description": "\"ticket\": the deployment was created from a tracker ticket and takes its description from it; update_deployment refuses to change it."
+            "description": "\"ticket\": the deployment was created from a tracker ticket and takes its description from it; update_deployment refuses to change it.",
+            "type": "string"
           },
           "source": {
             "type": "object",
@@ -1659,6 +1761,7 @@
                 ]
               },
               "task": {
+                "description": "The population task behind this side; error says why a failed side failed.",
                 "type": "object",
                 "properties": {
                   "id": {
@@ -1682,8 +1785,7 @@
                   "status",
                   "error"
                 ],
-                "additionalProperties": {},
-                "description": "The population task behind this side; error says why a failed side failed."
+                "additionalProperties": {}
               }
             },
             "required": [
@@ -1773,6 +1875,7 @@
             "description": "Both sides are ready: browse, validate and deploy only then."
           },
           "scope": {
+            "description": "The metadata scope of the deployment; null: no scope, all metadata.",
             "anyOf": [
               {
                 "type": "object",
@@ -1790,6 +1893,7 @@
                     "type": "boolean"
                   },
                   "rules": {
+                    "description": "One rule per metadata type: every component, the listed names, or names matching a pattern with *. An empty list means all metadata.",
                     "type": "array",
                     "items": {
                       "type": "object",
@@ -1818,8 +1922,7 @@
                         "type"
                       ],
                       "additionalProperties": false
-                    },
-                    "description": "One rule per metadata type: every component, the listed names, or names matching a pattern with *. An empty list means all metadata."
+                    }
                   },
                   "rules_unreadable": {
                     "type": "boolean",
@@ -1840,11 +1943,13 @@
               {
                 "type": "null"
               }
-            ],
-            "description": "The metadata scope of the deployment; null: no scope, all metadata."
+            ]
           },
           "components": {
             "type": "object",
+            "propertyNames": {
+              "type": "string"
+            },
             "additionalProperties": {
               "type": "array",
               "items": {
@@ -1858,6 +1963,9 @@
           },
           "deletions": {
             "type": "object",
+            "propertyNames": {
+              "type": "string"
+            },
             "additionalProperties": {
               "type": "array",
               "items": {
@@ -1869,14 +1977,17 @@
             "type": "boolean"
           },
           "partial_selections": {
+            "description": "Components with partial selections; edit them only in the mtdt UI.",
             "type": "object",
+            "propertyNames": {
+              "type": "string"
+            },
             "additionalProperties": {
               "type": "array",
               "items": {
                 "type": "string"
               }
-            },
-            "description": "Components with partial selections; edit them only in the mtdt UI."
+            }
           },
           "test_level": {
             "type": "object",
@@ -2052,8 +2163,8 @@
             "type": "string"
           },
           "changed": {
-            "type": "boolean",
-            "description": "false when every passed value was already saved."
+            "description": "false when every passed value was already saved.",
+            "type": "boolean"
           },
           "changes": {
             "type": "object",
@@ -2062,14 +2173,17 @@
                 "type": "string"
               },
               "description": {
-                "type": "string",
-                "description": "\"set\" or \"cleared\"."
+                "description": "\"set\" or \"cleared\".",
+                "type": "string"
               },
               "components": {
                 "type": "object",
                 "properties": {
                   "added": {
                     "type": "object",
+                    "propertyNames": {
+                      "type": "string"
+                    },
                     "additionalProperties": {
                       "type": "array",
                       "items": {
@@ -2079,6 +2193,9 @@
                   },
                   "removed": {
                     "type": "object",
+                    "propertyNames": {
+                      "type": "string"
+                    },
                     "additionalProperties": {
                       "type": "array",
                       "items": {
@@ -2090,6 +2207,9 @@
                     "type": "array",
                     "items": {
                       "type": "object",
+                      "propertyNames": {
+                        "type": "string"
+                      },
                       "additionalProperties": {}
                     }
                   }
@@ -2161,8 +2281,8 @@
             "additionalProperties": false
           },
           "error": {
-            "type": "string",
-            "description": "\"nothing_to_change\", \"conflicting_changes\", \"invalid_test_level\", \"permission_denied\", \"work_item_not_found\", \"work_item_archived\", \"deployment_not_ready\" (components only), \"unresolved_types\", \"items_not_retrieved\", \"component_marked_for_deletion\", \"component_has_overrides\", \"not_found\". Nothing was written."
+            "description": "\"nothing_to_change\", \"conflicting_changes\", \"invalid_test_level\", \"permission_denied\", \"work_item_not_found\", \"work_item_archived\", \"deployment_not_ready\" (components only), \"unresolved_types\", \"items_not_retrieved\", \"component_marked_for_deletion\", \"component_has_overrides\", \"not_found\". Nothing was written.",
+            "type": "string"
           },
           "message": {
             "type": "string"
@@ -2214,18 +2334,18 @@
             "type": "boolean"
           },
           "description": {
+            "description": "Plain text of the release note, at most 2000 characters.",
             "type": [
               "string",
               "null"
-            ],
-            "description": "Plain text of the release note, at most 2000 characters."
+            ]
           },
           "description_truncated": {
             "type": "boolean"
           },
           "description_source": {
-            "type": "string",
-            "description": "\"ticket\": the deployment was created from a tracker ticket and takes its description from it; update_deployment refuses to change it."
+            "description": "\"ticket\": the deployment was created from a tracker ticket and takes its description from it; update_deployment refuses to change it.",
+            "type": "string"
           },
           "source": {
             "type": "object",
@@ -2255,6 +2375,7 @@
                 ]
               },
               "task": {
+                "description": "The population task behind this side; error says why a failed side failed.",
                 "type": "object",
                 "properties": {
                   "id": {
@@ -2278,8 +2399,7 @@
                   "status",
                   "error"
                 ],
-                "additionalProperties": {},
-                "description": "The population task behind this side; error says why a failed side failed."
+                "additionalProperties": {}
               }
             },
             "required": [
@@ -2369,6 +2489,7 @@
             "description": "Both sides are ready: browse, validate and deploy only then."
           },
           "scope": {
+            "description": "The metadata scope of the deployment; null: no scope, all metadata.",
             "anyOf": [
               {
                 "type": "object",
@@ -2386,6 +2507,7 @@
                     "type": "boolean"
                   },
                   "rules": {
+                    "description": "One rule per metadata type: every component, the listed names, or names matching a pattern with *. An empty list means all metadata.",
                     "type": "array",
                     "items": {
                       "type": "object",
@@ -2414,8 +2536,7 @@
                         "type"
                       ],
                       "additionalProperties": false
-                    },
-                    "description": "One rule per metadata type: every component, the listed names, or names matching a pattern with *. An empty list means all metadata."
+                    }
                   },
                   "rules_unreadable": {
                     "type": "boolean",
@@ -2436,11 +2557,13 @@
               {
                 "type": "null"
               }
-            ],
-            "description": "The metadata scope of the deployment; null: no scope, all metadata."
+            ]
           },
           "components": {
             "type": "object",
+            "propertyNames": {
+              "type": "string"
+            },
             "additionalProperties": {
               "type": "array",
               "items": {
@@ -2454,6 +2577,9 @@
           },
           "deletions": {
             "type": "object",
+            "propertyNames": {
+              "type": "string"
+            },
             "additionalProperties": {
               "type": "array",
               "items": {
@@ -2465,14 +2591,17 @@
             "type": "boolean"
           },
           "partial_selections": {
+            "description": "Components with partial selections; edit them only in the mtdt UI.",
             "type": "object",
+            "propertyNames": {
+              "type": "string"
+            },
             "additionalProperties": {
               "type": "array",
               "items": {
                 "type": "string"
               }
-            },
-            "description": "Components with partial selections; edit them only in the mtdt UI."
+            }
           },
           "test_level": {
             "type": "object",
@@ -2684,9 +2813,11 @@
           "deployment_id": {
             "type": "integer",
             "exclusiveMinimum": 0,
+            "maximum": 9007199254740991,
             "description": "Deployment ID. The SAVED composition is checked: save components with update_deployment first."
           },
           "checks": {
+            "description": "Run only these parts. Omit to run all. Pre-deploy checks: folder_sharing, destructive_impact, permissions_and_profiles, record_backups, cron_triggers, business_hours, non_source_deployable, static_analysis, secrets, changed_since_donor, user_references; plus \"dependencies\" (source components the selection needs), \"target_conflicts\" (target components changed since they were read) and \"tests\" (Apex tests to run).",
             "type": "array",
             "items": {
               "type": "string",
@@ -2706,20 +2837,19 @@
                 "target_conflicts",
                 "tests"
               ]
-            },
-            "description": "Run only these parts. Omit to run all. Pre-deploy checks: folder_sharing, destructive_impact, permissions_and_profiles, record_backups, cron_triggers, business_hours, non_source_deployable, static_analysis, secrets, changed_since_donor, user_references; plus \"dependencies\" (source components the selection needs), \"target_conflicts\" (target components changed since they were read) and \"tests\" (Apex tests to run)."
+            }
           },
           "depth": {
+            "description": "\"fast\" runs only the database-backed parts (seconds); \"full\" (default) also runs the parts that query the target org.",
             "type": "string",
             "enum": [
               "fast",
               "full"
-            ],
-            "description": "\"fast\" runs only the database-backed parts (seconds); \"full\" (default) also runs the parts that query the target org."
+            ]
           },
           "all_items": {
-            "type": "boolean",
-            "description": "Deployment created from an archive only: check every component of the archive."
+            "description": "Deployment created from an archive only: check every component of the archive.",
+            "type": "boolean"
           }
         },
         "required": [
@@ -2779,51 +2909,69 @@
             "additionalProperties": {}
           },
           "preflight": {
+            "description": "Pre-deploy warnings the web Deploy dialog shows; each verdict has severity, what is affected and often a suggested_action.",
             "type": "object",
             "properties": {
               "verdicts": {
                 "type": "array",
                 "items": {
                   "type": "object",
+                  "propertyNames": {
+                    "type": "string"
+                  },
                   "additionalProperties": {}
                 }
               },
               "counts": {
                 "type": "object",
+                "propertyNames": {
+                  "type": "string"
+                },
                 "additionalProperties": {}
               },
               "checks": {
                 "type": "array",
                 "items": {
                   "type": "object",
+                  "propertyNames": {
+                    "type": "string"
+                  },
                   "additionalProperties": {}
                 }
               }
             },
-            "additionalProperties": {},
-            "description": "Pre-deploy warnings the web Deploy dialog shows; each verdict has severity, what is affected and often a suggested_action."
+            "additionalProperties": {}
           },
           "dependencies": {
+            "description": "missing: source components the selection depends on that are not saved, required ones first; add_with is the update_deployment call that adds them. required: true (with required_by) marks a component the target org does not have while a selected component references it — the deploy most likely fails without it. not_addable: such components mtdt cannot add from the source, with reason package (install or upgrade the package on the target, or remove the reference), not_in_source (the source lacks it too: remove the reference) or other (the target lacks it: add it from the source if it is there, or remove the reference). required counts both; it is only reported at depth \"full\".",
             "type": "object",
-            "additionalProperties": {},
-            "description": "missing: source components the selection depends on that are not saved, required ones first; add_with is the update_deployment call that adds them. required: true (with required_by) marks a component the target org does not have while a selected component references it — the deploy most likely fails without it. not_addable: such components mtdt cannot add from the source, with reason package (install or upgrade the package on the target, or remove the reference), not_in_source (the source lacks it too: remove the reference) or other (the target lacks it: add it from the source if it is there, or remove the reference). required counts both; it is only reported at depth \"full\"."
+            "propertyNames": {
+              "type": "string"
+            },
+            "additionalProperties": {}
           },
           "target_conflicts": {
+            "description": "Target components changed, deleted or created since mtdt read them, which this deploy would overwrite.",
             "type": "object",
-            "additionalProperties": {},
-            "description": "Target components changed, deleted or created since mtdt read them, which this deploy would overwrite."
+            "propertyNames": {
+              "type": "string"
+            },
+            "additionalProperties": {}
           },
           "tests": {
+            "description": "Apex test recommendation; save_with is the update_deployment call that saves it as the test level.",
             "type": "object",
-            "additionalProperties": {},
-            "description": "Apex test recommendation; save_with is the update_deployment call that saves it as the test level."
+            "propertyNames": {
+              "type": "string"
+            },
+            "additionalProperties": {}
           },
           "pending": {
+            "description": "Parts that did not finish inside the time budget; they keep running: call again with checks set to these to collect them.",
             "type": "array",
             "items": {
               "type": "string"
-            },
-            "description": "Parts that did not finish inside the time budget; they keep running: call again with checks set to these to collect them."
+            }
           },
           "not_run_at_depth": {
             "type": "array",
@@ -2835,8 +2983,8 @@
             "type": "string"
           },
           "error": {
-            "type": "string",
-            "description": "\"empty_selection\", \"deployment_not_ready\", \"deployment_population_failed\", \"not_found\", \"unknown_checks\", \"checks_incompatible_with_depth\", or with all_items \"all_items_not_supported\" / \"archive_not_ready\" / \"archive_unpack_failed\" / \"archive_empty\"."
+            "description": "\"empty_selection\", \"deployment_not_ready\", \"deployment_population_failed\", \"not_found\", \"unknown_checks\", \"checks_incompatible_with_depth\", or with all_items \"all_items_not_supported\" / \"archive_not_ready\" / \"archive_unpack_failed\" / \"archive_empty\".",
+            "type": "string"
           },
           "message": {
             "type": "string"
@@ -2891,11 +3039,11 @@
         "type": "object",
         "properties": {
           "backup_id": {
+            "description": "The new backup; list_sources(kind:\"backups\", include_unusable:true) shows its state.",
             "type": [
               "string",
               "null"
-            ],
-            "description": "The new backup; list_sources(kind:\"backups\", include_unusable:true) shows its state."
+            ]
           },
           "org_id": {
             "type": "string"
@@ -2905,6 +3053,9 @@
           },
           "backup": {
             "type": "object",
+            "propertyNames": {
+              "type": "string"
+            },
             "additionalProperties": {}
           },
           "hint": {
@@ -2935,38 +3086,39 @@
         "type": "object",
         "properties": {
           "kind": {
+            "description": "Omit for all three.",
             "type": "string",
             "enum": [
               "repos",
               "backups",
               "archives"
-            ],
-            "description": "Omit for all three."
+            ]
           },
           "team_id": {
-            "type": "string",
-            "description": "Optional team ID. If omitted, covers all of the user's teams."
+            "description": "Optional team ID. If omitted, covers all of the user's teams.",
+            "type": "string"
           },
           "org_id": {
+            "description": "Backups of this org only.",
             "type": "string",
             "format": "uuid",
-            "description": "Backups of this org only."
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})$"
           },
           "name_contains": {
+            "description": "Case-insensitive filter on the repo, backup or archive caption (and repo name).",
             "type": "string",
             "minLength": 1,
-            "maxLength": 200,
-            "description": "Case-insensitive filter on the repo, backup or archive caption (and repo name)."
+            "maxLength": 200
           },
           "include_unusable": {
-            "type": "boolean",
-            "description": "Backups: also list those that cannot be a deployment source yet (in progress, failed, or done without a stored archive), each with unusable_reason."
+            "description": "Backups: also list those that cannot be a deployment source yet (in progress, failed, or done without a stored archive), each with unusable_reason.",
+            "type": "boolean"
           },
           "limit": {
+            "description": "Max rows per kind, newest first (default 20 with kind, 10 per kind without; max 50).",
             "type": "integer",
             "exclusiveMinimum": 0,
-            "maximum": 50,
-            "description": "Max rows per kind, newest first (default 20 with kind, 10 per kind without; max 50)."
+            "maximum": 50
           }
         },
         "additionalProperties": false
@@ -2978,6 +3130,9 @@
             "type": "array",
             "items": {
               "type": "object",
+              "propertyNames": {
+                "type": "string"
+              },
               "additionalProperties": {}
             }
           },
@@ -2985,6 +3140,9 @@
             "type": "array",
             "items": {
               "type": "object",
+              "propertyNames": {
+                "type": "string"
+              },
               "additionalProperties": {}
             }
           },
@@ -2992,6 +3150,9 @@
             "type": "array",
             "items": {
               "type": "object",
+              "propertyNames": {
+                "type": "string"
+              },
               "additionalProperties": {}
             }
           },
@@ -3020,37 +3181,41 @@
         "type": "object",
         "properties": {
           "deployment_id": {
+            "description": "Compare the two sides of this deployment or comparison (comparison_id from an earlier answer).",
             "type": "integer",
             "exclusiveMinimum": 0,
-            "description": "Compare the two sides of this deployment or comparison (comparison_id from an earlier answer)."
+            "maximum": 9007199254740991
           },
           "from_org_id": {
+            "description": "Source org to compare.",
             "type": "string",
             "format": "uuid",
-            "description": "Source org to compare."
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})$"
           },
           "from_backup_id": {
+            "description": "Source backup to compare (instead of from_org_id).",
             "type": "string",
             "format": "uuid",
-            "description": "Source backup to compare (instead of from_org_id)."
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})$"
           },
           "to_org_id": {
+            "description": "Target org to compare against.",
             "type": "string",
             "format": "uuid",
-            "description": "Target org to compare against."
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})$"
           },
           "types": {
+            "description": "When done: list the component names of these metadata types (e.g. [\"classes\", \"flows\"]).",
+            "maxItems": 20,
             "type": "array",
             "items": {
               "type": "string",
               "minLength": 1
-            },
-            "maxItems": 20,
-            "description": "When done: list the component names of these metadata types (e.g. [\"classes\", \"flows\"])."
+            }
           },
           "start_new": {
-            "type": "boolean",
-            "description": "Run a fresh comparison instead of answering with the latest one."
+            "description": "Run a fresh comparison instead of answering with the latest one.",
+            "type": "boolean"
           }
         },
         "additionalProperties": false
@@ -3059,8 +3224,8 @@
         "type": "object",
         "properties": {
           "comparison_id": {
-            "type": "number",
-            "description": "The comparison (a metadata_deploys id); pass it as deployment_id to read it again."
+            "description": "The comparison (a metadata_deploys id); pass it as deployment_id to read it again.",
+            "type": "number"
           },
           "state": {
             "type": "string",
@@ -3093,20 +3258,29 @@
           },
           "progress": {
             "type": "object",
+            "propertyNames": {
+              "type": "string"
+            },
             "additionalProperties": {}
           },
           "summary": {
+            "description": "types_compared, totals and by_type counts: only_in_source, only_in_target, different, same.",
             "type": "object",
-            "additionalProperties": {},
-            "description": "types_compared, totals and by_type counts: only_in_source, only_in_target, different, same."
+            "propertyNames": {
+              "type": "string"
+            },
+            "additionalProperties": {}
           },
           "components": {
+            "description": "Per requested type: component names per bucket, cut at 50 with total.",
             "type": "array",
             "items": {
               "type": "object",
+              "propertyNames": {
+                "type": "string"
+              },
               "additionalProperties": {}
-            },
-            "description": "Per requested type: component names per bucket, cut at 50 with total."
+            }
           },
           "types_not_found": {
             "type": "array",
@@ -3115,15 +3289,15 @@
             }
           },
           "failure_reason": {
-            "type": "string",
-            "description": "state failed: why the comparison failed."
+            "description": "state failed: why the comparison failed.",
+            "type": "string"
           },
           "hint": {
             "type": "string"
           },
           "error": {
-            "type": "string",
-            "description": "\"not_found\", \"permission_denied\" or \"invalid_pair\": nothing was started."
+            "description": "\"not_found\", \"permission_denied\" or \"invalid_pair\": nothing was started.",
+            "type": "string"
           },
           "message": {
             "type": "string"
@@ -3165,19 +3339,19 @@
         "type": "object",
         "properties": {
           "path": {
-            "type": "string",
-            "description": "Pass to register_archive after the upload."
+            "description": "Pass to register_archive after the upload.",
+            "type": "string"
           },
           "upload_url": {
-            "type": "string",
-            "description": "Signed upload URL, valid until expires_at."
+            "description": "Signed upload URL, valid until expires_at.",
+            "type": "string"
           },
           "method": {
             "type": "string"
           },
           "expires_in_seconds": {
-            "type": "number",
-            "description": "Lifetime of the upload link — run the curl command before it runs out."
+            "description": "Lifetime of the upload link — run the curl command before it runs out.",
+            "type": "number"
           },
           "expires_at": {
             "type": "string"
@@ -3186,15 +3360,15 @@
             "type": "number"
           },
           "curl": {
-            "type": "string",
-            "description": "Ready upload command — replace <LOCAL_ZIP_PATH>."
+            "description": "Ready upload command — replace <LOCAL_ZIP_PATH>.",
+            "type": "string"
           },
           "next": {
             "type": "string"
           },
           "error": {
-            "type": "string",
-            "description": "\"forbidden\" or \"invalid_request\" on a reject."
+            "description": "\"forbidden\" or \"invalid_request\" on a reject.",
+            "type": "string"
           },
           "message": {
             "type": "string"
@@ -3226,12 +3400,12 @@
             "description": "The path request_archive_upload returned."
           },
           "caption": {
-            "type": "string",
-            "description": "Archive title shown on the Archives page. Defaults to the file name."
+            "description": "Archive title shown on the Archives page. Defaults to the file name.",
+            "type": "string"
           },
           "description": {
-            "type": "string",
-            "description": "Optional longer description of the archive."
+            "description": "Optional longer description of the archive.",
+            "type": "string"
           }
         },
         "required": [
@@ -3244,25 +3418,28 @@
         "type": "object",
         "properties": {
           "archive_id": {
-            "type": "string",
-            "description": "Success: pass as from_archive_id to create_deployment."
+            "description": "Success: pass as from_archive_id to create_deployment.",
+            "type": "string"
           },
           "caption": {
             "type": "string"
           },
           "source_format": {
-            "type": "string",
-            "description": "\"source\" (SFDX, converted) or \"metadata_api\"."
+            "description": "\"source\" (SFDX, converted) or \"metadata_api\".",
+            "type": "string"
           },
           "component_count": {
             "type": "number"
           },
           "types": {
+            "description": "Component count per metadata type.",
             "type": "object",
+            "propertyNames": {
+              "type": "string"
+            },
             "additionalProperties": {
               "type": "number"
-            },
-            "description": "Component count per metadata type."
+            }
           },
           "api_version": {
             "type": [
@@ -3274,8 +3451,8 @@
             "type": "string"
           },
           "error": {
-            "type": "string",
-            "description": "\"not_uploaded\", \"too_large\", \"invalid_archive\", \"archive_empty\", \"forbidden\" or \"invalid_request\" on a reject; NO archive is created."
+            "description": "\"not_uploaded\", \"too_large\", \"invalid_archive\", \"archive_empty\", \"forbidden\" or \"invalid_request\" on a reject; NO archive is created.",
+            "type": "string"
           },
           "message": {
             "type": "string"
@@ -3310,34 +3487,35 @@
             "description": "Metadata type to browse, e.g. \"classes\" (\"ApexClass\" is fuzzy-resolved). One type per call (mirrors the wizard)."
           },
           "org_id": {
-            "type": "string",
-            "description": "Org to browse. Defaults to the deployment's SOURCE org."
+            "description": "Org to browse. Defaults to the deployment's SOURCE org.",
+            "type": "string"
           },
           "name_contains": {
-            "type": "string",
-            "description": "Case-insensitive substring filter on the component name."
+            "description": "Case-insensitive substring filter on the component name.",
+            "type": "string"
           },
           "modified_since": {
-            "type": "string",
-            "description": "ISO date; keep only components whose last change (last_modified) is on/after this."
+            "description": "ISO date; keep only components whose last change (last_modified) is on/after this.",
+            "type": "string"
           },
           "modified_by": {
+            "description": "Keep only components changed by one of these names: the last author (last_modified_by) or anyone in change_authors.",
             "type": "array",
             "items": {
               "type": "string"
-            },
-            "description": "Keep only components changed by one of these names: the last author (last_modified_by) or anyone in change_authors."
+            }
           },
           "page": {
+            "description": "Page number (1-based); pass next_page to continue with the same filters.",
             "type": "integer",
             "exclusiveMinimum": 0,
-            "description": "Page number (1-based); pass next_page to continue with the same filters."
+            "maximum": 9007199254740991
           },
           "page_size": {
+            "description": "Page size (default 25, maximum 200).",
             "type": "integer",
             "exclusiveMinimum": 0,
-            "maximum": 200,
-            "description": "Page size (default 25, maximum 200)."
+            "maximum": 200
           }
         },
         "required": [
@@ -3350,20 +3528,23 @@
         "type": "object",
         "properties": {
           "status": {
-            "type": "string",
-            "description": "\"ready\" (the retrieval finished — the component listing is complete across pages; also returned with 0 components when the type simply has no metadata in this org, see hint), \"names_ready\" (every component name is listed across pages, contents are still being read — pick and save components now), \"retrieving\" (still running — components is a PARTIAL set so far, call again) or \"retrieval_failed\" (a JIT task failed/cancelled for part of the type; see failed_tasks — mtdt retries automatically, call again)."
+            "description": "\"ready\" (the retrieval finished — the component listing is complete across pages; also returned with 0 components when the type simply has no metadata in this org, see hint), \"names_ready\" (every component name is listed across pages, contents are still being read — pick and save components now), \"retrieving\" (still running — components is a PARTIAL set so far, call again) or \"retrieval_failed\" (a JIT task failed/cancelled for part of the type; see failed_tasks — mtdt retries automatically, call again).",
+            "type": "string"
           },
           "components": {
+            "description": "One row per COMPONENT { name, type, last_modified, last_modified_by, change_authors? }, most-recently-modified first. last_modified_by is \"Salesforce\" for a profile or permission set change the audit trail shows no person for, null when the author is unknown. change_authors lists everyone known to have changed it in the last 30 days, newest first; absent when none is known. On retrieving/retrieval_failed the list is partial (more may still arrive).",
             "type": "array",
             "items": {
               "type": "object",
+              "propertyNames": {
+                "type": "string"
+              },
               "additionalProperties": {}
-            },
-            "description": "One row per COMPONENT { name, type, last_modified, last_modified_by, change_authors? }, most-recently-modified first. last_modified_by is \"Salesforce\" for a profile or permission set change the audit trail shows no person for, null when the author is unknown. change_authors lists everyone known to have changed it in the last 30 days, newest first; absent when none is known. On retrieving/retrieval_failed the list is partial (more may still arrive)."
+            }
           },
           "total": {
-            "type": "number",
-            "description": "Component count matching the filters (across all pages). While status=\"retrieving\" it grows as more components arrive."
+            "description": "Component count matching the filters (across all pages). While status=\"retrieving\" it grows as more components arrive.",
+            "type": "number"
           },
           "page": {
             "type": "number"
@@ -3372,30 +3553,33 @@
             "type": "number"
           },
           "next_page": {
+            "description": "Next page with the same filters, or null when this snapshot has no more rows. Retrieval may still be running; check status.",
             "type": [
               "number",
               "null"
-            ],
-            "description": "Next page with the same filters, or null when this snapshot has no more rows. Retrieval may still be running; check status."
+            ]
           },
           "partial": {
-            "type": "boolean",
-            "description": "True when components is an incomplete snapshot (status=\"retrieving\") — call again until status=\"ready\" before treating the list as the full set."
+            "description": "True when components is an incomplete snapshot (status=\"retrieving\") — call again until status=\"ready\" before treating the list as the full set.",
+            "type": "boolean"
           },
           "task_ids": {
+            "description": "retrieving / names_ready: the JIT task ids still running.",
             "type": "array",
             "items": {
               "type": "number"
-            },
-            "description": "retrieving / names_ready: the JIT task ids still running."
+            }
           },
           "failed_tasks": {
+            "description": "retrieval_failed: [{ id, status, error }] per failed JIT task — error is the Salesforce-side reason. mtdt re-queues the retrieval automatically (up to 3 times); report the error only if it keeps repeating.",
             "type": "array",
             "items": {
               "type": "object",
+              "propertyNames": {
+                "type": "string"
+              },
               "additionalProperties": {}
-            },
-            "description": "retrieval_failed: [{ id, status, error }] per failed JIT task — error is the Salesforce-side reason. mtdt re-queues the retrieval automatically (up to 3 times); report the error only if it keeps repeating."
+            }
           },
           "hint": {
             "type": "string"
@@ -3414,7 +3598,7 @@
     {
       "name": "validate_deployment",
       "title": "Validate Deployment (Check-Only)",
-      "description": "Validate the deployment on its target org without deploying it (Salesforce check-only with tests), using its FULL saved config. Pass deployment_id and optional test/backup/comment settings only. Call it with dry_run:true first: that returns the plan (components, deletions, test level, backups, post-deploy Apex, git push, scheduled jobs, activations) without creating anything; show the consequential actions to the user. Save components first with update_deployment; get_deployment shows the saved composition. Existing overrides, partial selections and deletions are preserved. Wait until get_deployment shows the source ready first (a repo, backup or archive source can take minutes): until then it rejects with deployment_not_ready, or deployment_population_failed when the source failed. A target whose metadata is not loaded does not block a run. Archive components are selected automatically after population. A run of this deployment that is still queued, running, finishing or waiting refuses with run_in_progress. Returns { run_id, task_id, state, outcome } immediately, or an actionable reject without creating a task. Then call get_deployment_run every 15-30 s until state is succeeded, failed or cancelled. To quick-deploy later, validate with a test level that runs tests (\"local\" or \"specific\").",
+      "description": "Validate the deployment on its target org without deploying it (Salesforce check-only with tests), using its FULL saved config. Pass deployment_id and optional test/backup/comment settings only. Call it with dry_run:true first: that returns the plan (components, deletions, test level, backups, post-deploy Apex, git push, scheduled jobs, activations) without creating anything; show the consequential actions to the user. Save components first with update_deployment; get_deployment shows the saved composition. Existing overrides, partial selections and deletions are preserved. Wait until get_deployment shows the source ready first (a repo, backup or archive source can take minutes): until then it rejects with deployment_not_ready, or deployment_population_failed when the source failed. A target whose metadata is not loaded does not block a run. Archive components are selected automatically after population. A run of this deployment that is still queued, running, finishing or waiting refuses with run_in_progress. A target or source org that expired or must be re-authenticated refuses with org_unavailable. Returns { run_id, task_id, state, outcome } immediately, or an actionable reject without creating a task. Then call get_deployment_run every 15-30 s until state is succeeded, failed or cancelled. To quick-deploy later, validate with a test level that runs tests (\"local\" or \"specific\").",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -3423,6 +3607,7 @@
             "description": "Deployment ID."
           },
           "test_option": {
+            "description": "Apex test level for this run only. Omit to use the level saved with update_deployment, or local if none is saved. Inspect the plan with dry_run:true first. Tests must run for a later execute_quick_deployment of this validation. \"relevant\" lets Salesforce select tests automatically; \"specific\" needs tests_to_run; \"NoTestRun\" fails on production targets.",
             "type": "string",
             "enum": [
               "all",
@@ -3431,24 +3616,23 @@
               "specific",
               "default",
               "NoTestRun"
-            ],
-            "description": "Apex test level for this run only. Omit to use the level saved with update_deployment, or local if none is saved. Inspect the plan with dry_run:true first. Tests must run for a later execute_quick_deployment of this validation. \"relevant\" lets Salesforce select tests automatically; \"specific\" needs tests_to_run; \"NoTestRun\" fails on production targets."
+            ]
           },
           "tests_to_run": {
-            "type": "string",
-            "description": "Comma-separated Apex test class names. Only used when test_option=\"specific\"."
+            "description": "Comma-separated Apex test class names. Only used when test_option=\"specific\".",
+            "type": "string"
           },
           "backup": {
-            "type": "boolean",
-            "description": "Enable the pre-deploy \"Metadata Backup\" so a later real deploy of this run can be rolled back."
+            "description": "Enable the pre-deploy \"Metadata Backup\" so a later real deploy of this run can be rolled back.",
+            "type": "boolean"
           },
           "comment": {
-            "type": "string",
-            "description": "Optional comment (shown on approval requests / audit)."
+            "description": "Optional comment (shown on approval requests / audit).",
+            "type": "string"
           },
           "dry_run": {
-            "type": "boolean",
-            "description": "Return the run plan without creating anything: components, deletions, test level, backups, post-deploy Apex, git push, scheduled jobs, activations, and whether a run in progress would block it."
+            "description": "Return the run plan without creating anything: components, deletions, test level, backups, post-deploy Apex, git push, scheduled jobs, activations, and whether a run in progress would block it.",
+            "type": "boolean"
           }
         },
         "required": [
@@ -3460,13 +3644,14 @@
         "type": "object",
         "properties": {
           "run_id": {
-            "type": "number",
-            "description": "The new run; pass to get_deployment_run."
+            "description": "The new run; pass to get_deployment_run.",
+            "type": "number"
           },
           "task_id": {
             "type": "number"
           },
           "state": {
+            "description": "\"waiting\" with waiting_for \"approval\" means an approver must act in mtdt before anything is deployed.",
             "type": "string",
             "enum": [
               "queued",
@@ -3476,8 +3661,7 @@
               "succeeded",
               "failed",
               "cancelled"
-            ],
-            "description": "\"waiting\" with waiting_for \"approval\" means an approver must act in mtdt before anything is deployed."
+            ]
           },
           "waiting_for": {
             "type": "string",
@@ -3493,18 +3677,22 @@
             "type": "string"
           },
           "dry_run": {
-            "type": "boolean",
-            "description": "true: nothing was created; the fields describe the run that would start."
+            "description": "true: nothing was created; the fields describe the run that would start.",
+            "type": "boolean"
           },
           "components_count": {
             "type": "number"
           },
           "would_refuse": {
+            "description": "dry_run: the refusal a real call would return now (run_in_progress, permission_denied, org_unavailable, scheduling_not_supported, unknown_objects_to_backup).",
             "type": "object",
-            "additionalProperties": {},
-            "description": "dry_run: the refusal a real call would return now (run_in_progress, permission_denied, scheduling_not_supported, unknown_objects_to_backup)."
+            "propertyNames": {
+              "type": "string"
+            },
+            "additionalProperties": {}
           },
           "run": {
+            "description": "run_in_progress: the active run; follow it with get_deployment_run.",
             "type": "object",
             "properties": {
               "run_id": {
@@ -3553,32 +3741,37 @@
               "state",
               "outcome"
             ],
-            "additionalProperties": false,
-            "description": "run_in_progress: the active run; follow it with get_deployment_run."
+            "additionalProperties": false
           },
           "error": {
-            "type": "string",
-            "description": "\"unresolved_types\" or \"items_not_retrieved\" on a structured reject; with all_items \"archive_not_ready\" / \"archive_unpack_failed\" / \"all_items_not_supported\" / \"archive_empty\"; \"missing_selection\" / \"conflicting_selection\" when items and all_items are both absent or both set."
+            "description": "\"run_in_progress\", \"org_unavailable\" (see reason, side and org), \"unresolved_types\" or \"items_not_retrieved\" on a structured reject; with all_items \"archive_not_ready\" / \"archive_unpack_failed\" / \"all_items_not_supported\" / \"archive_empty\"; \"missing_selection\" / \"conflicting_selection\" when items and all_items are both absent or both set.",
+            "type": "string"
           },
           "message": {
             "type": "string"
           },
           "component_count": {
-            "type": "number",
-            "description": "all_items: number of components sent to validation. Can exceed register_archive component_count: an object whose fields are shipped is sent as its own component too."
+            "description": "all_items: number of components sent to validation. Can exceed register_archive component_count: an object whose fields are shipped is sent as its own component too.",
+            "type": "number"
           },
           "missing": {
+            "description": "items_not_retrieved: the [{type,name}] not yet retrieved.",
             "type": "array",
             "items": {
               "type": "object",
+              "propertyNames": {
+                "type": "string"
+              },
               "additionalProperties": {}
-            },
-            "description": "items_not_retrieved: the [{type,name}] not yet retrieved."
+            }
           },
           "unresolved": {
             "type": "array",
             "items": {
               "type": "object",
+              "propertyNames": {
+                "type": "string"
+              },
               "additionalProperties": {}
             }
           },
@@ -3586,6 +3779,9 @@
             "type": "array",
             "items": {
               "type": "object",
+              "propertyNames": {
+                "type": "string"
+              },
               "additionalProperties": {}
             }
           }
@@ -3603,7 +3799,7 @@
     {
       "name": "execute_deployment",
       "title": "Execute Deployment (Real Deploy)",
-      "description": "Deploy for real: run a full deploy of the CURRENT saved draft to its target org, with saved or passed test/backup settings, overwrites and deletions. It never chooses a previous validation or quick-deploys. Only on an explicit user instruction after confirming the target. Call with dry_run:true first and show the plan, including post-deploy actions. An important org requires confirm_important_target:true after the user confirmed this specific deploy. Uses team deploy permissions or requests approval when the role allows that; state waiting/approval needs an approver in mtdt. Refuses run_in_progress, permission_denied, confirmation_required, unknown_objects_to_backup (an objects_to_backup name the target org does not have), saved-config errors or scheduling_not_supported (full deploys cannot be scheduled). To deploy an explicitly chosen validation package, call execute_quick_deployment with validation_run_id instead. Returns mode full_deploy and the new run; follow get_deployment_run every 15-30 s.",
+      "description": "Deploy for real: run a full deploy of the CURRENT saved draft to its target org, with saved or passed test/backup settings, overwrites and deletions. It never chooses a previous validation or quick-deploys. Only on an explicit user instruction after confirming the target. Call with dry_run:true first and show the plan, including post-deploy actions. An important org requires confirm_important_target:true after the user confirmed this specific deploy. Uses team deploy permissions or requests approval when the role allows that; state waiting/approval needs an approver in mtdt. Refuses run_in_progress, permission_denied, org_unavailable (the target or source org expired or must be re-authenticated), confirmation_required, unknown_objects_to_backup (an objects_to_backup name the target org does not have), saved-config errors or scheduling_not_supported (full deploys cannot be scheduled). To deploy an explicitly chosen validation package, call execute_quick_deployment with validation_run_id instead. Returns mode full_deploy and the new run; follow get_deployment_run every 15-30 s.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -3612,6 +3808,7 @@
             "description": "Deployment ID."
           },
           "test_option": {
+            "description": "Apex test level for this full deploy. Omit to use the level saved with update_deployment. \"NoTestRun\" fails on production targets.",
             "type": "string",
             "enum": [
               "all",
@@ -3620,43 +3817,42 @@
               "specific",
               "default",
               "NoTestRun"
-            ],
-            "description": "Apex test level for this full deploy. Omit to use the level saved with update_deployment. \"NoTestRun\" fails on production targets."
+            ]
           },
           "tests_to_run": {
-            "type": "string",
-            "description": "Comma-separated Apex test class names. Only used when test_option=\"specific\"."
+            "description": "Comma-separated Apex test class names. Only used when test_option=\"specific\".",
+            "type": "string"
           },
           "backup": {
-            "type": "boolean",
-            "description": "Take the pre-deploy \"Metadata Backup\" so this deploy can be rolled back."
+            "description": "Take the pre-deploy \"Metadata Backup\" so this deploy can be rolled back.",
+            "type": "boolean"
           },
           "objects_to_backup": {
+            "description": "Object API names whose RECORDS to back up before deploying. Each must exist on the target org (case-insensitive), otherwise unknown_objects_to_backup and nothing is created.",
             "type": "array",
             "items": {
               "type": "string"
-            },
-            "description": "Object API names whose RECORDS to back up before deploying. Each must exist on the target org (case-insensitive), otherwise unknown_objects_to_backup and nothing is created."
+            }
           },
           "request_approval": {
-            "type": "boolean",
-            "description": "Request approval instead of deploying directly. Omit: mtdt requests approval by itself when you may not deploy to this target directly, like the web app."
+            "description": "Request approval instead of deploying directly. Omit: mtdt requests approval by itself when you may not deploy to this target directly, like the web app.",
+            "type": "boolean"
           },
           "scheduled_at": {
-            "type": "string",
-            "description": "A full deploy cannot be scheduled: this returns scheduling_not_supported. Use execute_quick_deployment to schedule a specific validation."
+            "description": "A full deploy cannot be scheduled: this returns scheduling_not_supported. Use execute_quick_deployment to schedule a specific validation.",
+            "type": "string"
           },
           "comment": {
-            "type": "string",
-            "description": "Comment shown on the approval request and in the audit."
+            "description": "Comment shown on the approval request and in the audit.",
+            "type": "string"
           },
           "confirm_important_target": {
-            "type": "boolean",
-            "description": "Set only after the user confirmed this specific deploy to an important org."
+            "description": "Set only after the user confirmed this specific deploy to an important org.",
+            "type": "boolean"
           },
           "dry_run": {
-            "type": "boolean",
-            "description": "Return the plan without creating anything: full deploy, whether approval will be requested, components, deletions, backups, post-deploy Apex, git push, jobs, activations, and any refusal that would apply."
+            "description": "Return the plan without creating anything: full deploy, whether approval will be requested, components, deletions, backups, post-deploy Apex, git push, jobs, activations, and any refusal that would apply.",
+            "type": "boolean"
           }
         },
         "required": [
@@ -3668,13 +3864,14 @@
         "type": "object",
         "properties": {
           "run_id": {
-            "type": "number",
-            "description": "The new run; pass to get_deployment_run."
+            "description": "The new run; pass to get_deployment_run.",
+            "type": "number"
           },
           "task_id": {
             "type": "number"
           },
           "state": {
+            "description": "\"waiting\" with waiting_for \"approval\" means an approver must act in mtdt before anything is deployed.",
             "type": "string",
             "enum": [
               "queued",
@@ -3684,8 +3881,7 @@
               "succeeded",
               "failed",
               "cancelled"
-            ],
-            "description": "\"waiting\" with waiting_for \"approval\" means an approver must act in mtdt before anything is deployed."
+            ]
           },
           "waiting_for": {
             "type": "string",
@@ -3701,18 +3897,22 @@
             "type": "string"
           },
           "dry_run": {
-            "type": "boolean",
-            "description": "true: nothing was created; the fields describe the run that would start."
+            "description": "true: nothing was created; the fields describe the run that would start.",
+            "type": "boolean"
           },
           "components_count": {
             "type": "number"
           },
           "would_refuse": {
+            "description": "dry_run: the refusal a real call would return now (run_in_progress, permission_denied, org_unavailable, scheduling_not_supported, unknown_objects_to_backup).",
             "type": "object",
-            "additionalProperties": {},
-            "description": "dry_run: the refusal a real call would return now (run_in_progress, permission_denied, scheduling_not_supported, unknown_objects_to_backup)."
+            "propertyNames": {
+              "type": "string"
+            },
+            "additionalProperties": {}
           },
           "run": {
+            "description": "run_in_progress: the active run; follow it with get_deployment_run.",
             "type": "object",
             "properties": {
               "run_id": {
@@ -3761,26 +3961,26 @@
               "state",
               "outcome"
             ],
-            "additionalProperties": false,
-            "description": "run_in_progress: the active run; follow it with get_deployment_run."
+            "additionalProperties": false
           },
           "mode": {
+            "description": "Always a full deploy of the current saved draft.",
             "type": "string",
-            "const": "full_deploy",
-            "description": "Always a full deploy of the current saved draft."
+            "const": "full_deploy"
           },
           "note": {
             "type": "string"
           },
           "approval_will_be_requested": {
-            "type": "boolean",
-            "description": "dry_run: the run will wait for an approver."
+            "description": "dry_run: the run will wait for an approver.",
+            "type": "boolean"
           },
           "confirmation_required": {
-            "type": "boolean",
-            "description": "dry_run: the target is marked important, so the real call needs confirm_important_target:true after the user confirmed."
+            "description": "dry_run: the target is marked important, so the real call needs confirm_important_target:true after the user confirmed.",
+            "type": "boolean"
           },
           "target": {
+            "description": "confirmation_required: the important target org.",
             "type": "object",
             "properties": {
               "id": {
@@ -3796,19 +3996,18 @@
                 ]
               }
             },
-            "additionalProperties": {},
-            "description": "confirmation_required: the important target org."
+            "additionalProperties": {}
           },
           "error": {
-            "type": "string",
-            "description": "\"run_in_progress\" (see run), \"permission_denied\", \"scheduling_not_supported\", \"confirmation_required\" (ask the user, see message), \"unknown_objects_to_backup\" (see unknown_objects), \"objects_to_backup_check_failed\" (the target object list could not be read), or a saved-config reject such as \"deployment_not_ready\" / \"empty_selection\"."
+            "description": "\"run_in_progress\" (see run), \"permission_denied\", \"org_unavailable\" (see reason, side and org), \"scheduling_not_supported\", \"confirmation_required\" (ask the user, see message), \"unknown_objects_to_backup\" (see unknown_objects), \"objects_to_backup_check_failed\" (the target object list could not be read), or a saved-config reject such as \"deployment_not_ready\" / \"empty_selection\".",
+            "type": "string"
           },
           "unknown_objects": {
+            "description": "unknown_objects_to_backup: the passed objects_to_backup names the target org does not have.",
             "type": "array",
             "items": {
               "type": "string"
-            },
-            "description": "unknown_objects_to_backup: the passed objects_to_backup names the target org does not have."
+            }
           },
           "message": {
             "type": "string"
@@ -3827,39 +4026,41 @@
     {
       "name": "execute_quick_deployment",
       "title": "Execute Quick Deployment (Selected Validation)",
-      "description": "Deploy for real: quick-deploy the EXACT package of the explicitly selected validation_run_id, without re-running Apex tests. Requires deployment_id and validation_run_id (an mtdt run_id, not task_id); the server checks ownership and resolves its Salesforce job ID. No latest-validation lookup and no full-deploy fallback. A changed draft or a newer validation does not replace the package you chose. Call with dry_run:true first and show that validation snapshot and quick workflow; quick deploy does not run saved post-deploy Apex, Git push, record backups or scheduled-job pauses. Metadata rollback backup is attempted from persisted validation artifacts; flow activation uses saved deployment settings at execution, Flow tests and agent publication use validation data. Only on explicit user instruction, after confirming the target and selected validation. Important targets require confirm_important_target:true after the user said yes. Team permissions, approval and active-run gates apply as for execute_deployment. An ineligible validation returns validation_not_eligible without creating a task; choose a different action explicitly. scheduled_at can defer this quick deploy within the Salesforce validation lifetime. Follow the returned run with get_deployment_run.",
+      "description": "Deploy for real: quick-deploy the EXACT package of the explicitly selected validation_run_id, without re-running Apex tests. Requires deployment_id and validation_run_id (an mtdt run_id, not task_id); the server checks ownership and resolves its Salesforce job ID. No latest-validation lookup and no full-deploy fallback. A changed draft or a newer validation does not replace the package you chose. Call with dry_run:true first and show that validation snapshot and quick workflow; quick deploy does not run saved post-deploy Apex, Git push, record backups or scheduled-job pauses. Metadata rollback backup is attempted from persisted validation artifacts; flow activation uses saved deployment settings at execution, Flow tests and agent publication use validation data. Only on explicit user instruction, after confirming the target and selected validation. Important targets require confirm_important_target:true after the user said yes. Team permissions, approval and active-run gates apply as for execute_deployment; an expired or re-auth target refuses with org_unavailable. An ineligible validation returns validation_not_eligible without creating a task; choose a different action explicitly. scheduled_at can defer this quick deploy within the Salesforce validation lifetime. Follow the returned run with get_deployment_run.",
       "inputSchema": {
         "type": "object",
         "properties": {
           "deployment_id": {
             "type": "integer",
             "exclusiveMinimum": 0,
+            "maximum": 9007199254740991,
             "description": "Deployment that owns the validation."
           },
           "validation_run_id": {
             "type": "integer",
             "exclusiveMinimum": 0,
+            "maximum": 9007199254740991,
             "description": "Explicit validation run_id from validate_deployment or get_deployment_run; not task_id or the Salesforce ID. The server resolves the SF job ID from this run."
           },
           "request_approval": {
-            "type": "boolean",
-            "description": "Request approval instead of deploying directly. Omit to follow the team role and target policy."
+            "description": "Request approval instead of deploying directly. Omit to follow the team role and target policy.",
+            "type": "boolean"
           },
           "scheduled_at": {
-            "type": "string",
-            "description": "ISO datetime to defer this quick deploy, within the validation lifetime."
+            "description": "ISO datetime to defer this quick deploy, within the validation lifetime.",
+            "type": "string"
           },
           "comment": {
-            "type": "string",
-            "description": "Comment for the approval request and audit."
+            "description": "Comment for the approval request and audit.",
+            "type": "string"
           },
           "confirm_important_target": {
-            "type": "boolean",
-            "description": "Set only after the user confirmed this specific deploy to an important org."
+            "description": "Set only after the user confirmed this specific deploy to an important org.",
+            "type": "boolean"
           },
           "dry_run": {
-            "type": "boolean",
-            "description": "Show the selected validation package and actual quick workflow without creating a task."
+            "description": "Show the selected validation package and actual quick workflow without creating a task.",
+            "type": "boolean"
           }
         },
         "required": [
@@ -3872,13 +4073,14 @@
         "type": "object",
         "properties": {
           "run_id": {
-            "type": "number",
-            "description": "The new run; pass to get_deployment_run."
+            "description": "The new run; pass to get_deployment_run.",
+            "type": "number"
           },
           "task_id": {
             "type": "number"
           },
           "state": {
+            "description": "\"waiting\" with waiting_for \"approval\" means an approver must act in mtdt before anything is deployed.",
             "type": "string",
             "enum": [
               "queued",
@@ -3888,8 +4090,7 @@
               "succeeded",
               "failed",
               "cancelled"
-            ],
-            "description": "\"waiting\" with waiting_for \"approval\" means an approver must act in mtdt before anything is deployed."
+            ]
           },
           "waiting_for": {
             "type": "string",
@@ -3905,18 +4106,22 @@
             "type": "string"
           },
           "dry_run": {
-            "type": "boolean",
-            "description": "true: nothing was created; the fields describe the run that would start."
+            "description": "true: nothing was created; the fields describe the run that would start.",
+            "type": "boolean"
           },
           "components_count": {
             "type": "number"
           },
           "would_refuse": {
+            "description": "dry_run: the refusal a real call would return now (run_in_progress, permission_denied, org_unavailable, scheduling_not_supported, unknown_objects_to_backup).",
             "type": "object",
-            "additionalProperties": {},
-            "description": "dry_run: the refusal a real call would return now (run_in_progress, permission_denied, scheduling_not_supported, unknown_objects_to_backup)."
+            "propertyNames": {
+              "type": "string"
+            },
+            "additionalProperties": {}
           },
           "run": {
+            "description": "run_in_progress: the active run; follow it with get_deployment_run.",
             "type": "object",
             "properties": {
               "run_id": {
@@ -3965,8 +4170,7 @@
               "state",
               "outcome"
             ],
-            "additionalProperties": false,
-            "description": "run_in_progress: the active run; follow it with get_deployment_run."
+            "additionalProperties": false
           },
           "mode": {
             "type": "string",

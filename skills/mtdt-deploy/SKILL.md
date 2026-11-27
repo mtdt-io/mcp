@@ -182,7 +182,8 @@ For the initial deployment, use `create_deployment` with the card IDs instead.
 - `list_orgs` to see connected orgs, or `list_orgs` with `query`: the user's free-text name ("QA",
   "acme prod"), part of the URL, or an org type ("production", "sandbox"). **Never assume the top
   hit** — confirm with the user, especially when a candidate has `org_type: production` or
-  `is_important: true`.
+  `is_important: true`. An org with `expired: true` (a scratch org past its expiration date) or
+  `reauth_required: true` cannot be deployed to, validated against or read: pick another org.
 - Source can be an org, or a git repo, metadata backup or uploaded archive from `list_sources`
   (`kind` narrows to `repos` / `backups` / `archives`); each row's `use_as` names the
   `create_deployment` parameter that takes its id. Backups are listed only when actually usable as a
@@ -353,6 +354,9 @@ execution settings as the actual launch. For example, a validation with specific
 - `empty_selection` means nothing is saved yet: browse, add components, inspect, then retry.
   `run_in_progress` means a run of this deployment is still queued, running, finishing or
   waiting: follow `run` with `get_deployment_run` instead of starting another one.
+  `org_unavailable` means the target or source org (`side`) expired or must be re-authenticated
+  (`reason`): nothing was created. Re-authentication happens in the mtdt web app; an expired org
+  cannot come back, so use a deployment with another org.
   `deployment_not_ready` means archive selection is still populating: wait until `get_deployment` reports `ready`.
   Other rejects and recovery steps are covered by the `mtdt-troubleshoot` skill.
 - The launch returns `{ run_id, task_id, state, outcome }` right away. Follow it with

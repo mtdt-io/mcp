@@ -164,6 +164,9 @@ concurrent edits are not detected or rejected.
   target — mtdt then forces an approval request; that is policy, not a bug.
 - **`reauth_required: true` on an org** (in `list_orgs`): the Salesforce connection needs
   re-authentication in the mtdt web app before any retrieval/deploy against it will work.
+- **`expired: true` on an org** (in `list_orgs`), or `org_unavailable` with `reason: "expired"`
+  from a validate or deploy: the scratch org is past its expiration date and cannot be used
+  again. Validate and deploy refuse before creating a run; use a deployment with another org.
 
 ## The failure a preflight would have named
 
